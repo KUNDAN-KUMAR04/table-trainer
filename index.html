@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Table Trainer</title>
+<style>
+:root{--bg:#fbf8f3;--card:#fff;--ink:#1f2937;--mute:#6b7280;--acc:#e8590c;--acc2:#fff0e6;--ok:#2f9e44;--bad:#e03131;--line:#e7e1d8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181c;--card:#22242a;--ink:#f1f1f1;--mute:#9ca3af;--acc:#ff922b;--acc2:#35281e;--line:#33363d}}
+:root[data-theme="dark"]{--bg:#17181c;--card:#22242a;--ink:#f1f1f1;--mute:#9ca3af;--acc:#ff922b;--acc2:#35281e;--line:#33363d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.4}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:4px 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+label{font-size:.8rem;color:var(--mute);display:block;margin-bottom:4px}
+input[type=text],input[type=number]{width:100%;padding:10px;font-size:1rem;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:110px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+.tab,button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;white-space:nowrap}
+.tab.on,button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{padding:4px 11px;border-radius:99px;font-size:.85rem;border:1px solid var(--line);background:var(--card);cursor:pointer}
+.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.hint{font-size:.8rem;color:var(--mute);margin-top:6px}
+.tbl{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px;background:var(--card)}
+.tbl h3{margin:0 0 6px;color:var(--acc)}
+.line{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--line);font-size:1.05rem}
+.line:last-child{border:0}.line .a.hide{filter:blur(7px);cursor:pointer;user-select:none}
+.q{font-size:2.6rem;text-align:center;margin:16px 0;font-weight:700}
+.ans{font-size:1.6rem;text-align:center}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.opts button{font-size:1.4rem;padding:14px}
+.stats{display:flex;justify-content:space-around;font-size:.9rem;color:var(--mute);margin-bottom:6px}.stats b{color:var(--ink);font-size:1.2rem;display:block;text-align:center}
+.fb{text-align:center;min-height:1.6em;font-weight:600}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>✖️ Table Trainer</h1>
+
+<div class="card">
+  <div class="row">
+    <div style="flex:2;min-width:180px"><label>Which tables? (e.g. 7 or 2,5,9 or 3-6)</label><input type="text" id="tables" value="7"></div>
+    <div><label>From</label><input type="number" id="from" value="1" min="1"></div>
+    <div><label>To</label><input type="number" id="to" value="10" min="1"></div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="hint" id="sum"></div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div id="view"></div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const MODES=[["learn","📖 Learn"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"]];
+let mode="learn",st={},best={};
+try{best=JSON.parse(localStorage.getItem("tt_best")||"{}")}catch(e){}
+
+function parseTables(s){
+  const out=new Set();
+  s.split(/[,\s]+/).filter(Boolean).forEach(p=>{
+    const m=p.match(/^(\d+)-(\d+)$/);
+    if(m){let a=+m[1],b=+m[2];if(a>b)[a,b]=[b,a];for(let i=a;i<=Math.min(b,100);i++)out.add(i)}
+    else if(/^\d+$/.test(p)&&+p>0)out.add(+p);
+  });
+  return [...out].sort((a,b)=>a-b);
+}
+function cfg(){
+  let f=Math.max(1,+$("from").value||1),t=Math.max(1,+$("to").value||10);
+  if(f>t)[f,t]=[t,f];
+  return {tb:parseTables($("tables").value),f,t};
+}
+function pool(){const c=cfg(),p=[];c.tb.forEach(a=>{for(let m=c.f;m<=c.t;m++)p.push([a,m])});return p}
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+
+function renderChips(){
+  const cur=new Set(cfg().tb);
+  $("chips").innerHTML=Array.from({length:20},(_,i)=>i+1).map(n=>`<span class="chip ${cur.has(n)?"on":""}" data-n="${n}">${n}</span>`).join("");
+  $("chips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+    const s=new Set(cfg().tb),n=+c.dataset.n;s.has(n)?s.delete(n):s.add(n);
+    $("tables").value=[...s].sort((a,b)=>a-b).join(",");update();
+  });
+}
+function update(){
+  renderChips();
+  const c=cfg();
+  $("sum").textContent=c.tb.length?`Tables: ${c.tb.join(", ")} · multiplied from ${c.f} to ${c.t} (${pool().length} questions)`:"Enter at least one table number.";
+  start();
+}
+["tables","from","to"].forEach(i=>$(i).addEventListener("input",update));
+
+$("tabs").innerHTML=MODES.map(([k,l])=>`<button class="tab" data-k="${k}">${l}</button>`).join("");
+$("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{mode=b.dataset.k;start()});
+
+function start(){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.k===mode));
+  clearInterval(st.timer);
+  st={score:0,tot:0,streak:0,time:60,over:false};
+  if(!pool().length){$("view").innerHTML=`<div class="card">Add a table number above to begin.</div>`;return}
+  if(mode==="learn")return learn();
+  if(mode==="match")return match();
+  if(mode==="speed"){st.timer=setInterval(()=>{st.time--;const e=$("t");if(e)e.textContent=st.time;if(st.time<=0){clearInterval(st.timer);st.over=true;endSpeed()}},1000)}
+  next();
+}
+
+function learn(){
+  const c=cfg();
+  let h=`<div class="hint" style="margin-bottom:8px">Tap a blurred answer to reveal it. <button id="hideall" style="padding:3px 10px;font-size:.8rem">Hide all answers</button> <button id="showall" style="padding:3px 10px;font-size:.8rem">Show all</button></div>`;
+  c.tb.forEach(a=>{
+    h+=`<div class="tbl"><h3>Table of ${a}</h3>`;
+    for(let m=c.f;m<=c.t;m++)h+=`<div class="line"><span>${a} × ${m}</span><span class="a">= ${a*m}</span></div>`;
+    h+=`</div>`;
+  });
+  $("view").innerHTML=h;
+  const bind=()=>document.querySelectorAll(".a").forEach(e=>e.onclick=()=>e.classList.toggle("hide"));
+  bind();
+  $("hideall").onclick=()=>document.querySelectorAll(".a").forEach(e=>e.classList.add("hide"));
+  $("showall").onclick=()=>document.querySelectorAll(".a").forEach(e=>e.classList.remove("hide"));
+}
+
+function statsHtml(){
+  return `<div class="stats"><div><b>${st.score}/${st.tot}</b>score</div><div><b>${st.streak}</b>streak</div>${mode==="speed"?`<div><b id="t">${st.time}</b>seconds</div>`:""}${mode==="speed"?`<div><b>${best.speed||0}</b>best</div>`:""}</div>`;
+}
+function next(){
+  if(st.over)return;
+  const [a,m]=pick(pool());st.cur={a,m,p:a*m};
+  let h=`<div class="card">${statsHtml()}`;
+  if(mode==="missing"){
+    const hideA=Math.random()<.5;st.cur.ans=hideA?m:a; // hide the multiplier or the table
+    st.cur.txt=hideA?`${a} × <span style="color:var(--acc)">?</span> = ${a*m}`:`<span style="color:var(--acc)">?</span> × ${m} = ${a*m}`;
+    st.cur.ans=hideA?m:a;
+  } else {st.cur.ans=a*m;st.cur.txt=`${a} × ${m} = <span style="color:var(--acc)">?</span>`}
+  h+=`<div class="q">${st.cur.txt}</div>`;
+  if(mode==="choice"){
+    const set=new Set([st.cur.ans]);
+    while(set.size<4){const d=st.cur.ans+pick([-1,1])*(1+rnd(Math.max(3,a)));if(d>0)set.add(d)}
+    h+=`<div class="opts">${shuffle([...set]).map(o=>`<button data-o="${o}">${o}</button>`).join("")}</div>`;
+  } else {
+    h+=`<input type="number" id="ans" class="ans" inputmode="numeric" autofocus placeholder="Your answer"><div style="text-align:center;margin-top:10px"><button class="pri" id="go">Check</button></div>`;
+  }
+  h+=`<div class="fb" id="fb"></div></div>`;
+  $("view").innerHTML=h;
+  if(mode==="choice")$("view").querySelectorAll(".opts button").forEach(b=>b.onclick=()=>check(+b.dataset.o));
+  else{$("go").onclick=()=>{const v=$("ans").value;if(v!=="")check(+v)};$("ans").addEventListener("keydown",e=>{if(e.key==="Enter")$("go").click()});$("ans").focus()}
+}
+function check(v){
+  if(st.over)return;
+  st.tot++;
+  const ok=v===st.cur.ans;
+  if(ok){st.score++;st.streak++}else st.streak=0;
+  const fb=$("fb");
+  fb.className="fb "+(ok?"ok":"bad");
+  fb.textContent=ok?"✅ Correct!":`❌ It was ${st.cur.ans}  (${st.cur.a} × ${st.cur.m} = ${st.cur.p})`;
+  document.querySelectorAll("#view button,#view input").forEach(e=>e.disabled=true);
+  setTimeout(next,ok?500:1600);
+}
+function endSpeed(){
+  if(st.score>(best.speed||0)){best.speed=st.score;try{localStorage.setItem("tt_best",JSON.stringify(best))}catch(e){}}
+  $("view").innerHTML=`<div class="card" style="text-align:center"><div class="q">⏱️ Time's up!</div><p>You got <b>${st.score}</b> right out of ${st.tot}.<br>Best: ${best.speed}</p><button class="pri" onclick="start()">Play again</button></div>`;
+}
+
+/* Match: pair questions with answers */
+function match(){
+  const items=shuffle(pool()).slice(0,6);
+  const ans=shuffle(items.map(([a,m])=>a*m));
+  st.sel=null;st.done=0;st.n=items.length;st.tries=0;
+  $("view").innerHTML=`<div class="card"><div class="hint">Tap a question, then its answer.</div><div class="row" style="margin-top:10px"><div id="qs" class="opts" style="grid-template-columns:1fr">${items.map(([a,m],i)=>`<button data-v="${a*m}" class="mq">${a} × ${m}</button>`).join("")}</div><div id="as" class="opts" style="grid-template-columns:1fr">${ans.map(v=>`<button data-v="${v}" class="ma">${v}</button>`).join("")}</div></div><div class="fb" id="fb"></div></div>`;
+  const qs=[...document.querySelectorAll(".mq")],as=[...document.querySelectorAll(".ma")];
+  qs.forEach(q=>q.onclick=()=>{if(q.disabled)return;qs.forEach(x=>x.classList.remove("pri"));q.classList.add("pri");st.sel=q});
+  as.forEach(a=>a.onclick=()=>{
+    if(!st.sel||a.disabled)return;st.tries++;
+    if(st.sel.dataset.v===a.dataset.v){st.sel.disabled=a.disabled=true;st.sel.style.opacity=a.style.opacity=.4;st.sel.classList.remove("pri");st.sel=null;st.done++;
+      if(st.done===st.n){$("fb").className="fb ok";$("fb").innerHTML=`🎉 All matched in ${st.tries} tries! <button class="pri" onclick="start()">Next round</button>`}}
+    else{$("fb").className="fb bad";$("fb").textContent="Not a match, try again";}
+  });
+}
+update();
+</script>
+</body>
+</html>

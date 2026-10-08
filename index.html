@@ -4,183 +4,262 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Table Trainer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✖️</text></svg>">
 <style>
-:root{--bg:#fbf8f3;--card:#fff;--ink:#1f2937;--mute:#6b7280;--acc:#e8590c;--acc2:#fff0e6;--ok:#2f9e44;--bad:#e03131;--line:#e7e1d8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181c;--card:#22242a;--ink:#f1f1f1;--mute:#9ca3af;--acc:#ff922b;--acc2:#35281e;--line:#33363d}}
-:root[data-theme="dark"]{--bg:#17181c;--card:#22242a;--ink:#f1f1f1;--mute:#9ca3af;--acc:#ff922b;--acc2:#35281e;--line:#33363d}
+:root{--bg:#f4f6fb;--card:#fff;--ink:#16203a;--mute:#6a7391;--acc:#5b3df5;--acc2:#ece8ff;--ok:#12a150;--bad:#e5484d;--line:#e3e7f2;--sh:0 6px 20px rgba(40,50,110,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1220;--card:#181c30;--ink:#eef0fb;--mute:#97a0c0;--acc:#8b74ff;--acc2:#262050;--line:#2a2f4a;--sh:none}}
+:root[data-theme="dark"]{--bg:#0f1220;--card:#181c30;--ink:#eef0fb;--mute:#97a0c0;--acc:#8b74ff;--acc2:#262050;--line:#2a2f4a;--sh:none}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.4}
-main{max-width:760px;margin:0 auto;padding:16px}
-h1{font-size:1.5rem;margin:4px 0 12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-label{font-size:.8rem;color:var(--mute);display:block;margin-bottom:4px}
-input[type=text],input[type=number]{width:100%;padding:10px;font-size:1rem;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
-.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:110px}
-.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
-.tab,button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;white-space:nowrap}
-.tab.on,button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.chip{padding:4px 11px;border-radius:99px;font-size:.85rem;border:1px solid var(--line);background:var(--card);cursor:pointer}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito","Segoe UI",system-ui,sans-serif;line-height:1.4}
+button{font:inherit;cursor:pointer;color:inherit}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+.hd{max-width:1320px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+.logo{font-weight:800;font-size:1.3rem;display:flex;align-items:center;gap:8px}
+.logo i{font-style:normal;background:var(--acc);color:#fff;border-radius:10px;width:34px;height:34px;display:grid;place-items:center}
+.sp{flex:1}
+.lvl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem}
+.bar{width:110px;height:8px;border-radius:9px;background:var(--line);overflow:hidden}.bar b{display:block;height:100%;background:var(--acc);border-radius:9px;transition:width .4s}
+.ib{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px}
+.app{max-width:1320px;margin:0 auto;padding:20px;display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+aside{position:sticky;top:calc(70px + env(safe-area-inset-top,0px))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--sh)}
+aside h2{font-size:1rem;margin:0 0 10px}
+label{font-size:.78rem;color:var(--mute);display:block;margin:10px 0 4px;font-weight:700}
+input[type=text],input[type=number]{width:100%;padding:10px 12px;font:inherit;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
+input:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px;margin-top:6px}
+.chip{padding:7px 0;text-align:center;border-radius:10px;font-weight:700;font-size:.9rem;border:1.5px solid var(--line);background:var(--bg);cursor:pointer}
 .chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
-.hint{font-size:.8rem;color:var(--mute);margin-top:6px}
-.tbl{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px;background:var(--card)}
-.tbl h3{margin:0 0 6px;color:var(--acc)}
-.line{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--line);font-size:1.05rem}
-.line:last-child{border:0}.line .a.hide{filter:blur(7px);cursor:pointer;user-select:none}
-.q{font-size:2.6rem;text-align:center;margin:16px 0;font-weight:700}
-.ans{font-size:1.6rem;text-align:center}
-.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.opts button{font-size:1.4rem;padding:14px}
-.stats{display:flex;justify-content:space-around;font-size:.9rem;color:var(--mute);margin-bottom:6px}.stats b{color:var(--ink);font-size:1.2rem;display:block;text-align:center}
-.fb{text-align:center;min-height:1.6em;font-weight:600}.ok{color:var(--ok)}.bad{color:var(--bad)}
-.hidden{display:none}
+.qk{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.qk button{padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg);font-size:.8rem}
+.hint{font-size:.8rem;color:var(--mute);margin-top:10px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none}
+.tab{border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:10px 16px;white-space:nowrap;font-weight:700}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.pri{background:var(--acc);color:#fff;border:0;border-radius:12px;padding:11px 20px;font-weight:700}
+.sm{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:5px 11px;font-size:.82rem;font-weight:700}
+.bar2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.tbl{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--sh)}
+.tbl h3{margin:0;padding:12px 16px;background:var(--c);color:#fff;display:flex;justify-content:space-between;align-items:center;font-size:1.1rem}
+.tbl h3 button{background:rgba(255,255,255,.25);border:0;border-radius:8px;padding:3px 8px;color:#fff}
+.line{display:flex;justify-content:space-between;padding:7px 16px;font-size:1.02rem;border-bottom:1px solid var(--line)}
+.line:nth-child(odd){background:color-mix(in srgb,var(--c) 6%,transparent)}
+.line:last-child{border:0}.line b{color:var(--c)}.line .a.hide{filter:blur(7px);cursor:pointer;user-select:none}.line .a{cursor:pointer}
+.qw{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(240px,1fr);gap:16px}
+.q{font-size:clamp(2.4rem,6vw,4rem);text-align:center;margin:26px 0;font-weight:800}
+.q span{color:var(--acc);border-bottom:4px solid var(--acc);padding:0 12px}
+.ans{width:100%;max-width:280px;margin:0 auto;display:block;font-size:1.8rem!important;text-align:center}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opts button{font-size:1.5rem;font-weight:700;padding:16px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px}
+.opts button:hover:not(:disabled){border-color:var(--acc)}
+.opts button.pri{background:var(--acc);color:#fff}
+.fb{text-align:center;min-height:1.8em;font-weight:700;margin-top:14px}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat div{background:var(--bg);border-radius:14px;padding:12px;text-align:center;font-size:.8rem;color:var(--mute)}
+.stat b{display:block;font-size:1.5rem;color:var(--ink)}
+.log{margin-top:12px;max-height:200px;overflow:auto;font-size:.9rem}
+.log div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)}
+.chart{overflow-x:auto}
+.ch{display:grid;gap:3px;min-width:640px}
+.ch div{aspect-ratio:1;display:grid;place-items:center;font-size:.72rem;border-radius:6px;background:color-mix(in srgb,var(--acc) var(--p),var(--card));cursor:pointer;min-height:26px}
+.ch .hd2{background:none;font-weight:800;color:var(--mute)}.ch .sel{outline:2px solid var(--acc)}
+.big{font-size:1.5rem;font-weight:800;text-align:center;margin:12px 0}
+.mt{display:grid;grid-template-columns:1fr 1fr;gap:16px}.mt>div{display:grid;gap:10px;align-content:start}
+.weak{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.weak span{background:var(--acc2);border-radius:99px;padding:5px 12px;font-weight:700}
+.ph{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.ph div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;color:var(--mute);font-size:.85rem}.ph b{display:block;font-size:1.8rem;color:var(--acc)}
+.body{max-height:400px;overflow-y:auto;scrollbar-width:thin}
+.car{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px}.car .tbl{flex:0 0 min(330px,86%);scroll-snap-align:start}
+input[type=range]{width:100%;accent-color:var(--acc);margin:4px 0 0}
+.sk{display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;margin-bottom:14px}.sk .f{font-size:2.1rem;font-weight:800;line-height:1}.sk .n{font-size:.8rem;color:var(--mute)}
+.days{display:flex;gap:6px}.days i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.75rem;font-weight:800;background:var(--bg);border:1.5px solid var(--line);color:var(--mute)}
+.days i.a{background:var(--acc);color:#fff;border-color:var(--acc)}.days i.p{background:var(--acc2);border-color:var(--acc)}.days i.t{outline:2px solid var(--acc);outline-offset:2px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:700;z-index:9;max-width:90%;text-align:center}
+@media(max-width:900px){.app{grid-template-columns:1fr;padding:14px}aside{position:static}.qw{grid-template-columns:1fr}.bar{width:60px}.lg{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<main>
-<h1>✖️ Table Trainer</h1>
+<header><div class="hd">
+  <div class="logo"><i>✖</i>Table Trainer</div><div class="sp"></div>
+  <div class="lvl" id="sc" style="gap:12px"></div><div class="lvl"><span id="lv">Lv 1</span><div class="bar"><b id="xpb" style="width:0"></b></div><span class="lg" id="xpt"></span></div>
+  <button class="ib" id="theme" aria-label="Toggle theme">🌓</button>
+</div></header>
 
-<div class="card">
-  <div class="row">
-    <div style="flex:2;min-width:180px"><label>Which tables? (e.g. 7 or 2,5,9 or 3-6)</label><input type="text" id="tables" value="7"></div>
-    <div><label>From</label><input type="number" id="from" value="1" min="1"></div>
-    <div><label>To</label><input type="number" id="to" value="10" min="1"></div>
-  </div>
+<div class="app">
+<aside><div class="card">
+  <h2>Choose your tables</h2>
+  <label for="tables">Tables (e.g. 7 or 2,5,9 or 3-6)</label>
+  <input type="text" id="tables" value="7">
+  <div class="two"><div><label for="from">Multiply from</label><input type="number" id="from" value="1" min="1"></div><div><label for="to">Multiply to</label><input type="number" id="to" value="10" min="1"></div></div>
+  <input type="range" id="fromR" min="1" max="100" value="1" aria-label="From slider"><input type="range" id="toR" min="1" max="100" value="10" aria-label="To slider">
   <div class="chips" id="chips"></div>
+  <div class="qk"><button data-q="2-5">2–5</button><button data-q="6-10">6–10</button><button data-q="11-20">11–20</button><button data-q="1-20">All</button></div>
   <div class="hint" id="sum"></div>
+</div></aside>
+
+<main>
+  <div class="card sk" id="streak"></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+</main>
 </div>
 
-<div class="tabs" id="tabs"></div>
-<div id="view"></div>
-</main>
-
+<div class="toast" id="toast" hidden></div>
 <script>
 const $=id=>document.getElementById(id);
-const MODES=[["learn","📖 Learn"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"]];
-let mode="learn",st={},best={};
-try{best=JSON.parse(localStorage.getItem("tt_best")||"{}")}catch(e){}
+const MODES=[["learn","📖 Learn"],["chart","🔢 Chart"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["prog","📊 Progress"]];
+let mode="learn",st={},weakMode=false;
+const def=()=>({xp:0,ans:0,ok:0,bs:0,speed:0,weak:{},sk:{cur:0,best:0,last:null,prot:0,h:{}}});
+let P=def();
+const load=()=>{try{Object.assign(P,JSON.parse(localStorage.getItem("tt_v2")||"{}"))}catch(e){}};
+const save=()=>{try{localStorage.setItem("tt_v2",JSON.stringify(P))}catch(e){}};
+load();P.sk=Object.assign(def().sk,P.sk||{});
+try{const t=localStorage.getItem("tt_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}
+$("theme").onclick=()=>{const d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;d.dataset.theme=dark?"light":"dark";try{localStorage.setItem("tt_theme",d.dataset.theme)}catch(e){}};
 
-function parseTables(s){
-  const out=new Set();
-  s.split(/[,\s]+/).filter(Boolean).forEach(p=>{
-    const m=p.match(/^(\d+)-(\d+)$/);
-    if(m){let a=+m[1],b=+m[2];if(a>b)[a,b]=[b,a];for(let i=a;i<=Math.min(b,100);i++)out.add(i)}
-    else if(/^\d+$/.test(p)&&+p>0)out.add(+p);
-  });
-  return [...out].sort((a,b)=>a-b);
+const dn=(d=new Date())=>Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
+const isPrime=n=>{if(n<2)return false;for(let i=2;i*i<=n;i++)if(n%i===0)return false;return true};
+const reward=n=>isPrime(n)?n:(n%2?1:0);
+let toastT;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,5000)}
+function sync(){
+  const s=P.sk,t=dn();let msg="";
+  if(s.last!==null&&s.cur>0&&t-s.last>1){const miss=t-s.last-1;
+    if(s.prot>=miss){s.prot-=miss;for(let i=1;i<=miss;i++)s.h[s.last+i]=2;s.last=t-1;msg=`🛡️ ${miss} protector${miss>1?"s":""} used. Your ${s.cur}-day streak is safe.`}
+    else{msg=`Your ${s.cur}-day streak ended. Start a new one today.`;s.cur=0}}
+  save();if(msg)toast(msg);
 }
-function cfg(){
-  let f=Math.max(1,+$("from").value||1),t=Math.max(1,+$("to").value||10);
-  if(f>t)[f,t]=[t,f];
-  return {tb:parseTables($("tables").value),f,t};
+function touch(){
+  const s=P.sk,t=dn();if(s.last===t)return;
+  s.cur=(s.cur||0)+1;s.last=t;s.h[t]=1;s.best=Math.max(s.best,s.cur);
+  const r=reward(s.cur);s.prot+=r;
+  Object.keys(s.h).forEach(k=>{if(+k<t-60)delete s.h[k]});
+  toast(`🔥 Day ${s.cur} streak!`+(r?` +${r} protector${r>1?"s":""}${isPrime(s.cur)?" (prime day bonus)":""}`:""));
+  hud();
 }
-function pool(){const c=cfg(),p=[];c.tb.forEach(a=>{for(let m=c.f;m<=c.t;m++)p.push([a,m])});return p}
-const rnd=n=>Math.floor(Math.random()*n);
-const pick=a=>a[rnd(a.length)];
+function streakUI(){
+  const s=P.sk,t=dn(),done=s.last===t,n=s.cur+1;let p=n;while(!isPrime(p))p++;
+  const L="SMTWTFS";let d="";
+  for(let i=6;i>=0;i--){const k=t-i,v=s.h[k];d+=`<i class="${v===1?"a":v===2?"p":""} ${i===0?"t":""}" title="${v===2?"Protected":v?"Practiced":""}">${v===2?"🛡":L[new Date(k*864e5).getUTCDay()]}</i>`}
+  const r=reward(n);
+  $("streak").innerHTML=`<div class="f">🔥 ${s.cur}</div><div><b>day streak</b><div class="n">Best ${s.best}. ${done?"Done for today.":"Answer one question to keep it."}</div></div><div class="f">🛡️ ${s.prot}</div><div><b>protectors</b><div class="n">Used automatically when you miss a day</div></div><div class="days">${d}</div><div class="n" style="flex:1;min-width:210px">${done?"Tomorrow":"Today"} (day ${n}): ${r?`+${r} protector${r>1?"s":""}`:"no bonus"}<br>Next prime bonus: day ${p} gives +${p}</div>`;
+}
+function hud(){$("sc").innerHTML=`<span>🔥 ${P.sk.cur}</span><span>🛡️ ${P.sk.prot}</span>`;streakUI();const l=Math.floor(P.xp/100)+1;$("lv").textContent="Lv "+l;$("xpb").style.width=(P.xp%100)+"%";$("xpt").textContent=P.xp+" XP"}
+const rnd=n=>Math.floor(Math.random()*n),pick=a=>a[rnd(a.length)];
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const col=a=>`hsl(${(a*47+250)%360} 62% 48%)`;
 
-function renderChips(){
-  const cur=new Set(cfg().tb);
-  $("chips").innerHTML=Array.from({length:20},(_,i)=>i+1).map(n=>`<span class="chip ${cur.has(n)?"on":""}" data-n="${n}">${n}</span>`).join("");
-  $("chips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
-    const s=new Set(cfg().tb),n=+c.dataset.n;s.has(n)?s.delete(n):s.add(n);
-    $("tables").value=[...s].sort((a,b)=>a-b).join(",");update();
-  });
-}
-function update(){
-  renderChips();
-  const c=cfg();
-  $("sum").textContent=c.tb.length?`Tables: ${c.tb.join(", ")} · multiplied from ${c.f} to ${c.t} (${pool().length} questions)`:"Enter at least one table number.";
-  start();
-}
-["tables","from","to"].forEach(i=>$(i).addEventListener("input",update));
+function parseTables(s){const out=new Set();s.split(/[,\s]+/).filter(Boolean).forEach(p=>{const m=p.match(/^(\d+)-(\d+)$/);if(m){let a=+m[1],b=+m[2];if(a>b)[a,b]=[b,a];for(let i=a;i<=Math.min(b,100);i++)out.add(i)}else if(/^\d+$/.test(p)&&+p>0)out.add(+p)});return[...out].sort((a,b)=>a-b)}
+function cfg(){let f=Math.max(1,+$("from").value||1),t=Math.max(1,+$("to").value||10);if(f>t)[f,t]=[t,f];return{tb:parseTables($("tables").value),f,t}}
+function pool(){
+  if(weakMode){return Object.keys(P.weak).map(k=>k.split("x").map(Number))}
+  const c=cfg(),p=[];c.tb.forEach(a=>{for(let m=c.f;m<=c.t;m++)p.push([a,m])});return p}
 
+function renderChips(){const cur=new Set(cfg().tb);$("chips").innerHTML=Array.from({length:20},(_,i)=>i+1).map(n=>`<span class="chip ${cur.has(n)?"on":""}" data-n="${n}">${n}</span>`).join("");
+  $("chips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{const s=new Set(cfg().tb),n=+c.dataset.n;s.has(n)?s.delete(n):s.add(n);$("tables").value=[...s].sort((a,b)=>a-b).join(",");weakMode=false;update()})}
+function update(){renderChips();const c=cfg();$("sum").textContent=c.tb.length?`${c.tb.length} table${c.tb.length>1?"s":""}, ${c.f} to ${c.t}: ${c.tb.length*(c.t-c.f+1)} questions`:"Enter at least one table number.";start()}
+["tables","from","to"].forEach(i=>$(i).addEventListener("input",()=>{if(i!=="tables"){$("fromR").value=$("from").value;$("toR").value=$("to").value}weakMode=false;update()}));
+[["fromR","from"],["toR","to"]].forEach(([r,n])=>$(r).addEventListener("input",()=>{$(n).value=$(r).value;weakMode=false;update()}));
+document.querySelectorAll(".qk button").forEach(b=>b.onclick=()=>{$("tables").value=b.dataset.q;weakMode=false;update()});
 $("tabs").innerHTML=MODES.map(([k,l])=>`<button class="tab" data-k="${k}">${l}</button>`).join("");
 $("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{mode=b.dataset.k;start()});
 
 function start(){
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.k===mode));
-  clearInterval(st.timer);
-  st={score:0,tot:0,streak:0,time:60,over:false};
-  if(!pool().length){$("view").innerHTML=`<div class="card">Add a table number above to begin.</div>`;return}
+  clearInterval(st.timer);hud();
+  st={score:0,tot:0,streak:0,time:60,over:false,log:[]};
+  if(mode==="prog")return prog();
+  if(mode==="chart")return chart();
+  if(!pool().length){$("view").innerHTML=`<div class="card">${weakMode?"No weak spots yet. Keep practicing!":"Pick a table on the left to begin."}</div>`;return}
   if(mode==="learn")return learn();
   if(mode==="match")return match();
-  if(mode==="speed"){st.timer=setInterval(()=>{st.time--;const e=$("t");if(e)e.textContent=st.time;if(st.time<=0){clearInterval(st.timer);st.over=true;endSpeed()}},1000)}
+  if(mode==="speed")st.timer=setInterval(()=>{st.time--;const e=$("t");if(e)e.textContent=st.time;if(st.time<=0){clearInterval(st.timer);st.over=true;endSpeed()}},1000);
   next();
 }
 
+function say(a,c){try{speechSynthesis.cancel();let t="";for(let m=c.f;m<=c.t;m++)t+=`${a} times ${m} equals ${a*m}. `;speechSynthesis.speak(new SpeechSynthesisUtterance(t))}catch(e){}}
+let slide=false;
 function learn(){
   const c=cfg();
-  let h=`<div class="hint" style="margin-bottom:8px">Tap a blurred answer to reveal it. <button id="hideall" style="padding:3px 10px;font-size:.8rem">Hide all answers</button> <button id="showall" style="padding:3px 10px;font-size:.8rem">Show all</button></div>`;
-  c.tb.forEach(a=>{
-    h+=`<div class="tbl"><h3>Table of ${a}</h3>`;
-    for(let m=c.f;m<=c.t;m++)h+=`<div class="line"><span>${a} × ${m}</span><span class="a">= ${a*m}</span></div>`;
-    h+=`</div>`;
-  });
-  $("view").innerHTML=h;
-  const bind=()=>document.querySelectorAll(".a").forEach(e=>e.onclick=()=>e.classList.toggle("hide"));
-  bind();
+  let h=`<div class="bar2"><span class="hint" style="margin:0">Tap an answer to hide or reveal it, then test yourself.</span><span class="sp"></span><button class="sm" id="vw">${slide?"▦ Grid view":"↔ Slide view"}</button><button class="sm" id="hideall">Hide all answers</button><button class="sm" id="showall">Show all</button></div>${slide?`<div class="bar2"><button class="sm" id="pv">‹ Prev</button><button class="sm" id="nx">Next ›</button><span class="hint" style="margin:0">Swipe or use the buttons. Long tables scroll inside each card.</span></div>`:""}<div class="${slide?"car":"grid"}" id="gr">`;
+  c.tb.forEach(a=>{h+=`<div class="tbl" style="--c:${col(a)}"><h3>Table of ${a}<button data-s="${a}" aria-label="Read aloud">🔊</button></h3><div class="body">`;
+    for(let m=c.f;m<=c.t;m++)h+=`<div class="line"><span>${a} × ${m}</span><span class="a">= <b>${a*m}</b></span></div>`;h+=`</div></div>`});
+  $("view").innerHTML=h+`</div>`;
+  $("vw").onclick=()=>{slide=!slide;learn()};
+  if(slide){const g=$("gr");$("pv").onclick=()=>g.scrollBy({left:-g.clientWidth*.8,behavior:"smooth"});$("nx").onclick=()=>g.scrollBy({left:g.clientWidth*.8,behavior:"smooth"})}
+  document.querySelectorAll(".a").forEach(e=>e.onclick=()=>e.classList.toggle("hide"));
+  document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>say(+b.dataset.s,c));
   $("hideall").onclick=()=>document.querySelectorAll(".a").forEach(e=>e.classList.add("hide"));
   $("showall").onclick=()=>document.querySelectorAll(".a").forEach(e=>e.classList.remove("hide"));
 }
 
-function statsHtml(){
-  return `<div class="stats"><div><b>${st.score}/${st.tot}</b>score</div><div><b>${st.streak}</b>streak</div>${mode==="speed"?`<div><b id="t">${st.time}</b>seconds</div>`:""}${mode==="speed"?`<div><b>${best.speed||0}</b>best</div>`:""}</div>`;
+function chart(){
+  const sel=new Set(cfg().tb),N=20;let h=`<div class="card chart"><div class="big" id="ro">Tap any square</div><div class="ch" style="grid-template-columns:repeat(${N+1},1fr)"><div class="hd2">×</div>`;
+  for(let j=1;j<=N;j++)h+=`<div class="hd2">${j}</div>`;
+  for(let i=1;i<=N;i++){h+=`<div class="hd2">${i}</div>`;for(let j=1;j<=N;j++)h+=`<div data-a="${i}" data-b="${j}" class="${sel.has(i)?"sel":""}" style="--p:${Math.round(i*j/400*70)+8}%">${i*j}</div>`}
+  $("view").innerHTML=h+`</div><div class="hint">Darker squares are bigger products. Tables you picked are outlined.</div></div>`;
+  document.querySelectorAll(".ch [data-a]").forEach(e=>e.onclick=()=>{$("ro").textContent=`${e.dataset.a} × ${e.dataset.b} = ${e.dataset.a*e.dataset.b}`});
+}
+
+function side(){
+  const acc=st.tot?Math.round(st.score/st.tot*100):0;
+  return `<div class="card"><div class="stat"><div><b>${st.score}/${st.tot}</b>score</div><div><b>${acc}%</b>accuracy</div><div><b>${st.streak}</b>streak</div>${mode==="speed"?`<div><b id="t">${st.time}</b>seconds</div>`:`<div><b>${P.bs}</b>best streak</div>`}</div>${mode==="speed"?`<div class="hint">Best: ${P.speed} correct</div>`:""}${weakMode?`<div class="hint">Practicing weak spots. <button class="sm" id="exitw">Back to tables</button></div>`:""}<div class="log">${st.log.slice(-8).reverse().map(l=>`<div><span>${l[0]}</span><span class="${l[1]?"ok":"bad"}">${l[1]?"✓":"✗"}</span></div>`).join("")||`<span class="hint">Your answers appear here.</span>`}</div></div>`;
 }
 function next(){
   if(st.over)return;
   const [a,m]=pick(pool());st.cur={a,m,p:a*m};
-  let h=`<div class="card">${statsHtml()}`;
-  if(mode==="missing"){
-    const hideA=Math.random()<.5;st.cur.ans=hideA?m:a; // hide the multiplier or the table
-    st.cur.txt=hideA?`${a} × <span style="color:var(--acc)">?</span> = ${a*m}`:`<span style="color:var(--acc)">?</span> × ${m} = ${a*m}`;
-    st.cur.ans=hideA?m:a;
-  } else {st.cur.ans=a*m;st.cur.txt=`${a} × ${m} = <span style="color:var(--acc)">?</span>`}
-  h+=`<div class="q">${st.cur.txt}</div>`;
-  if(mode==="choice"){
-    const set=new Set([st.cur.ans]);
-    while(set.size<4){const d=st.cur.ans+pick([-1,1])*(1+rnd(Math.max(3,a)));if(d>0)set.add(d)}
-    h+=`<div class="opts">${shuffle([...set]).map(o=>`<button data-o="${o}">${o}</button>`).join("")}</div>`;
-  } else {
-    h+=`<input type="number" id="ans" class="ans" inputmode="numeric" autofocus placeholder="Your answer"><div style="text-align:center;margin-top:10px"><button class="pri" id="go">Check</button></div>`;
-  }
-  h+=`<div class="fb" id="fb"></div></div>`;
+  if(mode==="missing"){const hideA=Math.random()<.5;st.cur.ans=hideA?m:a;st.cur.txt=hideA?`${a} × <span>?</span> = ${a*m}`:`<span>?</span> × ${m} = ${a*m}`}
+  else{st.cur.ans=a*m;st.cur.txt=`${a} × ${m} = <span>?</span>`}
+  let h=`<div class="qw"><div class="card"><div class="q">${st.cur.txt}</div>`;
+  if(mode==="choice"){const set=new Set([st.cur.ans]);while(set.size<4){const d=st.cur.ans+pick([-1,1])*(1+rnd(Math.max(3,a)));if(d>0)set.add(d)}
+    h+=`<div class="opts">${shuffle([...set]).map(o=>`<button data-o="${o}">${o}</button>`).join("")}</div>`}
+  else h+=`<input type="number" id="ans" class="ans" inputmode="numeric" placeholder="Your answer"><div style="text-align:center;margin-top:14px"><button class="pri" id="go">Check</button></div>`;
+  h+=`<div class="fb" id="fb"></div></div>${side()}</div>`;
   $("view").innerHTML=h;
-  if(mode==="choice")$("view").querySelectorAll(".opts button").forEach(b=>b.onclick=()=>check(+b.dataset.o));
+  if($("exitw"))$("exitw").onclick=()=>{weakMode=false;update()};
+  if(mode==="choice")document.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>check(+b.dataset.o));
   else{$("go").onclick=()=>{const v=$("ans").value;if(v!=="")check(+v)};$("ans").addEventListener("keydown",e=>{if(e.key==="Enter")$("go").click()});$("ans").focus()}
 }
 function check(v){
   if(st.over)return;
-  st.tot++;
-  const ok=v===st.cur.ans;
-  if(ok){st.score++;st.streak++}else st.streak=0;
-  const fb=$("fb");
-  fb.className="fb "+(ok?"ok":"bad");
-  fb.textContent=ok?"✅ Correct!":`❌ It was ${st.cur.ans}  (${st.cur.a} × ${st.cur.m} = ${st.cur.p})`;
-  document.querySelectorAll("#view button,#view input").forEach(e=>e.disabled=true);
-  setTimeout(next,ok?500:1600);
+  st.tot++;P.ans++;const{a,m,p}=st.cur,ok=v===st.cur.ans,k=a+"x"+m;
+  if(ok){st.score++;st.streak++;P.ok++;P.xp+=10+Math.min(st.streak,5);P.bs=Math.max(P.bs,st.streak);if(P.weak[k]&&--P.weak[k]<=0)delete P.weak[k]}
+  else{st.streak=0;P.weak[k]=(P.weak[k]||0)+1}
+  st.log.push([`${a} × ${m}`,ok]);touch();save();hud();
+  const fb=$("fb");fb.className="fb "+(ok?"ok":"bad");fb.textContent=ok?"✅ Correct!":`❌ It was ${st.cur.ans} (${a} × ${m} = ${p})`;
+  document.querySelectorAll("#view .qw button,#view .qw input").forEach(e=>e.disabled=true);
+  setTimeout(next,ok?500:1500);
 }
 function endSpeed(){
-  if(st.score>(best.speed||0)){best.speed=st.score;try{localStorage.setItem("tt_best",JSON.stringify(best))}catch(e){}}
-  $("view").innerHTML=`<div class="card" style="text-align:center"><div class="q">⏱️ Time's up!</div><p>You got <b>${st.score}</b> right out of ${st.tot}.<br>Best: ${best.speed}</p><button class="pri" onclick="start()">Play again</button></div>`;
+  if(st.score>P.speed)P.speed=st.score;save();
+  $("view").innerHTML=`<div class="card" style="text-align:center"><div class="q">⏱️ Time's up!</div><p>You got <b>${st.score}</b> right out of ${st.tot}.<br>Best: ${P.speed}</p><button class="pri" onclick="start()">Play again</button></div>`;
 }
 
-/* Match: pair questions with answers */
 function match(){
-  const items=shuffle(pool()).slice(0,6);
-  const ans=shuffle(items.map(([a,m])=>a*m));
+  const items=shuffle(pool()).slice(0,6),ans=shuffle(items.map(([a,m])=>a*m));
   st.sel=null;st.done=0;st.n=items.length;st.tries=0;
-  $("view").innerHTML=`<div class="card"><div class="hint">Tap a question, then its answer.</div><div class="row" style="margin-top:10px"><div id="qs" class="opts" style="grid-template-columns:1fr">${items.map(([a,m],i)=>`<button data-v="${a*m}" class="mq">${a} × ${m}</button>`).join("")}</div><div id="as" class="opts" style="grid-template-columns:1fr">${ans.map(v=>`<button data-v="${v}" class="ma">${v}</button>`).join("")}</div></div><div class="fb" id="fb"></div></div>`;
+  $("view").innerHTML=`<div class="card"><div class="hint" style="margin:0 0 12px">Tap a question, then its answer.</div><div class="mt"><div>${items.map(([a,m])=>`<button data-v="${a*m}" class="mq opts" style="display:block;font-size:1.3rem;padding:14px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;font-weight:700">${a} × ${m}</button>`).join("")}</div><div>${ans.map(v=>`<button data-v="${v}" class="ma" style="font-size:1.3rem;padding:14px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;font-weight:700">${v}</button>`).join("")}</div></div><div class="fb" id="fb"></div></div>`;
   const qs=[...document.querySelectorAll(".mq")],as=[...document.querySelectorAll(".ma")];
-  qs.forEach(q=>q.onclick=()=>{if(q.disabled)return;qs.forEach(x=>x.classList.remove("pri"));q.classList.add("pri");st.sel=q});
+  const on=(x,y)=>{x.style.background=y?"var(--acc)":"var(--bg)";x.style.color=y?"#fff":""};
+  qs.forEach(q=>q.onclick=()=>{if(q.disabled)return;qs.forEach(x=>on(x,0));on(q,1);st.sel=q});
   as.forEach(a=>a.onclick=()=>{
     if(!st.sel||a.disabled)return;st.tries++;
-    if(st.sel.dataset.v===a.dataset.v){st.sel.disabled=a.disabled=true;st.sel.style.opacity=a.style.opacity=.4;st.sel.classList.remove("pri");st.sel=null;st.done++;
+    if(st.sel.dataset.v===a.dataset.v){st.sel.disabled=a.disabled=true;st.sel.style.opacity=a.style.opacity=.4;on(st.sel,0);st.sel=null;st.done++;P.xp+=5;touch();save();hud();
       if(st.done===st.n){$("fb").className="fb ok";$("fb").innerHTML=`🎉 All matched in ${st.tries} tries! <button class="pri" onclick="start()">Next round</button>`}}
-    else{$("fb").className="fb bad";$("fb").textContent="Not a match, try again";}
+    else{$("fb").className="fb bad";$("fb").textContent="Not a match, try again"}
   });
 }
-update();
+
+function prog(){
+  const acc=P.ans?Math.round(P.ok/P.ans*100):0,w=Object.entries(P.weak).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  $("view").innerHTML=`<div class="ph"><div><b>${Math.floor(P.xp/100)+1}</b>level</div><div><b>${P.xp}</b>total XP</div><div><b>${acc}%</b>accuracy</div><div><b>${P.ans}</b>answered</div><div><b>${P.bs}</b>best streak</div><div><b>${P.speed}</b>best speed round</div><div><b>${P.sk.best}</b>best day streak</div></div>
+  <div class="card"><h2 style="margin:0">Weak spots</h2>${w.length?`<div class="weak">${w.map(([k])=>`<span>${k.replace("x"," × ")}</span>`).join("")}</div><button class="pri" id="pw">Practice weak spots</button>`:`<p class="hint">Nothing here yet. Questions you miss show up so you can practice them.</p>`} <button class="sm" id="reset" style="margin-left:8px">Reset progress</button></div>`;
+  if($("pw"))$("pw").onclick=()=>{weakMode=true;mode="type";start()};
+  $("reset").onclick=()=>{if(confirm("Reset all progress?")){P=def();save();start()}};
+}
+sync();update();
 </script>
 </body>
 </html>

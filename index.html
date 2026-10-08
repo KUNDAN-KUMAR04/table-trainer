@@ -77,6 +77,11 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:4px 0 0}
 .days{display:flex;gap:6px}.days i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.75rem;font-weight:800;background:var(--bg);border:1.5px solid var(--line);color:var(--mute)}
 .days i.a{background:var(--acc);color:#fff;border-color:var(--acc)}.days i.p{background:var(--acc2);border-color:var(--acc)}.days i.t{outline:2px solid var(--acc);outline-offset:2px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:700;z-index:9;max-width:90%;text-align:center}
+#auth{position:fixed;inset:0;z-index:20;background:var(--bg);display:grid;place-items:center;padding:20px;overflow:auto}#auth[hidden]{display:none}
+#auth .card{width:100%;max-width:440px;margin:auto}#auth h2{margin:10px 0 4px;font-size:1.2rem}
+.ph2{display:grid;grid-template-columns:1.5fr 1fr;gap:8px}
+.er{color:var(--bad);font-size:.85rem;min-height:1.3em;margin:8px 0;font-weight:700}.er.ok{color:var(--ok)}
+#auth .pri{width:100%}
 @media(max-width:900px){.app{grid-template-columns:1fr;padding:14px}aside{position:static}.qw{grid-template-columns:1fr}.bar{width:60px}.lg{display:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -85,7 +90,7 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:4px 0 0}
 <header><div class="hd">
   <div class="logo"><i>✖</i>Table Trainer</div><div class="sp"></div>
   <div class="lvl" id="sc" style="gap:12px"></div><div class="lvl"><span id="lv">Lv 1</span><div class="bar"><b id="xpb" style="width:0"></b></div><span class="lg" id="xpt"></span></div>
-  <button class="ib" id="theme" aria-label="Toggle theme">🌓</button>
+  <button class="ib" id="acct" hidden></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button>
 </div></header>
 
 <div class="app">
@@ -108,6 +113,7 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:4px 0 0}
 </div>
 
 <div class="toast" id="toast" hidden></div>
+<div id="auth" hidden></div>
 <script>
 const $=id=>document.getElementById(id);
 const MODES=[["learn","📖 Learn"],["chart","🔢 Chart"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["prog","📊 Progress"]];
@@ -115,10 +121,74 @@ let mode="learn",st={},weakMode=false;
 const def=()=>({xp:0,ans:0,ok:0,bs:0,speed:0,weak:{},sk:{cur:0,best:0,last:null,prot:0,h:{}}});
 let P=def();
 const load=()=>{try{Object.assign(P,JSON.parse(localStorage.getItem("tt_v2")||"{}"))}catch(e){}};
-const save=()=>{try{localStorage.setItem("tt_v2",JSON.stringify(P))}catch(e){}};
+const save=()=>persist();
 load();P.sk=Object.assign(def().sk,P.sk||{});
 try{const t=localStorage.getItem("tt_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}
 $("theme").onclick=()=>{const d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;d.dataset.theme=dark?"light":"dark";try{localStorage.setItem("tt_theme",d.dataset.theme)}catch(e){}};
+
+/* ---------- Accounts: email + phone, no password ---------- */
+const COUNTRIES="India|91|10|10;United States|1|10|10;Canada|1|10|10;United Kingdom|44|9|10;Australia|61|9|9;Pakistan|92|10|10;Bangladesh|880|10|10;Nepal|977|10|10;Sri Lanka|94|9|9;Bhutan|975|8|8;Maldives|960|7|7;Afghanistan|93|9|9;Myanmar|95|8|10;United Arab Emirates|971|8|9;Saudi Arabia|966|9|9;Qatar|974|8|8;Kuwait|965|8|8;Oman|968|8|8;Bahrain|973|8|8;Israel|972|9|9;Iran|98|10|10;Iraq|964|10|10;Jordan|962|9|9;Turkey|90|10|10;Singapore|65|8|8;Malaysia|60|9|10;Indonesia|62|9|12;Philippines|63|10|10;Thailand|66|9|9;Vietnam|84|9|10;China|86|11|11;Hong Kong|852|8|8;Japan|81|10|10;South Korea|82|9|10;Germany|49|10|11;France|33|9|9;Italy|39|9|11;Spain|34|9|9;Netherlands|31|9|9;Switzerland|41|9|9;Sweden|46|9|10;Ireland|353|9|9;Russia|7|10|10;Egypt|20|10|10;Nigeria|234|10|10;South Africa|27|9|9;Kenya|254|9|9;Brazil|55|10|11;Mexico|52|10|10;Argentina|54|10|11;New Zealand|64|8|10".split(";").map(x=>{const[n,c,a,b]=x.split("|");return{n,c,a:+a,b:+b}});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const getDB=async()=>{try{return window.claude?await claude.use("db"):null}catch(e){return null}};
+async function sget(h){if(window.FB){try{await FB.ready;const d=await FB.get(h);if(d)return d}catch(e){}}const db=await getDB();if(db){try{const s=await db.doc("accounts/"+h).get();if(s.exists)return s.data()}catch(e){}}return LS.get("tt_acc_"+h)}
+async function sset(h,d){LS.set("tt_acc_"+h,d);if(window.FB){try{await FB.ready;await FB.set(h,d)}catch(e){}}const db=await getDB();if(db){try{await db.doc("accounts/"+h).set(d)}catch(e){}}}
+async function H(s){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("tt:"+s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){let h=5381;for(const c of s)h=(h*33^c.charCodeAt(0))>>>0;return"f"+h.toString(16)}}
+let U=null,svT,fails=0,lockUntil=0;
+function persist(){if(!U){LS.set("tt_v2",P);return}clearTimeout(svT);svT=setTimeout(flush,1500)}
+function flush(){if(U){clearTimeout(svT);sset(U.k,{name:U.name,phones:U.phones,prog:P})}}
+addEventListener("pagehide",flush);document.addEventListener("visibilitychange",()=>{if(document.hidden)flush()});
+
+const phoneField=p=>`<label for="${p}c">Country (pick or type a name)</label><div class="ph2"><input type="text" id="${p}c" list="cl" value="India" autocomplete="off"><input type="text" id="${p}k" value="+91" inputmode="tel" aria-label="Country code"></div><label for="${p}n">Phone number</label><input type="text" id="${p}n" inputmode="numeric" placeholder="Phone number" autocomplete="off">`;
+const wire=(p,btn)=>{$(p+"c").oninput=()=>{const c=COUNTRIES.find(x=>x.n.toLowerCase()===$(p+"c").value.trim().toLowerCase());if(c)$(p+"k").value="+"+c.c};$(p+"n").onkeydown=e=>{if(e.key==="Enter")$(btn).click()}};
+function readPhone(p){
+  const cc=$(p+"k").value.replace(/\D/g,""),num=$(p+"n").value.replace(/\D/g,"").replace(/^0+/,"");
+  if(!cc||cc.length>4)return{err:"Enter a valid country code, like +91."};
+  const m=COUNTRIES.filter(x=>x.c===cc),ok=m.length?m.some(x=>num.length>=x.a&&num.length<=x.b):num.length>=4&&num.length<=15-cc.length;
+  if(!ok||/^(\d)\1+$/.test(num))return{err:m.length?`Enter a valid ${m[0].n} number (${m[0].a===m[0].b?m[0].a:m[0].a+" to "+m[0].b} digits).`:"Enter a valid phone number."};
+  return{full:"+"+cc+num,disp:"+"+cc+" ••••"+num.slice(-4)};
+}
+const A=()=>$("auth");
+function shell(inner){A().hidden=false;A().innerHTML=`<div class="card"><div class="logo"><i>✖</i>Table Trainer</div>${inner}</div><datalist id="cl">${COUNTRIES.map(c=>`<option value="${c.n}">`).join("")}</datalist>`}
+const msgH=m=>`<div class="er ${m[0]==="✅"?"ok":""}" id="er">${esc(m)}</div>`;
+function authEmail(msg=""){
+  shell(`<h2>Sign in</h2><p class="hint" style="margin:0 0 6px">Enter your email. New here? You'll set up your profile in one step. No password needed.</p><label for="em">Email</label><input type="text" id="em" inputmode="email" autocomplete="email" placeholder="you@example.com">${msgH(msg)}<button class="pri" id="go1">Continue</button>`);
+  const go=async()=>{const em=$("em").value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(em)){$("er").textContent="Enter a valid email address.";return}
+    $("go1").disabled=true;const k=await H("e:"+em),d=await sget(k);d?authVerify({k,em,d}):authSignup({k,em})};
+  $("go1").onclick=go;$("em").onkeydown=e=>{if(e.key==="Enter")go()};$("em").focus();
+}
+function authSignup(c,msg=""){
+  shell(`<h2>Create your profile</h2><p class="hint" style="margin:0">${esc(c.em)} is new here. Add your name and one phone number. You can link more numbers after signing in.</p><label for="nm">Name</label><input type="text" id="nm" maxlength="40" autocomplete="name">${phoneField("s")}${msgH(msg)}<button class="pri" id="go2">Create profile</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
+  wire("s","go2");$("bk").onclick=()=>authEmail();
+  $("go2").onclick=async()=>{const nm=$("nm").value.trim().replace(/\s+/g," "),p=readPhone("s");
+    if(nm.length<2){$("er").textContent="Enter your name.";return}if(p.err){$("er").textContent=p.err;return}
+    $("go2").disabled=true;const d={name:nm,phones:[{h:await H(c.em+"|"+p.full),m:p.disp}],prog:P};await sset(c.k,d);login(c.k,c.em,d,true)};
+}
+function authVerify(c){
+  shell(`<h2>Confirm it's you</h2><p class="hint" style="margin:0">Enter a phone number linked to ${esc(c.em)}.</p>${phoneField("v")}${msgH("")}<button class="pri" id="go3">Sign in</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
+  wire("v","go3");$("bk").onclick=()=>authEmail();
+  $("go3").onclick=async()=>{
+    if(Date.now()<lockUntil){$("er").textContent="Too many tries. Wait 30 seconds and try again.";return}
+    const p=readPhone("v");if(p.err){$("er").textContent=p.err;return}
+    const h=await H(c.em+"|"+p.full);
+    if((c.d.phones||[]).some(x=>x.h===h)){fails=0;login(c.k,c.em,c.d)}
+    else{if(++fails>=5){lockUntil=Date.now()+3e4;fails=0}$("er").textContent="That number isn't linked to this email."}};
+}
+function login(k,em,d,isNew){
+  U={k,em,name:d.name,phones:d.phones||[]};
+  P=Object.assign(def(),d.prog||{});P.sk=Object.assign(def().sk,P.sk||{});
+  A().hidden=true;$("acct").hidden=false;$("acct").textContent="👤 "+U.name.split(" ")[0];
+  toast((isNew?"Welcome, ":"Welcome back, ")+U.name+"!");sync();update();
+}
+function authAccount(msg=""){
+  shell(`<h2>👋 ${esc(U.name)}</h2><p class="hint" style="margin:0">${esc(U.em)}</p><label>Linked phone numbers (${U.phones.length})</label><div class="weak">${U.phones.map(x=>`<span>${esc(x.m)}</span>`).join("")}</div><h2 style="font-size:1rem">Add another number</h2><p class="hint" style="margin:0">Add as many as you like, so a lost number never locks you out.</p>${phoneField("a")}${msgH(msg)}<button class="pri" id="ad">Add number</button><div class="two" style="margin-top:10px"><button class="sm" id="cl2">Close</button><button class="sm" id="lo">Sign out</button></div>`);
+  wire("a","ad");$("cl2").onclick=()=>A().hidden=true;
+  $("lo").onclick=()=>{flush();clearInterval(st.timer);U=null;P=def();$("acct").hidden=true;authEmail()};
+  $("ad").onclick=async()=>{const p=readPhone("a");if(p.err){$("er").textContent=p.err;return}
+    const h=await H(U.em+"|"+p.full);if(U.phones.some(x=>x.h===h)){$("er").textContent="That number is already linked.";return}
+    U.phones.push({h,m:p.disp});flush();authAccount("✅ Number added.")};
+}
+$("acct").onclick=()=>authAccount();
 
 const dn=(d=new Date())=>Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
 const isPrime=n=>{if(n<2)return false;for(let i=2;i*i<=n;i++)if(n%i===0)return false;return true};
@@ -259,7 +329,17 @@ function prog(){
   if($("pw"))$("pw").onclick=()=>{weakMode=true;mode="type";start()};
   $("reset").onclick=()=>{if(confirm("Reset all progress?")){P=def();save();start()}};
 }
-sync();update();
+update();authEmail();
+</script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const app=initializeApp({apiKey:"AIzaSyD8LcxmPzoI5Ru8tL1oaWWUHsFJFn7MPfk",authDomain:"tabletrainer.firebaseapp.com",projectId:"tabletrainer",storageBucket:"tabletrainer.firebasestorage.app",messagingSenderId:"19695469245",appId:"1:19695469245:web:962552c71ac9448243edd4"});
+const db=getFirestore(app),auth=getAuth(app);
+window.FB={ready:signInAnonymously(auth).catch(e=>console.warn("Anonymous sign-in failed",e)),
+  get:async h=>{const x=await getDoc(doc(db,"accounts",h));return x.exists()?x.data():null},
+  set:(h,d)=>setDoc(doc(db,"accounts",h),d)};
 </script>
 </body>
 </html>

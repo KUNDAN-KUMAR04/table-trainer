@@ -3,61 +3,86 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Table Trainer</title>
+<title>Table Trainer: learn, practice and master multiplication</title>
+<meta name="description" content="Learn and practice multiplication tables with spaced repetition, tests, streaks and guilds.">
+<meta name="theme-color" content="#5b3df5">
+<meta property="og:title" content="Table Trainer: learn, practice and master multiplication">
+<meta property="og:description" content="Practise multiplication tables, build streaks, earn achievements and share your progress.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✖️</text></svg>">
 <style>
-:root{--bg:#f4f6fb;--card:#fff;--ink:#16203a;--mute:#6a7391;--acc:#5b3df5;--acc2:#ece8ff;--ok:#12a150;--bad:#e5484d;--line:#e3e7f2;--sh:0 6px 20px rgba(40,50,110,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1220;--card:#181c30;--ink:#eef0fb;--mute:#97a0c0;--acc:#8b74ff;--acc2:#262050;--line:#2a2f4a;--sh:none}}
-:root[data-theme="dark"]{--bg:#0f1220;--card:#181c30;--ink:#eef0fb;--mute:#97a0c0;--acc:#8b74ff;--acc2:#262050;--line:#2a2f4a;--sh:none}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
+:root{--bg:#f4f5fa;--card:#fff;--ink:#151b34;--mute:#5f6887;--acc:#5b3df5;--acc-t:#5b3df5;--acc-ink:#fff;--acc2:#eeeaff;--ok:#0e8f4f;--ok2:#e2f5ea;--bad:#d6363c;--bad2:#fdecec;--warn:#a85d00;--warn2:#fff1d6;--line:#e1e5f0;--soft:#eceef7;--sh:0 1px 2px rgba(21,27,52,.05),0 6px 20px rgba(21,27,52,.06);color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1020;--card:#171b2f;--ink:#eceffc;--mute:#9aa3c4;--acc:#7357ff;--acc-t:#a899ff;--acc-ink:#fff;--acc2:#272256;--ok:#38c276;--ok2:#14301f;--bad:#ff6b70;--bad2:#3a1b20;--warn:#f0a23a;--warn2:#3a2a10;--line:#2a2f4b;--soft:#1f2441;--sh:none;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1020;--card:#171b2f;--ink:#eceffc;--mute:#9aa3c4;--acc:#7357ff;--acc-t:#a899ff;--acc-ink:#fff;--acc2:#272256;--ok:#38c276;--ok2:#14301f;--bad:#ff6b70;--bad2:#3a1b20;--warn:#f0a23a;--warn2:#3a2a10;--line:#2a2f4b;--soft:#1f2441;--sh:none;color-scheme:dark}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito","Segoe UI",system-ui,sans-serif;line-height:1.4}
-button{font:inherit;cursor:pointer;color:inherit}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
-.hd{max-width:1320px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
-.logo{font-weight:800;font-size:1.3rem;display:flex;align-items:center;gap:8px}
-.logo i{font-style:normal;background:var(--acc);color:#fff;border-radius:10px;width:34px;height:34px;display:grid;place-items:center}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito","Segoe UI",system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+h2{font-size:1.05rem;line-height:1.3;margin:20px 0 8px}
+button{font:inherit;cursor:pointer;color:inherit;transition:background-color .15s,border-color .15s,color .15s,box-shadow .15s}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{cursor:not-allowed}
+select{font:inherit;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.skip{position:absolute;left:-999px;top:8px;z-index:50;background:var(--acc);color:var(--acc-ink);padding:8px 14px;border-radius:10px;font-weight:700}.skip:focus{left:8px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--card) 90%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+.hd{max-width:1320px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px}
+.logo{font-weight:800;font-size:1.25rem;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.logo i{font-style:normal;background:var(--acc);color:var(--acc-ink);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;font-size:.95rem}
 .sp{flex:1}
 .lvl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem}
-.bar{width:110px;height:8px;border-radius:9px;background:var(--line);overflow:hidden}.bar b{display:block;height:100%;background:var(--acc);border-radius:9px;transition:width .4s}
-.ib{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px}
+.bar{width:110px;height:8px;border-radius:9px;background:var(--soft);overflow:hidden}.bar b{display:block;height:100%;background:var(--acc);border-radius:9px;transition:width .4s}
+.ib{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 10px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:.85rem}
+.ib:hover{background:var(--soft)}
 .app{max-width:1320px;margin:0 auto;padding:20px;display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
 aside{position:sticky;top:calc(70px + env(safe-area-inset-top,0px))}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--sh)}
-aside h2{font-size:1rem;margin:0 0 10px}
-label{font-size:.78rem;color:var(--mute);display:block;margin:10px 0 4px;font-weight:700}
-input[type=text],input[type=number]{width:100%;padding:10px 12px;font:inherit;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
-input:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--sh)}
+aside h2{margin:0 0 10px}
+label{font-size:.78rem;color:var(--mute);display:block;margin:12px 0 4px;font-weight:700}
+input[type=text],input[type=number]{width:100%;padding:10px 12px;font:inherit;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);transition:border-color .15s}
+input[type=text]:hover,input[type=number]:hover{border-color:color-mix(in srgb,var(--acc) 40%,var(--line))}
+input:focus,button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px;margin-top:6px}
-.chip{padding:7px 0;text-align:center;border-radius:10px;font-weight:700;font-size:.9rem;border:1.5px solid var(--line);background:var(--bg);cursor:pointer}
-.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
-.qk{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.qk button{padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg);font-size:.8rem}
-.hint{font-size:.8rem;color:var(--mute);margin-top:10px}
-.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none}
-.tab{border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:10px 16px;white-space:nowrap;font-weight:700}
-.tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
-.pri{background:var(--acc);color:#fff;border:0;border-radius:12px;padding:11px 20px;font-weight:700}
-.sm{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:5px 11px;font-size:.82rem;font-weight:700}
+.chip{padding:7px 0;text-align:center;border-radius:10px;font-weight:700;font-size:.9rem;border:1.5px solid var(--line);background:var(--bg);cursor:pointer;user-select:none}
+.chip:hover{border-color:var(--acc)}
+.chip.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.qk{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.qk button{padding:5px 12px;border-radius:99px;border:1px solid var(--line);background:var(--bg);font-size:.8rem;font-weight:700}.qk button:hover{border-color:var(--acc)}
+.hint{font-size:.82rem;color:var(--mute);margin-top:10px}
+.tip{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--acc2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:.9rem}
+.tabs{display:flex;gap:2px;overflow-x:auto;padding:4px;margin-bottom:16px;background:var(--soft);border-radius:14px;scrollbar-width:none}
+.tab{border:0;background:none;border-radius:10px;padding:8px 14px;white-space:nowrap;font-weight:700;color:var(--mute)}
+.tab:hover{color:var(--ink)}
+.tab.on{background:var(--card);color:var(--acc-t);box-shadow:0 1px 3px rgba(21,27,52,.12)}
+.pri{background:var(--acc);color:var(--acc-ink);border:0;border-radius:10px;padding:11px 20px;font-weight:800}
+.pri:hover:not(:disabled){filter:brightness(1.08)}
+.pri:disabled{opacity:.6}
+.sm{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 12px;font-size:.82rem;font-weight:700}
+.sm:hover:not(:disabled){background:var(--soft)}
+.sm:disabled{opacity:.5}
 .bar2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.act{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
-.tbl{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--sh)}
-.tbl h3{margin:0;padding:12px 16px;background:var(--c);color:#fff;display:flex;justify-content:space-between;align-items:center;font-size:1.1rem}
+.stack{display:grid;gap:16px}.stack h2{margin:0 0 4px}
+.tbl{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--sh)}
+.tbl h3{margin:0;padding:12px 16px;background:var(--c);color:#fff;display:flex;justify-content:space-between;align-items:center;font-size:1.05rem}
 .tbl h3 button{background:rgba(255,255,255,.25);border:0;border-radius:8px;padding:3px 8px;color:#fff}
+.tbl h3 button:hover{background:rgba(255,255,255,.4)}
 .line{display:flex;justify-content:space-between;padding:7px 16px;font-size:1.02rem;border-bottom:1px solid var(--line)}
 .line:nth-child(odd){background:color-mix(in srgb,var(--c) 6%,transparent)}
 .line:last-child{border:0}.line b{color:var(--c)}.line .a.hide{filter:blur(7px);cursor:pointer;user-select:none}.line .a{cursor:pointer}
 .qw{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(240px,1fr);gap:16px}
-.q{font-size:clamp(2.4rem,6vw,4rem);text-align:center;margin:26px 0;font-weight:800}
-.q span{color:var(--acc);border-bottom:4px solid var(--acc);padding:0 12px}
+.q{font-size:clamp(2.4rem,6vw,4rem);text-align:center;margin:26px 0;font-weight:800;letter-spacing:-.02em}
+.q span{color:var(--acc-t);border-bottom:4px solid var(--acc);padding:0 12px}
 .ans{width:100%;max-width:280px;margin:0 auto;display:block;font-size:1.8rem!important;text-align:center}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .opts button{font-size:1.5rem;font-weight:700;padding:16px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px}
-.opts button:hover:not(:disabled){border-color:var(--acc)}
-.opts button.pri{background:var(--acc);color:#fff}
-.fb{text-align:center;min-height:1.8em;font-weight:700;margin-top:14px}.ok{color:var(--ok)}.bad{color:var(--bad)}
-.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat div{background:var(--bg);border-radius:14px;padding:12px;text-align:center;font-size:.8rem;color:var(--mute)}
+.opts button:hover:not(:disabled){border-color:var(--acc);background:var(--acc2)}
+.fb{text-align:center;min-height:1.8em;font-weight:700;margin-top:14px}.fb .hint{font-weight:600;margin:6px 0 12px}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.hc{text-align:center;min-height:1.4em;margin-top:12px}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat.three{grid-template-columns:repeat(3,1fr);margin:14px 0}
+.stat div{background:var(--bg);border-radius:12px;padding:12px;text-align:center;font-size:.8rem;color:var(--mute)}
 .stat b{display:block;font-size:1.5rem;color:var(--ink)}
 .log{margin-top:12px;max-height:200px;overflow:auto;font-size:.9rem}
 .log div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)}
@@ -67,30 +92,122 @@ input:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px
 .ch .hd2{background:none;font-weight:800;color:var(--mute)}.ch .sel{outline:2px solid var(--acc)}
 .big{font-size:1.5rem;font-weight:800;text-align:center;margin:12px 0}
 .mt{display:grid;grid-template-columns:1fr 1fr;gap:16px}.mt>div{display:grid;gap:10px;align-content:start}
+.mb{font-size:1.3rem;padding:14px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;font-weight:700}
+.mb:hover:not(:disabled){border-color:var(--acc)}.mb.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}.mb:disabled{opacity:.4}
 .weak{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.weak span{background:var(--acc2);border-radius:99px;padding:5px 12px;font-weight:700}
-.ph{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-.ph div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;color:var(--mute);font-size:.85rem}.ph b{display:block;font-size:1.8rem;color:var(--acc)}
+.ph{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.ph div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;color:var(--mute);font-size:.85rem}.ph b{display:block;font-size:1.8rem;color:var(--acc-t)}
 .body{max-height:400px;overflow-y:auto;scrollbar-width:thin}
 .car{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px}.car .tbl{flex:0 0 min(330px,86%);scroll-snap-align:start}
 input[type=range]{width:100%;accent-color:var(--acc);margin:4px 0 0}
 .sk{display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;margin-bottom:14px}.sk .f{font-size:2.1rem;font-weight:800;line-height:1}.sk .n{font-size:.8rem;color:var(--mute)}
 .days{display:flex;gap:6px}.days i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.75rem;font-weight:800;background:var(--bg);border:1.5px solid var(--line);color:var(--mute)}
-.days i.a{background:var(--acc);color:#fff;border-color:var(--acc)}.days i.p{background:var(--acc2);border-color:var(--acc)}.days i.t{outline:2px solid var(--acc);outline-offset:2px}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:700;z-index:9;max-width:90%;text-align:center}
-#auth{position:fixed;inset:0;z-index:20;background:var(--bg);display:grid;place-items:center;padding:20px;overflow:auto}#auth[hidden]{display:none}
-#auth .card{width:100%;max-width:440px;margin:auto}#auth h2{margin:10px 0 4px;font-size:1.2rem}
+.days i.a{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}.days i.p{background:var(--acc2);border-color:var(--acc)}.days i.t{outline:2px solid var(--acc);outline-offset:2px}
+.goal{display:flex;align-items:center;gap:12px}
+.ring{--p:0;width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--acc) calc(var(--p)*1%),var(--soft) 0);display:grid;place-items:center;flex:none;position:relative}
+.ring::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--card)}
+.ring b{position:relative;font-size:.8rem}.ring.done{background:var(--ok)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:700;z-index:30;max-width:90%;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+#auth{position:fixed;inset:0;z-index:20;background:var(--bg);display:grid;place-items:center;padding:20px;overflow:auto}
+#auth .card{width:100%;max-width:440px;margin:auto}#auth .card.w{max-width:760px}#auth h2{margin:14px 0 4px;font-size:1.15rem}
+#modal{position:fixed;inset:0;z-index:25;background:rgba(10,14,30,.55);display:grid;place-items:center;padding:20px;overflow:auto}
+#modal .card{width:100%;max-width:480px;margin:auto}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.mh h2{margin:0;font-size:1.2rem}
 .ph2{display:grid;grid-template-columns:1.5fr 1fr;gap:8px}
 .er{color:var(--bad);font-size:.85rem;min-height:1.3em;margin:8px 0;font-weight:700}.er.ok{color:var(--ok)}
 #auth .pri{width:100%}
-@media(max-width:900px){.app{grid-template-columns:1fr;padding:14px}aside{position:static}.qw{grid-template-columns:1fr}.bar{width:60px}.lg{display:none}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.seg{display:flex;gap:6px;margin:12px 0 0}.seg button{flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);font-weight:700}.seg .on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.dh{display:flex;gap:14px;align-items:center;margin-top:12px}.av{width:52px;height:52px;border-radius:50%;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center;font-size:1.5rem;font-weight:800;flex:none}
+.lr{border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--bg)}.lr.me{border-color:var(--acc)}
+.lh{display:flex;gap:12px;align-items:center}.lh .ic{font-size:1.4rem}.lm{flex:1;min-width:0;word-break:break-all}.lm .n{font-size:.76rem;color:var(--mute);word-break:normal}
+.tg{background:var(--acc2);color:var(--acc-t);border-radius:99px;padding:1px 8px;font-size:.7rem;font-weight:800;margin-right:6px}.tg.nw{background:var(--warn2);color:var(--warn)}
+.dg{color:var(--bad);border-color:var(--bad)}
+.ls{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-top:10px;align-items:end;font-size:.72rem;color:var(--mute)}.ls b{display:block;font-size:1.05rem;color:var(--ink)}
+.sp7{display:flex;gap:3px;align-items:flex-end;height:32px}.sp7 i{flex:1;background:var(--acc);border-radius:3px;opacity:.75}
+.shb{height:6px;border-radius:9px;background:var(--line);margin-top:10px;overflow:hidden}.shb b{display:block;height:100%;background:var(--acc)}
+.tgl{display:flex;gap:10px;align-items:center;margin-top:14px;font-size:.85rem;color:var(--ink);font-weight:600}
+.lg2{display:flex;gap:10px;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:.85rem}
+ul.tree{margin:4px 0 4px 6px;padding-left:14px;border-left:2px solid var(--line);list-style:none}
+.sw{position:relative;width:44px;height:26px;flex:none;margin:0;display:block}.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.sw span{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:background .15s;pointer-events:none}
+.sw span::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw input:checked+span{background:var(--acc)}.sw input:checked+span::after{transform:translateX(18px)}.sw input:focus-visible+span{outline:2px solid var(--acc);outline-offset:2px}
+.sr{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}.sr b{display:block;font-size:.95rem}.sr small{color:var(--mute);font-size:.8rem;display:block}
+kbd{font:inherit;font-size:.75rem;font-weight:800;padding:1px 7px;border-radius:6px;border:1px solid var(--line);background:var(--soft);color:var(--mute)}
+.opts button kbd{margin-right:10px;vertical-align:middle}
+.pb{height:8px;border-radius:9px;background:var(--soft);overflow:hidden;margin-bottom:8px}.pb b{display:block;height:100%;background:var(--acc);transition:width .3s}
+.rt div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.hero{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.hero .lvn{font-size:2.4rem;font-weight:800;line-height:1;color:var(--acc-t)}.hero .rk{font-size:1.1rem;font-weight:800}.hero .pb{flex:1;min-width:180px;margin:0}
+.b14{display:flex;gap:4px;align-items:flex-end;height:104px;margin-top:10px}.b14 div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;font-size:.65rem;color:var(--mute)}
+.b14 i{width:100%;background:var(--acc);border-radius:4px 4px 0 0;opacity:.7}.b14 .t i{opacity:1}.b14 .t{color:var(--ink);font-weight:800}
+.mm{display:grid;gap:2px;min-width:560px}
+.mm div{aspect-ratio:1;display:grid;place-items:center;font-size:.62rem;border-radius:4px;cursor:pointer;background:var(--soft);color:var(--mute);min-height:20px}
+.mm .h{background:none;font-weight:800;cursor:default}.mm .m1{background:var(--bad2);color:var(--bad)}.mm .m2{background:var(--warn2);color:var(--warn)}.mm .m3{background:var(--ok);color:#fff}
+.lgd{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--mute);margin-top:10px}.lgd i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--soft)}
+.lgd .m1{background:var(--bad2)}.lgd .m2{background:var(--warn2)}.lgd .m3{background:var(--ok)}
+.ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:10px}
+.ac{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}.ac.lock{opacity:.55}.ac.lock .ai{filter:grayscale(1)}
+.ai{font-size:1.5rem;width:42px;height:42px;display:grid;place-items:center;background:var(--card);border-radius:12px;flex:none}.ac b{display:block;font-size:.9rem}.ac span{font-size:.78rem;color:var(--mute)}
+.ft{max-width:1320px;margin:0 auto;padding:8px 20px 28px;color:var(--mute);font-size:.8rem;text-align:center}
+#pubv{position:fixed;inset:0;z-index:15;background:var(--bg);overflow:auto}
+.pvb{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 20px;background:color-mix(in srgb,var(--card) 92%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.pvw{max-width:940px;margin:0 auto;padding:20px 20px 60px;display:grid;gap:16px}.pvw .tip{margin:0}
+.cover{border-radius:20px;padding:26px;color:#fff;background:linear-gradient(135deg,#5b3df5,#8f5bff 55%,#d946ef);display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.cover .pav{width:92px;height:92px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.7);display:grid;place-items:center;font-size:2.6rem;font-weight:800;flex:none}
+.cover h1{margin:0;font-size:1.7rem;line-height:1.15;word-break:break-word}.cover .sub{font-weight:700;opacity:.95;margin-top:2px}
+.chp{display:inline-block;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 12px;font-size:.8rem;font-weight:800;margin:8px 6px 0 0}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.kp div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;color:var(--mute);font-size:.8rem}.kp b{display:block;font-size:1.6rem;color:var(--ink)}.kp small{display:block;font-size:.72rem;margin-top:2px}
+.sec h2{margin:0 0 10px}.pre{white-space:pre-line;margin:0 0 8px;word-break:break-word}
+.pills{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.pill{background:var(--acc2);color:var(--acc-t);border-radius:99px;padding:4px 12px;font-weight:700;font-size:.85rem}
+.lnk{display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 12px;font-weight:700;font-size:.88rem;color:var(--ink);text-decoration:none;word-break:break-all}.lnk:hover{border-color:var(--acc)}.lnk small{color:var(--mute);font-weight:700}
+.lk2{text-align:center;border-style:dashed}
+.mm2{display:grid;grid-template-columns:repeat(20,1fr);gap:2px}.mm2 i{aspect-ratio:1;border-radius:3px;background:var(--soft)}
+.mm2 .m1{background:var(--bad2)}.mm2 .m2{background:var(--warn2)}.mm2 .m3{background:var(--ok)}.lgd i.s1{background:var(--bad)}.lgd i.s2{background:var(--warn)}.lgd i.s3{background:var(--ok)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start}
+.b30{gap:2px}.b30 div{font-size:.58rem}
+.tr2{display:grid;grid-template-columns:38px 1fr 40px;gap:10px;align-items:center;padding:3px 0;font-size:.85rem}.tr2 span{text-align:right;color:var(--mute)}
+.sb{display:flex;height:10px;border-radius:9px;overflow:hidden;background:var(--soft)}.sb i{display:block;height:100%}
+.sb .s3{background:var(--ok)}.sb .s2{background:var(--warn)}.sb .s1{background:var(--bad)}
+.pfw{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}.pfs{position:sticky;top:calc(80px + env(safe-area-inset-top,0px));display:grid;gap:16px}
+.fr{margin-bottom:14px}.fr label{margin:0 0 4px}.fi{display:flex;gap:8px;align-items:flex-start}.fi input,.fi textarea{flex:1;min-width:0}.fi>select:not([data-v]){flex:1}.fi select[data-v]{flex:none;width:128px;font-size:.8rem}
+textarea{width:100%;padding:10px 12px;font:inherit;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);resize:vertical}
+input[type=date]{width:100%;padding:10px 12px;font:inherit;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.fi input[readonly]{color:var(--mute)}
+.shr{display:flex;gap:6px;flex-wrap:wrap}.shr a{text-decoration:none;color:inherit}.sug{display:grid;gap:6px}.sug button{text-align:left}
+@media(max-width:900px){.pfw{grid-template-columns:1fr}.pfs{position:static}.cover{padding:20px}}
+@media(max-width:520px){.fi{flex-direction:column}.fi select[data-v]{width:100%}}
+.printonly{display:none}
+@media(max-width:900px){.app{grid-template-columns:1fr;padding:14px}aside{position:static}.qw{grid-template-columns:1fr}.bar{width:60px}.lg{display:none}.hd{padding:8px 14px}}
+@media(max-width:520px){.logo{font-size:1.05rem}.stat.three{grid-template-columns:1fr}.mt{gap:10px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media print{
+  :root{--bg:#fff;--card:#fff;--ink:#000;--line:#bbb;padding:0}
+  body:not(.psheet) header,body:not(.psheet) aside,body:not(.psheet) .tabs,body:not(.psheet) #streak,body:not(.psheet) .bar2,body:not(.psheet) .tip,body:not(.psheet) .ft,.toast,#auth,#modal,#pubv{display:none!important}
+  body:not(.psheet) .app{display:block;padding:0}
+  .grid{grid-template-columns:repeat(3,1fr);gap:10px}.tbl{break-inside:avoid;box-shadow:none}.tbl h3,.line:nth-child(odd){-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .line .a.hide{filter:none}.body{max-height:none;overflow:visible}.tbl h3 button{display:none}
+  body.psheet>:not(#sheet){display:none!important}body.psheet #sheet{display:block;color:#000;font-size:14pt}
+  #sheet h1{font-size:20pt;margin:0 0 4pt}#sheet .sq{columns:2;column-gap:40pt;padding-left:22pt;line-height:2.4}#sheet .sq li{break-inside:avoid}
+  #sheet h2{break-before:page;font-size:14pt}#sheet .key{font-size:11pt;line-height:1.8}
+}
+body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
+.jp{margin-top:4px}.js{position:relative;padding-left:56px;margin-bottom:12px}.js:before{content:"";position:absolute;left:19px;top:44px;bottom:-14px;width:3px;background:var(--line)}.js:last-child:before{display:none}.js.m:before{background:var(--acc)}
+.jn{position:absolute;left:0;top:10px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--card);border:3px solid var(--line)}.js.m .jn{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}.js.nx .jn{border-color:var(--warn);box-shadow:0 0 0 5px var(--warn2)}
+.js .card{margin:0}.js h3{margin:0;font-size:1.05rem}.jh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.jo{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}.jo button{text-align:left;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg)}.jo button:hover{border-color:var(--acc)}.jo small{display:block;color:var(--mute);font-weight:400}
+.mg{width:100%;height:auto;max-height:470px}.mn{cursor:pointer}.mn:focus-visible circle{stroke:var(--ink);stroke-width:4}.mn text{font-weight:800;pointer-events:none}
+.gb{display:flex;align-items:center;gap:10px;margin:8px 0;cursor:pointer;flex-wrap:wrap}.gb span{min-width:130px;font-weight:700}.gb i{flex:1;min-width:80px;height:10px;border-radius:9px;background:var(--soft);overflow:hidden}.gb i b{display:block;height:100%;background:var(--acc)}
+.ab{display:flex;gap:6px;align-items:flex-end;height:120px}.ab div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:.65rem;color:var(--mute)}.ab i{width:100%;background:var(--acc2);border-radius:5px 5px 0 0;position:relative;display:block;min-height:2px}.ab b{position:absolute;bottom:0;left:0;right:0;background:var(--ok);border-radius:5px 5px 0 0}
 </style>
 </head>
 <body>
+<a class="skip" href="#view">Skip to content</a>
 <header><div class="hd">
-  <div class="logo"><i>✖</i>Table Trainer</div><div class="sp"></div>
+  <div class="logo"><i aria-hidden="true">✖</i>Table Trainer</div><div class="sp"></div>
   <div class="lvl" id="sc" style="gap:12px"></div><div class="lvl"><span id="lv">Lv 1</span><div class="bar"><b id="xpb" style="width:0"></b></div><span class="lg" id="xpt"></span></div>
-  <button class="ib" id="acct" hidden></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button>
+  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="acct"></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
 </div></header>
 
 <div class="app">
@@ -103,41 +220,218 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:4px 0 0}
   <div class="chips" id="chips"></div>
   <div class="qk"><button data-q="2-5">2–5</button><button data-q="6-10">6–10</button><button data-q="11-20">11–20</button><button data-q="1-20">All</button></div>
   <div class="hint" id="sum"></div>
+  <label class="tgl" for="smart"><span class="sw"><input type="checkbox" id="smart"><span></span></span>Smart review</label>
+  <div class="hint" style="margin-top:6px">Asks the facts you miss, or haven't seen lately, more often.</div>
 </div></aside>
 
 <main>
   <div class="card sk" id="streak"></div>
-  <div class="tabs" id="tabs"></div>
-  <div id="view"></div>
+  <div class="tip" id="tip" hidden></div>
+  <div class="tabs" id="tabs" role="tablist" aria-label="Practice modes"></div>
+  <div id="view" tabindex="-1"></div>
 </main>
 </div>
+<footer class="ft">Table Trainer · Progress is saved on this device and syncs to your guild when you are signed in.</footer>
 
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div id="auth" hidden></div>
+<div id="pubv" hidden></div>
+<div id="modal" hidden></div>
+<div id="sheet" class="printonly" aria-hidden="true"></div>
 <script>
 const $=id=>document.getElementById(id);
-const MODES=[["learn","📖 Learn"],["chart","🔢 Chart"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["prog","📊 Progress"]];
-let mode="learn",st={},weakMode=false;
-const def=()=>({xp:0,ans:0,ok:0,bs:0,speed:0,weak:{},sk:{cur:0,best:0,last:null,prot:0,h:{}}});
-let P=def();
-const load=()=>{try{Object.assign(P,JSON.parse(localStorage.getItem("tt_v2")||"{}"))}catch(e){}};
+const MODES=[["path","🧭 Journey"],["map","🗺️ My Map"],["arcade","🎮 Arcade"],["cert","🏅 Certificates"],["learn","📖 Learn"],["chart","🔢 Chart"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["test","📝 Test"],["dash","📈 Dashboard"],["profile","👤 Profile"],["prog","📊 Progress"]];
+let mode="path",st={},weakMode=false;
+const def=()=>({xp:0,ans:0,ok:0,bs:0,speed:0,tests:0,perf:0,weak:{},dh:{},ms:{},dd:{},gm:{},jr:{start:null,stg:{}},ach:{},sk:{cur:0,best:0,last:null,prot:0,h:{}}});
+const norm=o=>{const p=Object.assign(def(),o||{});p.sk=Object.assign(def().sk,p.sk||{});p.weak=p.weak||{};p.dh=p.dh||{};p.ms=p.ms||{};p.ach=p.ach||{};p.dd=p.dd||{};p.jr=Object.assign({start:null,stg:{}},p.jr||{});p.jr.stg=p.jr.stg||{};p.gm=p.gm||{};return p};
+const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let P=norm(LS.get("tt_v2"));
 const save=()=>persist();
-load();P.sk=Object.assign(def().sk,P.sk||{});
 try{const t=localStorage.getItem("tt_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}
 $("theme").onclick=()=>{const d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;d.dataset.theme=dark?"light":"dark";try{localStorage.setItem("tt_theme",d.dataset.theme)}catch(e){}};
 
-/* ---------- Accounts: email + phone, no password ---------- */
+/* ---------- Preferences, sound, mastery, achievements ---------- */
+const PREF=Object.assign({sound:true,haptic:true,smart:true,goal:50,goalDay:0},LS.get("tt_prefs")||{});
+const savePref=()=>LS.set("tt_prefs",PREF);
+let AC;
+function tone(f,d,t=0){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime+t;o.frequency.value=f;g.gain.setValueAtTime(.07,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(AC.destination);o.start(n);o.stop(n+d)}catch(e){}}
+function sfx(k){
+  if(PREF.sound){if(k==="ok"){tone(660,.12);tone(880,.18,.09)}else if(k==="bad")tone(170,.28);else if(k==="win"){tone(523,.12);tone(659,.12,.11);tone(784,.24,.22)}}
+  try{if(PREF.haptic&&navigator.vibrate)navigator.vibrate(k==="bad"?[35,45,35]:k==="win"?[20,40,20,40,60]:12)}catch(e){}
+}
+/* Spaced repetition (Leitner boxes). P.ms["7x8"] = [box 0-5, times seen, last day, times missed]. Facts up to 20 x 20 are tracked. */
+const BOX_DAYS=[0,1,2,4,8,16],MS_MAX=20,fkey=(a,m)=>a<m?a+"x"+m:m+"x"+a;
+const fact=(a,m)=>P.ms[fkey(a,m)];
+const mlev=e=>!e?0:e[0]>=4?3:e[0]>=2?2:1;
+function learnFact(a,m,ok,help){
+  if(a>MS_MAX||m>MS_MAX)return;
+  const k=fkey(a,m),e=P.ms[k]||(P.ms[k]=[0,0,0,0]);
+  e[1]++;e[2]=dn();
+  if(ok){if(!help)e[0]=Math.min(5,e[0]+1)}else{e[0]=0;e[3]++}
+}
+function record(a,m,ok,help){
+  {const g=P.gm[mode]||(P.gm[mode]=[0,0]);g[0]++;if(ok)g[1]++}
+  P.ans++;out("ans",1);const k=a+"x"+m;{const t=dn(),e=P.dd[t]||(P.dd[t]=[0,0]);e[0]++;if(ok)e[1]++;for(const d in P.dd)if(+d<t-60)delete P.dd[d]}
+  if(ok){P.ok++;out("ok",1);if(P.weak[k]&&--P.weak[k]<=0)delete P.weak[k]}else P.weak[k]=(P.weak[k]||0)+1;
+  learnFact(a,m,ok,help);
+}
+function smartPick(p){
+  if(p.length<2)return p[0];
+  const t=dn(),prev=st.cur&&fkey(st.cur.a,st.cur.m);
+  const w=p.map(([a,m])=>{if(fkey(a,m)===prev)return 0;const e=fact(a,m);if(!e)return 3;return(6-e[0])*((t-e[2])>=BOX_DAYS[e[0]]?2:.5)+(e[3]?1:0)});
+  let r=Math.random()*w.reduce((x,y)=>x+y,0);
+  for(let i=0;i<p.length;i++){r-=w[i];if(r<=0)return p[i]}
+  return p[p.length-1];
+}
+const mastered=()=>{let n=0;for(let a=1;a<=12;a++){let all=true;for(let m=1;m<=10&&all;m++){const e=fact(a,m);if(!e||e[0]<4)all=false}if(all)n++}return n};
+const RANKS=["Rookie","Learner","Challenger","Calculator","Whiz","Master","Legend"];
+const rankOf=lv=>RANKS[Math.min(RANKS.length-1,Math.floor((lv-1)/3))];
+const lvOf=()=>Math.floor(tot().xp/100)+1;
+const ACH=[
+  ["first","🌱","First steps","Answer a question correctly",()=>P.ok>=1],
+  ["a100","💯","Century","Answer 100 questions",()=>P.ans>=100],
+  ["a1000","🏔️","Thousand club","Answer 1,000 questions",()=>P.ans>=1000],
+  ["bs10","⚡","On a roll","Get 10 right in a row",()=>P.bs>=10],
+  ["bs25","🚀","Unstoppable","Get 25 right in a row",()=>P.bs>=25],
+  ["d3","🔥","Warming up","Reach a 3-day streak",()=>P.sk.best>=3],
+  ["d7","📆","Full week","Reach a 7-day streak",()=>P.sk.best>=7],
+  ["d30","🏆","Habit built","Reach a 30-day streak",()=>P.sk.best>=30],
+  ["sp20","⏱️","Quick draw","Score 20 in a speed round",()=>P.speed>=20],
+  ["sp35","🌪️","Lightning","Score 35 in a speed round",()=>P.speed>=35],
+  ["t1","📝","Test taker","Finish a test",()=>P.tests>=1],
+  ["t100","🎯","Flawless","Score 100% on a test of 10 or more",()=>P.perf>=1],
+  ["m1","⭐","Table master","Master every fact of one table (×1 to ×10)",()=>mastered()>=1],
+  ["m5","🌟","Five tables","Master five tables",()=>mastered()>=5],
+  ["lv5","🎖️","Level 5","Reach level 5",()=>lvOf()>=5],
+  ["lv10","👑","Level 10","Reach level 10",()=>lvOf()>=10],
+  ["jr1","🧭","Pathfinder","Master a bunch on the Journey",()=>Object.values(P.jr.stg).some(d=>d.m&&!d.sk)],
+  ["jr9","🗺️","Path complete","Master every bunch on the Journey",()=>JB.every((_,i)=>P.jr.stg[i]&&P.jr.stg[i].m)]
+];
+function checkAch(){
+  const got=[];for(const[id,ic,ti,ds,fn]of ACH){if(!P.ach[id]&&fn()){P.ach[id]=Date.now();got.push(ic+" "+ti)}}
+  if(got.length){sfx("win");toast("🏅 Unlocked: "+got.join(", "));save()}
+}
+/* Hints show the method, never the final answer (the answer is added only after a wrong try). */
+function hintFor(a,m,full){
+  if(mode==="missing"){const k=st.cur.k;return`Count up in ${k}s until you reach ${a*m}.`}
+  const n=Math.max(a,m),k=Math.min(a,m),p=a*m;let h;
+  if(k===1)h=`Anything times 1 stays the same`;
+  else if(k===10)h=`Times 10 adds a zero to ${n}`;
+  else if(k===2)h=`Double it: ${n} + ${n}`;
+  else if(k===5)h=`Half of ${n} × 10: ${n*10} ÷ 2`;
+  else if(k===9)h=`Use ten: ${n} × 10 − ${n} = ${n*10} − ${n}`;
+  else if(k<=4)h=`Add ${n} up ${k} times: ${Array(k).fill(n).join(" + ")}`;
+  else if(k<=8)h=`Split ${k} as 5 + ${k-5}: (${n} × 5) + (${n} × ${k-5}) = ${n*5} + ${n*(k-5)}`;
+  else{const t=k-k%10,r=k%10;h=r?`Split ${k} as ${t} + ${r}: (${n} × ${t}) + (${n} × ${r}) = ${n*t} + ${n*r}`:`${k} is ${k/10} ten${k>10?"s":""}: work out ${n} × ${k/10}, then add a zero`}
+  return full?h+" = "+p:h;
+}
+
+/* ---------- Dialogs, export, worksheet ---------- */
+const MD=()=>$("modal");let lastFocus=null;
+function openModal(html){lastFocus=document.activeElement;MD().innerHTML=`<div class="card" role="dialog" aria-modal="true" aria-labelledby="mt">${html}</div>`;MD().hidden=false;const f=MD().querySelector("input,select,button");if(f)f.focus()}
+function closeModal(){MD().hidden=true;MD().innerHTML="";if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+MD().addEventListener("mousedown",e=>{if(e.target===MD())closeModal()});
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+const csvOut=()=>"fact,product,times_seen,leitner_box,times_missed,last_practiced\n"+Object.entries(P.ms).sort().map(([k,e])=>{const[a,m]=k.split("x");return[a+" x "+m,a*m,e[1],e[0],e[3],new Date(e[2]*864e5).toISOString().slice(0,10)].join(",")}).join("\n");
+function openSettings(){
+  const th=document.documentElement.dataset.theme||"auto";
+  const sw=(id,on)=>`<label class="sw" style="margin:0"><input type="checkbox" id="${id}" ${on?"checked":""}><span></span></label>`;
+  openModal(`<div class="mh"><h2 id="mt">Settings</h2><button class="sm" id="mx">Close</button></div>
+  <div class="sr"><div><b>Sound effects</b><small>Short tones for right and wrong answers.</small></div>${sw("s1",PREF.sound)}</div>
+  <div class="sr"><div><b>Vibration</b><small>A light buzz on supported phones.</small></div>${sw("s2",PREF.haptic)}</div>
+  <div class="sr"><div><b>Smart review</b><small>Ask the facts you miss or haven't seen lately more often.</small></div>${sw("s3",PREF.smart)}</div>
+  <div class="sr"><div><b>Daily XP goal</b><small>Counts XP earned on this login today.</small></div><select id="s4" aria-label="Daily XP goal">${[30,50,100,200].map(n=>`<option value="${n}" ${PREF.goal===n?"selected":""}>${n} XP</option>`).join("")}</select></div>
+  <div class="sr"><div><b>Appearance</b></div><div class="seg" id="s5" style="margin:0;width:210px">${["auto","light","dark"].map(x=>`<button data-t="${x}" class="${th===x?"on":""}">${x[0].toUpperCase()+x.slice(1)}</button>`).join("")}</div></div>
+  <h2 style="margin:18px 0 8px">Your data</h2><div class="two"><button class="sm" id="x1">Download CSV</button><button class="sm" id="x2">Download JSON</button></div>
+  <p class="hint">The CSV lists every fact you have practiced with its Leitner box and how often you missed it.</p>
+  <h2 style="margin:18px 0 8px">Keyboard shortcuts</h2>
+  <div class="hint" style="margin:0;line-height:2"><kbd>1</kbd>–<kbd>4</kbd> pick an option in Choose<br><kbd>Enter</kbd> check an answer or continue<br><kbd>←</kbd> <kbd>→</kbd> move through tables in slide view<br><kbd>Esc</kbd> close this dialog</div>`);
+  $("mx").onclick=closeModal;
+  $("s1").onchange=e=>{PREF.sound=e.target.checked;savePref();if(PREF.sound)sfx("ok")};
+  $("s2").onchange=e=>{PREF.haptic=e.target.checked;savePref();if(PREF.haptic)sfx("ok")};
+  $("s3").onchange=e=>{PREF.smart=e.target.checked;savePref();$("smart").checked=PREF.smart};
+  $("s4").onchange=e=>{PREF.goal=+e.target.value;PREF.goalDay=0;savePref();hud()};
+  $("s5").querySelectorAll("button").forEach(b=>b.onclick=()=>{const d=document.documentElement,t=b.dataset.t;if(t==="auto"){delete d.dataset.theme;try{localStorage.removeItem("tt_theme")}catch(e){}}else{d.dataset.theme=t;try{localStorage.setItem("tt_theme",t)}catch(e){}}$("s5").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
+  $("x1").onclick=()=>dl("table-trainer-facts.csv",csvOut(),"text/csv");
+  $("x2").onclick=()=>dl("table-trainer-progress.json",JSON.stringify({exported:new Date().toISOString(),progress:P},null,1),"application/json");
+}
+$("cfg").onclick=openSettings;
+function printSheet(){
+  const p=pool();if(!p.length)return toast("Pick a table first.");
+  const q=shuffle(p).slice(0,30);
+  $("sheet").innerHTML=`<h1>Table Trainer worksheet</h1><p>Name: ______________________ &nbsp; Date: ______________</p><ol class="sq">${q.map(([a,m])=>`<li>${a} × ${m} = ________</li>`).join("")}</ol><h2>Answer key</h2><p class="key">${q.map(([a,m])=>`${a} × ${m} = ${a*m}`).join(" &nbsp;·&nbsp; ")}</p>`;
+  document.body.classList.add("psheet");window.print();
+}
+addEventListener("afterprint",()=>document.body.classList.remove("psheet"));
+addEventListener("offline",()=>toast("You're offline. Progress is saved on this device and syncs when you reconnect."));
+addEventListener("online",()=>{toast("Back online. Syncing your progress…");flush();poll()});
+addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&!MD().hidden){closeModal();return}
+  if(e.ctrlKey||e.metaKey||e.altKey||!MD().hidden||!$("auth").hidden)return;
+  const tag=(document.activeElement||{}).tagName||"";
+  if(e.key==="Enter"&&$("cont")&&document.activeElement!==$("cont")&&!/INPUT|SELECT|TEXTAREA/.test(tag)){$("cont").click();return}
+  if(/INPUT|SELECT|TEXTAREA/.test(tag))return;
+  if(mode==="choice"&&/^[1-4]$/.test(e.key)){const b=document.querySelectorAll(".opts button")[+e.key-1];if(b&&!b.disabled)b.click()}
+  if(mode==="learn"&&slide&&$("gr")){const g=$("gr");if(e.key==="ArrowRight")g.scrollBy({left:g.clientWidth*.8,behavior:"smooth"});if(e.key==="ArrowLeft")g.scrollBy({left:-g.clientWidth*.8,behavior:"smooth"})}
+});
+function tip(){const t=$("tip");if(LS.get("tt_tip")||P.ans>0){t.hidden=true;return}t.hidden=false;t.innerHTML=`<span>New here? Pick your tables on the left, study them in <b>Learn</b>, then test yourself in <b>Practice</b>. Your streak grows every day you answer a question.</span><button class="sm" id="tipx">Got it</button>`;$("tipx").onclick=()=>{LS.set("tt_tip",1);t.hidden=true}}
+
+/* ---------- Accounts ----------
+ One account = one unique User ID (TT-XXXXXXXXXX). Any number of emails/phones can be linked as "logins".
+ Each login keeps its own stats; account totals = sum of all logins, so removing a login subtracts its score.
+ Firestore: accounts/{uid} = {name,lock,created,logins:{hash:{t,m,add,last,dev,s}}}, accounts/i_{hash} = {uid} */
 const COUNTRIES="India|91|10|10;United States|1|10|10;Canada|1|10|10;United Kingdom|44|9|10;Australia|61|9|9;Pakistan|92|10|10;Bangladesh|880|10|10;Nepal|977|10|10;Sri Lanka|94|9|9;Bhutan|975|8|8;Maldives|960|7|7;Afghanistan|93|9|9;Myanmar|95|8|10;United Arab Emirates|971|8|9;Saudi Arabia|966|9|9;Qatar|974|8|8;Kuwait|965|8|8;Oman|968|8|8;Bahrain|973|8|8;Israel|972|9|9;Iran|98|10|10;Iraq|964|10|10;Jordan|962|9|9;Turkey|90|10|10;Singapore|65|8|8;Malaysia|60|9|10;Indonesia|62|9|12;Philippines|63|10|10;Thailand|66|9|9;Vietnam|84|9|10;China|86|11|11;Hong Kong|852|8|8;Japan|81|10|10;South Korea|82|9|10;Germany|49|10|11;France|33|9|9;Italy|39|9|11;Spain|34|9|9;Netherlands|31|9|9;Switzerland|41|9|9;Sweden|46|9|10;Ireland|353|9|9;Russia|7|10|10;Egypt|20|10|10;Nigeria|234|10|10;South Africa|27|9|9;Kenya|254|9|9;Brazil|55|10|11;Mexico|52|10|10;Argentina|54|10|11;New Zealand|64|8|10".split(";").map(x=>{const[n,c,a,b]=x.split("|");return{n,c,a:+a,b:+b}});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const getDB=async()=>{try{return window.claude?await claude.use("db"):null}catch(e){return null}};
-async function sget(h){if(window.FB){try{await FB.ready;const d=await FB.get(h);if(d)return d}catch(e){}}const db=await getDB();if(db){try{const s=await db.doc("accounts/"+h).get();if(s.exists)return s.data()}catch(e){}}return LS.get("tt_acc_"+h)}
-async function sset(h,d){LS.set("tt_acc_"+h,d);if(window.FB){try{await FB.ready;await FB.set(h,d)}catch(e){}}const db=await getDB();if(db){try{await db.doc("accounts/"+h).set(d)}catch(e){}}}
+const fbp=()=>new Promise((res,rej)=>{let n=0;const t=setInterval(()=>{if(window.FB){clearInterval(t);window.FB.ready.then(()=>res(window.FB))}else if(++n>160){clearInterval(t);rej(new Error("offline"))}},50)});
+const dget=async id=>(await fbp()).get(id),dset=async(id,d)=>(await fbp()).set(id,d),dupd=async(id,o)=>(await fbp()).upd(id,o),ddel=async id=>(await fbp()).del(id);
 async function H(s){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("tt:"+s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){let h=5381;for(const c of s)h=(h*33^c.charCodeAt(0))>>>0;return"f"+h.toString(16)}}
-let U=null,svT,fails=0,lockUntil=0;
+const cleanName=v=>Array.from(String(v).trim().replace(/\s+/g," ")).slice(0,30).join("");
+const dev=()=>{const u=navigator.userAgent,os=/Android/.test(u)?"Android":/iPhone|iPad/.test(u)?"iOS":/Windows/.test(u)?"Windows":/Mac/.test(u)?"Mac":/Linux/.test(u)?"Linux":"Device",br=/Edg\//.test(u)?"Edge":/Chrome\//.test(u)?"Chrome":/Firefox\//.test(u)?"Firefox":/Safari\//.test(u)?"Safari":"Browser";return os+" · "+br};
+const ago=ts=>{if(!ts)return"never";const s=(Date.now()-ts)/1e3;return s<90?"just now":s<5400?Math.round(s/60)+" min ago":s<129600?Math.round(s/3600)+" h ago":Math.round(s/86400)+" d ago"};
+async function newUid(){const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";for(let i=0;i<8;i++){const id="TT-"+[...crypto.getRandomValues(new Uint8Array(10))].map(x=>A[x%32]).join("");if(!await dget(id))return id}throw new Error("id")}
+/* login -> accounts index. A login may sit in several accounts; merged accounts redirect to their successor. */
+const ixGet=async h=>{const d=await dget("i_"+h);return d?(d.uids||[d.uid]).filter(Boolean):[]};
+const ixAdd=async(h,u)=>{const l=await ixGet(h);if(!l.includes(u))await dset("i_"+h,{uids:[...l,u]})};
+const ixDel=async(h,u)=>{const l=(await ixGet(h)).filter(x=>x!==u);l.length?await dset("i_"+h,{uids:l}):await ddel("i_"+h)};
+/* A merged guild's old ID is deleted and released to the ID pool. Until it is reused, a small redirect doc r_<oldId> points to the successor.
+   Legacy tombstones (mergedInto) are still followed. */
+async function resolve(u){for(let i=0;i<8&&u;i++){const a=await dget(u);if(a&&!a.mergedInto)return a;if(a){u=a.mergedInto;continue}const r=await dget("r_"+u);if(!r||!r.to)return null;u=r.to}return null}
+const accXp=a=>Object.values(a.logins||{}).reduce((x,l)=>x+(l.t&&l.s?l.s.xp||0:0),0)+((a.base||{}).xp||0);
+const allAdmin=L=>Object.fromEntries(Object.keys(L).filter(k=>L[k].t).map(k=>[k,"admin"]));
+const EPOCH_MS=60*60*1000; /* merge window: all merges inside one window are consolidated together when it ends (use 5*60*1000 while testing) */
+const curEp=()=>Math.floor(Date.now()/EPOCH_MS);
+/* ID recycling: when guilds merge, their old User IDs are deleted and placed in the pool "idpool". An ID rests for RECYCLE_AFTER_MS
+   (so devices that were offline can still follow the r_<oldId> redirect), then becomes the User ID of an upcoming merged guild. Set to 0 to reuse at once. */
+const POOL_DOC="idpool",RECYCLE_AFTER_MS=24*60*60*1000;
+let U=null,svT,pollT,tickT,dashOn=false,fails=0,lockUntil=0;
+function tot(){if(!U)return{xp:P.xp,ans:P.ans,ok:P.ok,n:0};const b=U.base||{};let xp=b.xp||0,ans=b.ans||0,ok=b.ok||0,n=0;for(const[h,l]of Object.entries(U.logins)){if(!l.t)continue;n++;const s=h===U.h?P:l.s||{};xp+=s.xp||0;ans+=s.ans||0;ok+=s.ok||0}return{xp,ans,ok,n}}
 function persist(){if(!U){LS.set("tt_v2",P);return}clearTimeout(svT);svT=setTimeout(flush,1500)}
-function flush(){if(U){clearTimeout(svT);sset(U.k,{name:U.name,phones:U.phones,prog:P})}}
+/* ---- outbox: every score change is also kept as an unsent delta in localStorage until the server confirms it.
+   Nothing is lost if the device is offline, the tab closes, or the guild was merged meanwhile: the delta is replayed into the final guild. ---- */
+const blank=()=>({xp:0,ans:0,ok:0,dh:{}});
+let OUTS=LS.get("tt_out")||{};
+const addTo=(t,o)=>{t.xp+=o.xp||0;t.ans+=o.ans||0;t.ok+=o.ok||0;for(const d in o.dh||{})t.dh[d]=(t.dh[d]||0)+o.dh[d]};
+function out(k,n){if(!U)return;const key=U.uid+":"+U.h,o=OUTS[key]||(OUTS[key]=blank());if(k==="dh"){const t=dn();o.dh[t]=(o.dh[t]||0)+n}else o[k]+=n;LS.set("tt_out",OUTS)}
+const hasOut=()=>{const o=U&&OUTS[U.uid+":"+U.h];return !!(o&&(o.xp||o.ans||o.ok))};
+const applyOut=(uid,h)=>{const o=OUTS[uid+":"+h];if(o)addTo(P,o)};
+async function reclaim(uid,h,from){
+  const mine=uid+":"+h;let moved=false;
+  for(const k of Object.keys(OUTS)){if(k===mine||!k.endsWith(":"+h))continue;const u=k.split(":")[0];let ok=u===from;
+    if(!ok){try{const r=await resolve(u);ok=!!r&&r.uid===uid}catch(e){}}
+    if(!ok||!U||U.uid!==uid)continue;const o=OUTS[k];delete OUTS[k];addTo(OUTS[mine]||(OUTS[mine]=blank()),o);addTo(P,o);moved=true}
+  if(moved){LS.set("tt_out",OUTS);hud();flush()}
+}
+function flush(){
+  if(!U)return;clearTimeout(svT);
+  const key=U.uid+":"+U.h,snap=JSON.parse(JSON.stringify(OUTS[key]||blank())),k="logins."+U.h+".",inc=n=>({__inc:n});
+  const u={[k+"last"]:Date.now(),[k+"dev"]:dev(),[k+"s.sk"]:P.sk,[k+"s.weak"]:P.weak,[k+"s.bs"]:P.bs,[k+"s.speed"]:P.speed,[k+"s.ms"]:P.ms,[k+"s.ach"]:P.ach,[k+"s.tests"]:P.tests,[k+"s.perf"]:P.perf,[k+"s.dd"]:P.dd,[k+"s.jr"]:P.jr,[k+"s.gm"]:P.gm};
+  if(snap.xp)u[k+"s.xp"]=inc(snap.xp);if(snap.ans)u[k+"s.ans"]=inc(snap.ans);if(snap.ok)u[k+"s.ok"]=inc(snap.ok);
+  for(const d in snap.dh)u[k+"s.dh."+d]=inc(snap.dh[d]);
+  return dupd(U.uid,u).then(()=>{const c=OUTS[key];if(c){c.xp-=snap.xp;c.ans-=snap.ans;c.ok-=snap.ok;for(const d in snap.dh)c.dh[d]=(c.dh[d]||0)-snap.dh[d];if(!c.xp&&!c.ans&&!c.ok)delete OUTS[key];LS.set("tt_out",OUTS)}hud();pubSync()}).catch(()=>{})
+}
 addEventListener("pagehide",flush);document.addEventListener("visibilitychange",()=>{if(document.hidden)flush()});
+async function poll(){if(!U||document.hidden)return;try{let a=await dget(U.uid);if(a&&!a.mergedInto&&a.pend&&a.pend<curEp()){await consolidate(a.pend);a=await dget(U.uid);if(a&&!a.mergedInto&&a.pend)dupd(U.uid,{pend:null}).catch(()=>{})}if(!a||a.mergedInto){const z=await resolve(U.uid);if(z&&z.uid!==U.uid&&z.logins&&z.logins[U.h]&&z.logins[U.h].t){login(z,U.h,0,U.uid);toast("Your guild was merged into "+z.uid);return}signOut(a?"This guild was merged. Please sign in again.":"This login was removed from the guild.",1);return}if(!a.logins||!a.logins[U.h]||!a.logins[U.h].t){signOut("This login was removed from the guild.",1);return}
+  U.name=a.name;U.profile=a.profile||{};U.lock=!!a.lock;U.base=a.base||null;U.logins=a.logins;U.roles=a.roles||allAdmin(a.logins);U.tree=a.tree||null;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp());acctBtn();hud();if(dashOn&&!A().contains(document.activeElement))renderDash()}catch(e){}}
 
 const phoneField=p=>`<label for="${p}c">Country (pick or type a name)</label><div class="ph2"><input type="text" id="${p}c" list="cl" value="India" autocomplete="off"><input type="text" id="${p}k" value="+91" inputmode="tel" aria-label="Country code"></div><label for="${p}n">Phone number</label><input type="text" id="${p}n" inputmode="numeric" placeholder="Phone number" autocomplete="off">`;
 const wire=(p,btn)=>{$(p+"c").oninput=()=>{const c=COUNTRIES.find(x=>x.n.toLowerCase()===$(p+"c").value.trim().toLowerCase());if(c)$(p+"k").value="+"+c.c};$(p+"n").onkeydown=e=>{if(e.key==="Enter")$(btn).click()}};
@@ -148,51 +442,221 @@ function readPhone(p){
   if(!ok||/^(\d)\1+$/.test(num))return{err:m.length?`Enter a valid ${m[0].n} number (${m[0].a===m[0].b?m[0].a:m[0].a+" to "+m[0].b} digits).`:"Enter a valid phone number."};
   return{full:"+"+cc+num,disp:"+"+cc+" ••••"+num.slice(-4)};
 }
+/* login method picker: email or phone */
+const mf=p=>`<div class="seg" id="${p}seg"><button type="button" class="on" data-t="email">Email</button><button type="button" data-t="phone">Phone</button></div><div id="${p}e"><label for="${p}em">Email</label><input type="text" id="${p}em" inputmode="email" autocomplete="email" placeholder="you@example.com"></div><div id="${p}p" hidden>${phoneField(p)}</div>`;
+const mfw=(p,btn)=>{wire(p,btn);$(p+"em").onkeydown=e=>{if(e.key==="Enter")$(btn).click()};$(p+"seg").querySelectorAll("button").forEach(b=>b.onclick=()=>{$(p+"seg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));$(p+"e").hidden=b.dataset.t!=="email";$(p+"p").hidden=b.dataset.t!=="phone"})};
+async function rl(p){if($(p+"p").hidden){const em=$(p+"em").value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(em))return{err:"Enter a valid email address."};return{t:"email",v:em,m:em.replace(/^(.).*(@.*)$/,"$1•••$2"),h:await H("l:"+em)}}
+  const r=readPhone(p);if(r.err)return r;return{t:"phone",v:r.full,m:r.disp,h:await H("l:"+r.full)}}
 const A=()=>$("auth");
-function shell(inner){A().hidden=false;A().innerHTML=`<div class="card"><div class="logo"><i>✖</i>Table Trainer</div>${inner}</div><datalist id="cl">${COUNTRIES.map(c=>`<option value="${c.n}">`).join("")}</datalist>`}
-const msgH=m=>`<div class="er ${m[0]==="✅"?"ok":""}" id="er">${esc(m)}</div>`;
-function authEmail(msg=""){
-  shell(`<h2>Sign in</h2><p class="hint" style="margin:0 0 6px">Enter your email. New here? You'll set up your profile in one step. No password needed.</p><label for="em">Email</label><input type="text" id="em" inputmode="email" autocomplete="email" placeholder="you@example.com">${msgH(msg)}<button class="pri" id="go1">Continue</button>`);
-  const go=async()=>{const em=$("em").value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(em)){$("er").textContent="Enter a valid email address.";return}
-    $("go1").disabled=true;const k=await H("e:"+em),d=await sget(k);d?authVerify({k,em,d}):authSignup({k,em})};
-  $("go1").onclick=go;$("em").onkeydown=e=>{if(e.key==="Enter")go()};$("em").focus();
+function shell(inner,w){dashOn=false;A().hidden=false;A().innerHTML=`<div class="card ${w?"w":""}"><div class="logo"><i>✖</i>Table Trainer</div>${inner}</div><datalist id="cl">${COUNTRIES.map(c=>`<option value="${c.n}">`).join("")}</datalist>`}
+const msgH=m=>`<div class="er ${m&&m[0]==="✅"?"ok":""}" id="er">${esc(m||"")}</div>`;
+const guard=(id,fn)=>async()=>{const b=$(id);b.disabled=true;try{await fn()}catch(e){const er=$("er");if(er)er.textContent="Can't reach the server. Check your connection and try again."}b.disabled=false};
+const mkLogin=(l,s)=>({t:l.t,m:l.m,add:Date.now(),last:Date.now(),dev:dev(),s:s||norm()});
+const acctBtn=()=>{$("acct").textContent=U?"👤 "+Array.from(U.name).slice(0,12).join(""):"Sign in";$("hedit").hidden=!U};
+$("hedit").onclick=()=>{closePV();A().hidden=true;mode="profile";start();window.scrollTo({top:0,behavior:"smooth"})};
+
+function authHome(msg=""){
+  shell(`<h2>Sign in or create account</h2><p class="hint" style="margin:0">Use any email or phone linked to your account. No password needed.</p>${mf("l")}${msgH(msg)}<button class="pri" id="go1">Continue</button><div class="two" style="margin-top:10px"><button class="sm" id="jn">Join with a User ID</button><button class="sm" id="gs">Continue as guest</button></div><label for="fu" style="margin-top:16px">View a public profile by username</label><div class="fi"><input type="text" id="fu" placeholder="username" autocapitalize="none" autocomplete="off" spellcheck="false"><button class="sm" id="fub">View</button></div>`);
+  mfw("l","go1");
+  $("go1").onclick=guard("go1",async()=>{const l=await rl("l");if(l.err){$("er").textContent=l.err;return}
+    const seen=new Set(),L=[];
+    for(const u of await ixGet(l.h)){const a=await resolve(u);if(a&&!seen.has(a.uid)&&a.logins&&a.logins[l.h]&&a.logins[l.h].t){seen.add(a.uid);L.push(a)}}
+    if(L.length===1){login(L[0],l.h);return}
+    if(L.length>1){authPick(l,L);return}
+    if(l.t==="email"){const d=await dget(await H("e:"+l.v));if(d&&d.phones){authLegacy({l,d});return}}
+    authSignup(l)});
+  $("jn").onclick=()=>authJoin();$("gs").onclick=()=>{A().hidden=true};
+  const goU=()=>{const u=$("fu").value.trim().replace(/^@/,"").toLowerCase();if(!UN_RE.test(u)){$("er").textContent="Enter a valid username (3 to 24 letters, numbers or _).";return}A().hidden=true;if(PVID()===u)showPublic(u);else location.hash="#/"+u};$("fub").onclick=goU;$("fu").onkeydown=e=>{if(e.key==="Enter")goU()};
 }
-function authSignup(c,msg=""){
-  shell(`<h2>Create your profile</h2><p class="hint" style="margin:0">${esc(c.em)} is new here. Add your name and one phone number. You can link more numbers after signing in.</p><label for="nm">Name</label><input type="text" id="nm" maxlength="40" autocomplete="name">${phoneField("s")}${msgH(msg)}<button class="pri" id="go2">Create profile</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
-  wire("s","go2");$("bk").onclick=()=>authEmail();
-  $("go2").onclick=async()=>{const nm=$("nm").value.trim().replace(/\s+/g," "),p=readPhone("s");
-    if(nm.length<2){$("er").textContent="Enter your name.";return}if(p.err){$("er").textContent=p.err;return}
-    $("go2").disabled=true;const d={name:nm,phones:[{h:await H(c.em+"|"+p.full),m:p.disp}],prog:P};await sset(c.k,d);login(c.k,c.em,d,true)};
+function authPick(l,L){
+  shell(`<h2>Which account?</h2><p class="hint" style="margin:0 0 10px">${esc(l.m)} is linked to ${L.length} accounts. Pick the one to open. You can open the others later the same way.</p>${L.map((a,i)=>`<button class="lr" data-i="${i}" style="width:100%;text-align:left;display:block"><b>${esc(a.name)}</b><div class="hint" style="margin:2px 0 0">${esc(a.uid)} · ${accXp(a)} XP${a.base?" · merged":""}</div></button>`).join("")}<button class="sm" id="bk">Back</button>`);
+  $("bk").onclick=()=>authHome();A().querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>login(L[+b.dataset.i],l.h));
 }
-function authVerify(c){
-  shell(`<h2>Confirm it's you</h2><p class="hint" style="margin:0">Enter a phone number linked to ${esc(c.em)}.</p>${phoneField("v")}${msgH("")}<button class="pri" id="go3">Sign in</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
-  wire("v","go3");$("bk").onclick=()=>authEmail();
-  $("go3").onclick=async()=>{
-    if(Date.now()<lockUntil){$("er").textContent="Too many tries. Wait 30 seconds and try again.";return}
+function authSignup(l){
+  shell(`<h2>Create your account</h2><p class="hint" style="margin:0">${esc(l.m)} isn't linked to an account yet. Pick a display name. Your unique User ID is created automatically, and you can link more emails and phones later.</p><label for="nm">Display name (up to 30 characters, anything)</label><input type="text" id="nm" maxlength="30" autocomplete="nickname">${msgH("")}<button class="pri" id="go2">Create account</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
+  $("bk").onclick=()=>authHome();$("nm").focus();$("nm").onkeydown=e=>{if(e.key==="Enter")$("go2").click()};
+  $("go2").onclick=guard("go2",async()=>{const nm=cleanName($("nm").value);if(!nm){$("er").textContent="Enter a display name.";return}
+    const uid=await newUid(),a={uid,name:nm,created:Date.now(),lock:false,logins:{[l.h]:mkLogin(l,P)},roles:{[l.h]:"admin"}};
+    await dset(uid,a);await ixAdd(l.h,uid);login(a,l.h,true)});
+}
+function authJoin(){
+  shell(`<h2>Join an existing account</h2><p class="hint" style="margin:0">Enter the account's User ID and the email or phone you want to link. The owner will see your login on their dashboard.</p><label for="jid">User ID</label><input type="text" id="jid" placeholder="TT-XXXXXXXXXX" autocomplete="off" autocapitalize="characters">${mf("j")}${msgH("")}<button class="pri" id="go4">Join account</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
+  mfw("j","go4");$("bk").onclick=()=>authHome();
+  $("go4").onclick=guard("go4",async()=>{const id=$("jid").value.trim().toUpperCase();if(!/^TT-[A-HJ-NP-Z2-9]{10}$/.test(id)){$("er").textContent="Enter a valid User ID.";return}
+    const l=await rl("j");if(l.err){$("er").textContent=l.err;return}
+    if((await ixGet(l.h)).includes(id)){$("er").textContent="That email or phone is already on this account. Go back and sign in.";return}
+    const a=await dget(id);if(!a||!a.logins){const r=a?null:await dget("r_"+id);$("er").textContent=r&&r.to?"That guild was merged. Use its new User ID: "+r.to:"No account found with that User ID.";return}
+    if(a.mergedInto){$("er").textContent="That account was merged into "+a.mergedInto+". Use that User ID instead.";return}
+    if(a.lock){$("er").textContent="This account doesn't allow joining with its User ID.";return}
+    const lg=mkLogin(l);const ro={...(a.roles||allAdmin(a.logins)),[l.h]:"member"};await dupd(id,{["logins."+l.h]:lg,roles:ro});await ixAdd(l.h,id);a.logins[l.h]=lg;a.roles=ro;login(a,l.h)});
+}
+function authLegacy(c){
+  shell(`<h2>Welcome back, ${esc(c.d.name||"")}</h2><p class="hint" style="margin:0">We found your older profile for ${esc(c.l.m)}. Confirm one phone number from it to upgrade to the new account system.</p>${phoneField("v")}${msgH("")}<button class="pri" id="go3">Upgrade and sign in</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
+  wire("v","go3");$("bk").onclick=()=>authHome();
+  $("go3").onclick=guard("go3",async()=>{if(Date.now()<lockUntil){$("er").textContent="Too many tries. Wait 30 seconds and try again.";return}
     const p=readPhone("v");if(p.err){$("er").textContent=p.err;return}
-    const h=await H(c.em+"|"+p.full);
-    if((c.d.phones||[]).some(x=>x.h===h)){fails=0;login(c.k,c.em,c.d)}
-    else{if(++fails>=5){lockUntil=Date.now()+3e4;fails=0}$("er").textContent="That number isn't linked to this email."}};
+    const lh=await H(c.l.v+"|"+p.full);
+    if(!(c.d.phones||[]).some(x=>x.h===lh)){if(++fails>=5){lockUntil=Date.now()+3e4;fails=0}$("er").textContent="That number isn't linked to this email.";return}
+    fails=0;const ph=await H("l:"+p.full),uid=await newUid(),a={uid,name:cleanName(c.d.name||"")||"Player",created:Date.now(),lock:false,logins:{[c.l.h]:mkLogin(c.l,norm(c.d.prog))},roles:{[c.l.h]:"admin"}},pi=(await ixGet(ph)).length;
+    if(!pi){a.logins[ph]=mkLogin({t:"phone",m:p.disp});a.roles[ph]="admin"}
+    await dset(uid,a);await ixAdd(c.l.h,uid);if(!pi)await ixAdd(ph,uid);login(a,c.l.h,true)});
 }
-function login(k,em,d,isNew){
-  U={k,em,name:d.name,phones:d.phones||[]};
-  P=Object.assign(def(),d.prog||{});P.sk=Object.assign(def().sk,P.sk||{});
-  A().hidden=true;$("acct").hidden=false;$("acct").textContent="👤 "+U.name.split(" ")[0];
-  toast((isNew?"Welcome, ":"Welcome back, ")+U.name+"!");sync();update();
+function login(a,h,isNew,from){
+  U={uid:a.uid,name:a.name,created:a.created||Date.now(),profile:a.profile||{},h,logins:a.logins,lock:!!a.lock,base:a.base||null,roles:a.roles||allAdmin(a.logins),tree:a.tree||null,noMerge:!!a.noMerge,parents:a.parents||null,recycled:!!a.recycled,ep:null};P=norm(a.logins[h].s);applyOut(a.uid,h);reclaim(a.uid,h,from);LS.set("tt_sess",{uid:a.uid,h});
+  setTimeout(poll,1200);A().hidden=true;acctBtn();toast(isNew?`Account created. Your User ID: ${a.uid}`:`Welcome back, ${U.name}!`);
+  sync();update();flush();clearInterval(pollT);pollT=setInterval(poll,25000);pubT=0;setTimeout(()=>{pubSync();healUn()},4000);if(PV)showPublic(PV);
 }
-function authAccount(msg=""){
-  shell(`<h2>👋 ${esc(U.name)}</h2><p class="hint" style="margin:0">${esc(U.em)}</p><label>Linked phone numbers (${U.phones.length})</label><div class="weak">${U.phones.map(x=>`<span>${esc(x.m)}</span>`).join("")}</div><h2 style="font-size:1rem">Add another number</h2><p class="hint" style="margin:0">Add as many as you like, so a lost number never locks you out.</p>${phoneField("a")}${msgH(msg)}<button class="pri" id="ad">Add number</button><div class="two" style="margin-top:10px"><button class="sm" id="cl2">Close</button><button class="sm" id="lo">Sign out</button></div>`);
-  wire("a","ad");$("cl2").onclick=()=>A().hidden=true;
-  $("lo").onclick=()=>{flush();clearInterval(st.timer);U=null;P=def();$("acct").hidden=true;authEmail()};
-  $("ad").onclick=async()=>{const p=readPhone("a");if(p.err){$("er").textContent=p.err;return}
-    const h=await H(U.em+"|"+p.full);if(U.phones.some(x=>x.h===h)){$("er").textContent="That number is already linked.";return}
-    U.phones.push({h,m:p.disp});flush();authAccount("✅ Number added.")};
+function signOut(msg="",skip){if(U&&!skip)flush();clearInterval(st.timer);clearInterval(pollT);try{localStorage.removeItem("tt_sess")}catch(e){}U=null;P=norm();acctBtn();update();if(PV)showPublic(PV);authHome(msg)}
+
+/* ---------- Dashboard ---------- */
+const isAdmin=()=>!!(U&&U.roles&&U.roles[U.h]==="admin");
+const nodeOf=a=>a.tree||{u:a.uid,n:a.name,xp:accXp(a),at:a.created,k:[]};
+const treeH=n=>`<li><b>${esc(n.n)}</b> <span class="hint">${esc(n.u)} · ${n.xp} XP${n.k.length?" · merged "+new Date(n.at).toLocaleDateString():""}</span>${n.k.length?`<ul class="tree">${n.k.map(treeH).join("")}</ul>`:""}</li>`;
+const rid=n=>[...crypto.getRandomValues(new Uint8Array(n))].map(x=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[x%32]).join("");
+async function refresh(){const a=await dget(U.uid);if(!a||a.mergedInto)return poll();U.profile=a.profile||{};U.logins=a.logins;U.base=a.base||null;U.roles=a.roles||allAdmin(a.logins);U.tree=a.tree||null;U.name=a.name;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp())}
+
+/* ---- merge windows: merges queue as edges inside an hourly epoch doc (e_<hour>). When the hour ends, every connected
+   group of guilds is consolidated into ONE new guild by an atomic transaction. Nothing is locked while the hour is open. ---- */
+function components(edges){const p={},f=x=>p[x]===undefined||p[x]===x?(p[x]=x):(p[x]=f(p[x]));
+  edges.filter(g=>!g.x).forEach(g=>{const r=f(g.a),q=f(g.b);p[r]=q});
+  const m={};Object.keys(p).forEach(u=>{const r=f(u);(m[r]=m[r]||[]).push(u)});
+  return Object.values(m).filter(c=>c.length>1).map(c=>c.sort()).sort((a,b)=>a[0]<b[0]?-1:1)}
+const tmpId=c=>"TMP-"+Math.abs([...c.join("|")].reduce((h,ch)=>(h*31+ch.charCodeAt(0))|0,7)).toString(36).toUpperCase().slice(0,6);
+function buildZ(accs,zid,edges,ep){
+  const now=Date.now(),base={xp:0,ans:0,ok:0,dh:{},by:{},from:accs.map(a=>a.uid),at:now},logins={},roles={};
+  const add=(d,o)=>{for(const k in d||{})o[k]=(o[k]||0)+d[k]};
+  for(const a of accs){const b=a.base,ro=a.roles||allAdmin(a.logins);
+    if(b){base.xp+=b.xp||0;base.ans+=b.ans||0;base.ok+=b.ok||0;add(b.dh,base.dh);
+      for(const h in b.by||{}){const e=base.by[h]||(base.by[h]={m:b.by[h].m,t:b.by[h].t,xp:0,ans:0,ok:0,left:b.by[h].left});e.xp+=b.by[h].xp||0;e.ans+=b.by[h].ans||0;e.ok+=b.by[h].ok||0}}
+    for(const[h,l]of Object.entries(a.logins)){if(!l.t)continue;const s=norm(l.s);base.xp+=s.xp;base.ans+=s.ans;base.ok+=s.ok;add(s.dh,base.dh);
+      const e=base.by[h]||(base.by[h]={m:l.m,t:l.t,xp:0,ans:0,ok:0});e.xp+=s.xp;e.ans+=s.ans;e.ok+=s.ok;
+      s.xp=s.ans=s.ok=0;s.dh={};if(!logins[h])logins[h]={...l,s};roles[h]=roles[h]==="admin"||ro[h]==="admin"?"admin":"member"}}
+  for(const h in base.by){if(logins[h]||base.by[h].left===undefined)delete base.by[h].left}
+  const top=[...accs].sort((p,q)=>accXp(q)-accXp(p))[0];
+  return{uid:zid,name:top.name,created:now,lock:false,logins,roles,base,profile:top.profile||{},parents:base.from,ep,
+    tree:{u:zid,n:top.name,xp:base.xp,at:now,k:accs.map(nodeOf)},log:edges.map(g=>({a:g.na,b:g.nb,m:g.bm,at:g.at}))};
 }
-$("acct").onclick=()=>authAccount();
+async function consolidate(ep){
+  if(Date.now()<(ep+1)*EPOCH_MS)return;
+  const F=await fbp(),eid="e_"+ep,e0=await dget(eid);if(!e0)return;
+  try{await flush()}catch(e){}
+  const cs=components(e0.edges);
+  for(const c of cs){const key=c[0];if(e0.comps&&e0.comps[key])continue;const fresh=await newUid();
+    try{await F.txn(async t=>{
+      const e=await t.get(eid);if(!e||(e.comps&&e.comps[key]))return;
+      const c2=components(e.edges).find(q=>q[0]===key);if(!c2)return;
+      const accs=[];for(const u of c2)accs.push(await t.get(u));
+      /* an ID that was deleted and reused after the edge was queued is a different guild: never merge it by mistake */
+      const stale=a=>e.edges.some(g=>!g.x&&(g.a===a.uid||g.b===a.uid)&&a.created>(g.t0||g.at));
+      if(accs.some(a=>!a||a.mergedInto||stale(a))){   /* something changed underneath: nothing is dropped, the merges wait in the next hour */
+        const ne="e_"+(ep+1),nx=(await t.get(ne))||{ep:ep+1,status:"open",edges:[],comps:{}},add=[];
+        const res=async(u,g)=>{for(let i=0;i<5;i++){const a=await t.get(u);if(a&&!a.mergedInto)return(i===0&&a.created>(g.t0||g.at))?null:u;const n=a?a.mergedInto:((await t.get("r_"+u))||{}).to;if(!n)return null;u=n}return null};
+        for(const g of e.edges.filter(g=>!g.x&&c2.includes(g.a))){const a=await res(g.a,g),b=await res(g.b,g);if(a&&b&&a!==b)add.push({...g,id:rid(8),a,b,t0:Date.now()})}
+        add.forEach(g=>{nx.edges.push(g);t.upd(g.a,{pend:ep+1});t.upd(g.b,{pend:ep+1})});
+        t.set(ne,nx);t.upd(eid,{comps:{...(e.comps||{}),[key]:"requeued"}});return}
+      /* pick the new User ID: the oldest rested ID from the pool, otherwise a freshly generated one */
+      const pl=(await t.get(POOL_DOC))||{free:[]},now=Date.now(),skip=new Set();let zid=fresh,used=false;
+      for(const f of pl.free.slice(0,8)){if(now-f.at<RECYCLE_AFTER_MS)break;if(await t.get(f.id)){skip.add(f.id);continue}zid=f.id;used=true;break}
+      if(!used&&await t.get(zid))return;
+      const Z=buildZ(accs,zid,e.edges.filter(g=>!g.x&&c2.includes(g.a)),ep);Z.recycled=used;
+      const hs=Object.keys(Z.logins),ix=await Promise.all(hs.map(h=>t.get("i_"+h)));
+      t.set(zid,Z);t.del("r_"+zid);
+      hs.forEach((h,i)=>{const u=((ix[i]&&(ix[i].uids||[ix[i].uid]))||[]).filter(k=>!c2.includes(k));u.push(zid);t.set("i_"+h,{uids:u})});
+      /* old guild docs are deleted; their IDs go back to the pool and leave a redirect to the new guild */
+      accs.forEach(a=>{t.del(a.uid);t.set("r_"+a.uid,{to:zid,at:now})});
+      t.set(POOL_DOC,{free:[...pl.free.filter(f=>f.id!==zid&&!skip.has(f.id)),...accs.map(a=>({id:a.uid,at:now}))].slice(-2000)});
+      t.upd(eid,{comps:{...(e.comps||{}),[key]:zid}});
+    })}catch(err){console.warn("consolidate",err)}}
+  const e1=await dget(eid);if(e1&&e1.status!=="done"&&components(e1.edges).every(c=>e1.comps&&e1.comps[c[0]]))await dupd(eid,{status:"done"});
+}
+async function proposeMerge(yid){
+  const F=await fbp();
+  for(const u of[U.uid,yid]){const a=await dget(u);if(a&&!a.mergedInto&&a.pend&&a.pend<curEp())await consolidate(a.pend)}
+  for(let k=0;k<2;k++){const ep=curEp()+k,eid="e_"+ep;   /* a merge that arrives after its hour closed waits in the next hour */
+    try{await F.txn(async t=>{
+      const x=await t.get(U.uid),y=await t.get(yid),e=(await t.get(eid))||{ep,status:"open",edges:[],comps:{}};
+      if(!x||x.mergedInto)throw new Error("merged");if(!y||!y.logins)throw new Error("noacct");if(y.mergedInto)throw new Error("merged");
+      if(y.noMerge)throw new Error("blocked");if(e.status==="done")throw new Error("closing");if(e.edges.length>=400)throw new Error("full");
+      if(e.edges.some(g=>!g.x&&((g.a===x.uid&&g.b===yid)||(g.a===yid&&g.b===x.uid))))throw new Error("dup");
+      e.edges.push({id:rid(8),a:x.uid,b:yid,na:x.name,nb:y.name,by:U.h,bm:U.logins[U.h].m,at:Date.now(),x:false});
+      t.set(eid,e);t.upd(x.uid,{pend:ep});t.upd(yid,{pend:ep});
+    });return}catch(x){if(x.message!=="closing"||k)throw x}}
+}
+async function cancelEdge(eid,id){
+  const F=await fbp();
+  await F.txn(async t=>{const e=await t.get(eid);if(!e||e.status==="done")throw new Error("gone");const g=e.edges.find(z=>z.id===id);if(!g)throw new Error("gone");g.x=true;t.upd(eid,{edges:e.edges})});
+}
+
+function renderDash(msg=""){
+  const t=dn(),T=tot(),acc=T.ans?Math.round(T.ok/T.ans*100):0,adm=isAdmin(),b=U.base,by=(b&&b.by)||{};
+  const L=Object.entries(U.logins).filter(([,l])=>l.t).map(([h,l])=>({h,l,s:h===U.h?P:norm(l.s)})).sort((a,c)=>(c.h===U.h)-(a.h===U.h)||(c.l.last||0)-(a.l.last||0));
+  const nAdm=L.filter(x=>U.roles[x.h]==="admin").length;
+  const rows=L.map(({h,l,s})=>{const me=h===U.h,role=U.roles[h]||"member",fresh=!me&&Date.now()-l.add<864e5,share=T.xp?Math.round(s.xp/T.xp*100):0,ac=s.ans?Math.round(s.ok/s.ans*100):0,mx=Math.max(1,...Array.from({length:7},(_,i)=>s.dh[t-i]||0));
+    const bars=Array.from({length:7},(_,i)=>{const v=s.dh[t-6+i]||0;return`<i style="height:${Math.max(3,Math.round(v/mx*30))}px" title="${v} XP"></i>`}).join("");
+    const btn=`${adm&&role==="member"&&nAdm<5?`<button class="sm" data-rl="${h}:admin">Make admin</button>`:""}${adm&&role==="admin"&&nAdm>1?`<button class="sm" data-rl="${h}:member">Make member</button>`:""}${adm||me?`<button class="sm dg" data-rm="${h}">${me?"Leave":"Remove"}</button>`:""}`;
+    return`<div class="lr ${me?"me":""}"><div class="lh"><span class="ic">${l.t==="email"?"✉️":"📱"}</span><div class="lm"><b>${esc(l.m)}</b><div class="n"><span class="tg">${role==="admin"?"Admin":"Member"}</span>${me?`<span class="tg">This device</span>`:""}${fresh?`<span class="tg nw">New</span>`:""}Added ${ago(l.add)} · Active ${ago(l.last)} · ${esc(l.dev||"unknown device")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${btn}</div></div><div class="ls"><div><b>+${s.xp}</b>XP since joining (${share}%)</div><div><b>${s.ans}</b>answered</div><div><b>${ac}%</b>accuracy</div><div><b>+${s.dh[t]||0}</b>XP today</div><div><div class="sp7" title="Last 7 days">${bars}</div>7 days</div></div><div class="shb"><b style="width:${share}%"></b></div></div>`}).join("");
+  const led={};for(const h in by)led[h]={m:by[h].m,t:by[h].t,x:by[h].xp};
+  for(const r of L){const e=led[r.h]||(led[r.h]={m:r.l.m,t:r.l.t,x:0});e.x+=r.s.xp;e.cur=true}
+  const unattr=Math.max(0,(b?b.xp:0)-Object.values(by).reduce((a,e)=>a+e.xp,0));
+  const ledH=Object.entries(led).sort((a,c)=>c[1].x-a[1].x).map(([h,e])=>`<div class="lg2"><span>${e.t==="email"?"✉️":"📱"} ${esc(e.m)} <span class="tg">${e.cur?(U.roles[h]==="admin"?"Admin":"Member"):"Former"}</span></span><b>${e.x} XP · ${T.xp?Math.round(e.x/T.xp*100):0}%</b></div>`).join("")+(unattr?`<div class="lg2"><span>Earlier history (not attributed)</span><b>${unattr} XP</b></div>`:"");
+  const ep=U.ep,cmp=ep&&ep.status!=="done"?components(ep.edges).find(c=>c.includes(U.uid)):null;let mgH="";
+  if(cmp)mgH=`<div class="lr me"><b>Temporary group ${tmpId(cmp)}</b> <span class="tg nw">${cmp.length} guilds</span><div class="hint" style="margin:4px 0 8px">Merges made this hour are collected under a temporary ID. In <b id="cd">…</b> everything is consolidated into one final guild with a new User ID, and every login moves there automatically.</div>${ep.edges.filter(g=>cmp.includes(g.a)||cmp.includes(g.b)).map(g=>`<div class="lg2" ${g.x?`style="text-decoration:line-through;opacity:.6"`:""}><span>${esc(g.na)} + ${esc(g.nb)}<div class="hint" style="margin:0">${esc(g.bm)} · ${ago(g.at)}</div></span>${!g.x&&adm&&(g.a===U.uid||g.b===U.uid)?`<button class="sm dg" data-ce="${g.id}">Cancel</button>`:""}</div>`).join("")}</div>`;
+  mgH+=`<p class="hint" style="margin:0 0 4px">Anyone in a guild can merge it with another guild at any time. Merges are collected for the hour, then every connected guild is combined into one new guild: all emails and phones, all scores and the full history. The new guild takes a User ID from the pool of IDs released by earlier merges (or a fresh one), and the old IDs are deleted and returned to the pool. Admins of either guild can cancel until the hour ends. After that it can't be undone.</p><label for="my">User ID of the other guild</label><input type="text" id="my" placeholder="TT-XXXXXXXXXX" autocomplete="off" autocapitalize="characters"><div class="er" id="er2"></div><button class="sm" id="mg">Merge</button><div class="hint" id="poolinfo" style="margin-top:10px"></div>`;
+  shell(`<div class="dh"><div class="av">${esc(Array.from(U.name)[0]||"?")}</div><div style="flex:1;min-width:0"><div class="two" style="grid-template-columns:1fr auto"><input type="text" id="dn" maxlength="30" value="${esc(U.name)}" aria-label="Guild name" ${adm?"":"disabled"}><button class="sm" id="sn" ${adm?"":"disabled"}>Save</button></div><div class="hint" style="margin-top:6px">User ID <b>${esc(U.uid)}</b> <button class="sm" id="cp">Copy</button></div>${U.parents&&U.parents.length?`<div class="hint" style="margin-top:6px">Formed by merging ${U.parents.map(esc).join(", ")}. Those IDs are retired and released for future merges${U.recycled?"; this User ID was recycled from an earlier merge":""}.</div>`:""}</div></div>
+  <div class="ph" style="margin-top:14px"><div><b>${Math.floor(T.xp/100)+1}</b>level</div><div><b>${T.xp}</b>total XP</div><div><b>${acc}%</b>accuracy</div><div><b>${L.length}</b>logins</div></div>
+  <h2>Members and logins</h2><p class="hint" style="margin:0 0 10px">Admins manage the guild. Members can only leave. Don't recognise a login? An admin can remove it.</p>${rows}
+  <h2>Contribution ledger</h2><p class="hint" style="margin:0 0 6px">Everyone who ever contributed, including former members and logins from merged guilds.</p>${ledH}
+  ${U.tree?`<h2>Merge tree</h2><ul class="tree" style="margin-left:0;border:0;padding:0">${treeH(U.tree)}</ul>`:""}
+  <h2>Merge guilds</h2>${mgH}
+  ${adm?`<h2>Add another email or phone</h2>${mf("a")}<button class="pri" id="ad">Add login</button><label class="tgl"><input type="checkbox" id="lk" ${U.lock?"checked":""}> Block anyone from joining with this User ID (only admins can add logins)</label><label class="tgl"><input type="checkbox" id="nm2" ${U.noMerge?"checked":""}> Block other guilds from merging with this one</label>`:""}${msgH(msg)}
+  <button class="sm" id="pf" style="margin-top:14px;width:100%">👤 Edit profile and public page</button><div class="two" style="margin-top:10px"><button class="sm" id="cl2">Close</button><button class="sm" id="lo">Sign out</button></div>`,1);
+  dashOn=true;if(adm)mfw("a","ad");
+  dget(POOL_DOC).then(p=>{const el=$("poolinfo");if(!el)return;const f=(p&&p.free)||[],n=Date.now(),ready=f.filter(x=>n-x.at>=RECYCLE_AFTER_MS).length;el.textContent=`ID pool: ${ready} ready for reuse, ${f.length-ready} resting for ${Math.round(RECYCLE_AFTER_MS/36e5)} h after a merge.`}).catch(()=>{});
+  clearInterval(tickT);tickT=setInterval(()=>{const e=$("cd");if(!e||!dashOn){clearInterval(tickT);return}const r=(curEp()+1)*EPOCH_MS-Date.now();if(r<=0){clearInterval(tickT);poll()}else e.textContent=Math.floor(r/60000)+":"+String(Math.floor(r/1000)%60).padStart(2,"0")},1000);
+  $("cl2").onclick=()=>{dashOn=false;A().hidden=true};$("pf").onclick=()=>{dashOn=false;A().hidden=true;mode="profile";start()};$("lo").onclick=()=>signOut();
+  $("cp").onclick=()=>{try{navigator.clipboard.writeText(U.uid);toast("User ID copied")}catch(e){}};
+  $("sn").onclick=async()=>{const nm=cleanName($("dn").value);if(!nm)return renderDash("Enter a name.");try{await dupd(U.uid,{name:nm});U.name=nm;acctBtn();renderDash("✅ Name saved.")}catch(e){renderDash("Couldn't save. Check your connection.")}};
+  if(adm){
+    $("lk").onchange=async e=>{try{await dupd(U.uid,{lock:e.target.checked});U.lock=e.target.checked}catch(x){renderDash("Couldn't update. Check your connection.")}};
+    $("nm2").onchange=async e=>{try{await dupd(U.uid,{noMerge:e.target.checked});U.noMerge=e.target.checked}catch(x){renderDash("Couldn't update. Check your connection.")}};
+    $("ad").onclick=guard("ad",async()=>{const l=await rl("a");if(l.err){$("er").textContent=l.err;return}
+      if((await ixGet(l.h)).includes(U.uid)){$("er").textContent="That login is already on this guild.";return}
+      const lg=mkLogin(l),ro={...U.roles,[l.h]:"member"};await dupd(U.uid,{["logins."+l.h]:lg,roles:ro});await ixAdd(l.h,U.uid);U.logins[l.h]=lg;U.roles=ro;renderDash("✅ Login added as a member.")});
+  }
+  $("mg").onclick=guard("mg",async()=>{const e=$("er2"),id=$("my").value.trim().toUpperCase();e.textContent="";
+    if(!/^TT-[A-HJ-NP-Z2-9]{10}$/.test(id)){e.textContent="Enter the other guild's User ID.";return}
+    if(id===U.uid){e.textContent="That is this guild.";return}
+    try{await proposeMerge(id)}catch(x){if(x.message==="noacct"){const r=await dget("r_"+id);if(r&&r.to){e.textContent="That guild was merged. Use its new User ID: "+r.to;return}}const M={noacct:"No guild found with that User ID.",merged:"A guild was already merged. Use its newer User ID.",blocked:"That guild doesn't accept merges.",closing:"This hour is closing. Try again in a moment.",full:"Too many merges this hour. Try next hour.",dup:"That merge is already queued this hour."};if(M[x.message]){e.textContent=M[x.message];return}throw x}
+    await refresh();renderDash("✅ Merge queued. The final guild is created when the hour ends.")});
+  A().querySelectorAll("[data-ce]").forEach(b=>b.onclick=async()=>{try{await cancelEdge("e_"+curEp(),b.dataset.ce);await refresh();renderDash("Merge cancelled.")}catch(e){renderDash("Couldn't cancel. It may have just closed.")}});
+  A().querySelectorAll("[data-rl]").forEach(b=>b.onclick=async()=>{const[h,r]=b.dataset.rl.split(":"),ro={...U.roles,[h]:r};try{await dupd(U.uid,{roles:ro});U.roles=ro;renderDash("✅ Role updated.")}catch(e){renderDash("Couldn't update. Check your connection.")}});
+  A().querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>rmLogin(b.dataset.rm));
+}
+async function rmLogin(h){
+  const l=U.logins[h],me=h===U.h;
+  if(Object.values(U.logins).filter(x=>x.t).length<2)return renderDash("A guild needs at least one login.");
+  if(U.roles[h]==="admin"&&Object.values(U.roles).filter(r=>r==="admin").length<2)return renderDash("Make another login an admin first.");
+  if(!confirm(`${me?"Leave the guild with":"Remove"} ${l.m}?`))return;
+  const keep=confirm(`Keep ${me?"your":"their"} contribution in the guild history?\n\nOK = keep it in the ledger (they did contribute).\nCancel = subtract it from the total (use for logins you don't know).`);
+  try{const F=await fbp();
+    await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("x");const lg=a.logins[h];if(!lg)return;
+      const s=h===U.h?P:norm(lg.s),o={["logins."+h]:null,["roles."+h]:null};
+      if(keep){const bs=a.base||{xp:0,ans:0,ok:0,dh:{},by:{},from:[],at:Date.now()},by=bs.by||{},e=by[h]||{m:lg.m,t:lg.t,xp:0,ans:0,ok:0};
+        e.xp+=s.xp;e.ans+=s.ans;e.ok+=s.ok;e.left=Date.now();by[h]=e;bs.by=by;bs.xp+=s.xp;bs.ans+=s.ans;bs.ok+=s.ok;bs.dh=bs.dh||{};for(const d in s.dh)bs.dh[d]=(bs.dh[d]||0)+s.dh[d];o.base=bs}
+      t.upd(U.uid,o)});
+    await ixDel(h,U.uid);if(me)return signOut("You left the guild.",1);
+    await refresh();renderDash("✅ Done.")}catch(e){renderDash("Couldn't complete. Check your connection.")}
+}
+$("acct").onclick=()=>U?renderDash():authHome();
 
 const dn=(d=new Date())=>Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
 const isPrime=n=>{if(n<2)return false;for(let i=2;i*i<=n;i++)if(n%i===0)return false;return true};
 const reward=n=>isPrime(n)?n:(n%2?1:0);
+const addXp=n=>{
+  const was=Math.floor(tot().xp/100);P.xp+=n;out("xp",n);out("dh",n);const t=dn();P.dh[t]=(P.dh[t]||0)+n;for(const k in P.dh)if(+k<t-30)delete P.dh[k];
+  const now=Math.floor(tot().xp/100);if(now>was){sfx("win");toast(`⬆️ Level ${now+1}: ${rankOf(now+1)}!`)}
+  if(P.dh[t]>=PREF.goal&&PREF.goalDay!==t){PREF.goalDay=t;savePref();sfx("win");toast("🎯 Daily goal reached!")}
+};
 let toastT;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,5000)}
 function sync(){
   const s=P.sk,t=dn();let msg="";
@@ -213,10 +677,10 @@ function streakUI(){
   const s=P.sk,t=dn(),done=s.last===t,n=s.cur+1;let p=n;while(!isPrime(p))p++;
   const L="SMTWTFS";let d="";
   for(let i=6;i>=0;i--){const k=t-i,v=s.h[k];d+=`<i class="${v===1?"a":v===2?"p":""} ${i===0?"t":""}" title="${v===2?"Protected":v?"Practiced":""}">${v===2?"🛡":L[new Date(k*864e5).getUTCDay()]}</i>`}
-  const r=reward(n);
-  $("streak").innerHTML=`<div class="f">🔥 ${s.cur}</div><div><b>day streak</b><div class="n">Best ${s.best}. ${done?"Done for today.":"Answer one question to keep it."}</div></div><div class="f">🛡️ ${s.prot}</div><div><b>protectors</b><div class="n">Used automatically when you miss a day</div></div><div class="days">${d}</div><div class="n" style="flex:1;min-width:210px">${done?"Tomorrow":"Today"} (day ${n}): ${r?`+${r} protector${r>1?"s":""}`:"no bonus"}<br>Next prime bonus: day ${p} gives +${p}</div>`;
+  const r=reward(n),today=P.dh[t]||0,g=PREF.goal,pc=Math.min(100,Math.round(today/g*100));
+  $("streak").innerHTML=`<div class="f">🔥 ${s.cur}</div><div><b>day streak</b><div class="n">Best ${s.best}. ${done?"Done for today.":"Answer one question to keep it."}</div></div><div class="f">🛡️ ${s.prot}</div><div><b>protectors</b><div class="n">Used automatically when you miss a day</div></div><div class="days">${d}</div><div class="goal"><div class="ring ${pc>=100?"done":""}" style="--p:${pc}"><b>${pc}%</b></div><div><b>Daily goal</b><div class="n">${today} of ${g} XP today</div></div></div><div class="n" style="flex:1;min-width:210px">${done?"Tomorrow":"Today"} (day ${n}): ${r?`+${r} protector${r>1?"s":""}`:"no bonus"}<br>Next prime bonus: day ${p} gives +${p}</div>`;
 }
-function hud(){$("sc").innerHTML=`<span>🔥 ${P.sk.cur}</span><span>🛡️ ${P.sk.prot}</span>`;streakUI();const l=Math.floor(P.xp/100)+1;$("lv").textContent="Lv "+l;$("xpb").style.width=(P.xp%100)+"%";$("xpt").textContent=P.xp+" XP"}
+function hud(){const x=tot().xp;$("sc").innerHTML=`<span>🔥 ${P.sk.cur}</span><span>🛡️ ${P.sk.prot}</span>${hasOut()?`<span title="Waiting to sync">⏳</span>`:""}`;streakUI();const lvl=Math.floor(x/100)+1;$("lv").textContent="Lv "+lvl;$("lv").title=rankOf(lvl);$("xpb").style.width=(x%100)+"%";$("xpt").textContent=x+" XP"}
 const rnd=n=>Math.floor(Math.random()*n),pick=a=>a[rnd(a.length)];
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
 const col=a=>`hsl(${(a*47+250)%360} 62% 48%)`;
@@ -233,18 +697,25 @@ function update(){renderChips();const c=cfg();$("sum").textContent=c.tb.length?`
 ["tables","from","to"].forEach(i=>$(i).addEventListener("input",()=>{if(i!=="tables"){$("fromR").value=$("from").value;$("toR").value=$("to").value}weakMode=false;update()}));
 [["fromR","from"],["toR","to"]].forEach(([r,n])=>$(r).addEventListener("input",()=>{$(n).value=$(r).value;weakMode=false;update()}));
 document.querySelectorAll(".qk button").forEach(b=>b.onclick=()=>{$("tables").value=b.dataset.q;weakMode=false;update()});
-$("tabs").innerHTML=MODES.map(([k,l])=>`<button class="tab" data-k="${k}">${l}</button>`).join("");
+$("tabs").innerHTML=MODES.map(([k,l])=>`<button class="tab" role="tab" data-k="${k}">${l}</button>`).join("");
 $("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{mode=b.dataset.k;start()});
 
 function start(){
-  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.k===mode));
-  clearInterval(st.timer);hud();
+  document.querySelectorAll(".tab").forEach(b=>{b.classList.toggle("on",b.dataset.k===mode);b.setAttribute("aria-selected",b.dataset.k===mode)});
+  clearInterval(st.timer);hud();document.body.classList.toggle("jr",["path","map","arcade","cert"].includes(mode));
   st={score:0,tot:0,streak:0,time:60,over:false,log:[]};
   if(mode==="prog")return prog();
+  if(mode==="dash")return dashT();
+  if(mode==="profile")return profileT();
   if(mode==="chart")return chart();
+  if(mode==="path")return journey();
+  if(mode==="map")return skillMap();
+  if(mode==="arcade")return arcade();
+  if(mode==="cert")return certScreen();
   if(!pool().length){$("view").innerHTML=`<div class="card">${weakMode?"No weak spots yet. Keep practicing!":"Pick a table on the left to begin."}</div>`;return}
   if(mode==="learn")return learn();
   if(mode==="match")return match();
+  if(mode==="test")return testSetup();
   if(mode==="speed")st.timer=setInterval(()=>{st.time--;const e=$("t");if(e)e.textContent=st.time;if(st.time<=0){clearInterval(st.timer);st.over=true;endSpeed()}},1000);
   next();
 }
@@ -253,7 +724,7 @@ function say(a,c){try{speechSynthesis.cancel();let t="";for(let m=c.f;m<=c.t;m++
 let slide=false;
 function learn(){
   const c=cfg();
-  let h=`<div class="bar2"><span class="hint" style="margin:0">Tap an answer to hide or reveal it, then test yourself.</span><span class="sp"></span><button class="sm" id="vw">${slide?"▦ Grid view":"↔ Slide view"}</button><button class="sm" id="hideall">Hide all answers</button><button class="sm" id="showall">Show all</button></div>${slide?`<div class="bar2"><button class="sm" id="pv">‹ Prev</button><button class="sm" id="nx">Next ›</button><span class="hint" style="margin:0">Swipe or use the buttons. Long tables scroll inside each card.</span></div>`:""}<div class="${slide?"car":"grid"}" id="gr">`;
+  let h=`<div class="bar2"><span class="hint" style="margin:0">Tap an answer to hide or reveal it, then test yourself.</span><span class="sp"></span><button class="sm" id="vw">${slide?"▦ Grid view":"↔ Slide view"}</button><button class="sm" id="hideall">Hide all answers</button><button class="sm" id="showall">Show all</button><button class="sm" id="prn">🖨 Print</button><button class="sm" id="wks">📄 Worksheet</button></div>${slide?`<div class="bar2"><button class="sm" id="pv">‹ Prev</button><button class="sm" id="nx">Next ›</button><span class="hint" style="margin:0">Swipe or use the buttons. Long tables scroll inside each card.</span></div>`:""}<div class="${slide?"car":"grid"}" id="gr">`;
   c.tb.forEach(a=>{h+=`<div class="tbl" style="--c:${col(a)}"><h3>Table of ${a}<button data-s="${a}" aria-label="Read aloud">🔊</button></h3><div class="body">`;
     for(let m=c.f;m<=c.t;m++)h+=`<div class="line"><span>${a} × ${m}</span><span class="a">= <b>${a*m}</b></span></div>`;h+=`</div></div>`});
   $("view").innerHTML=h+`</div>`;
@@ -263,6 +734,7 @@ function learn(){
   document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>say(+b.dataset.s,c));
   $("hideall").onclick=()=>document.querySelectorAll(".a").forEach(e=>e.classList.add("hide"));
   $("showall").onclick=()=>document.querySelectorAll(".a").forEach(e=>e.classList.remove("hide"));
+  $("prn").onclick=()=>window.print();$("wks").onclick=printSheet;
 }
 
 function chart(){
@@ -279,67 +751,545 @@ function side(){
 }
 function next(){
   if(st.over)return;
-  const [a,m]=pick(pool());st.cur={a,m,p:a*m};
-  if(mode==="missing"){const hideA=Math.random()<.5;st.cur.ans=hideA?m:a;st.cur.txt=hideA?`${a} × <span>?</span> = ${a*m}`:`<span>?</span> × ${m} = ${a*m}`}
+  const [a,m]=(PREF.smart?smartPick:pick)(pool());st.cur={a,m,p:a*m};st.hinted=false;
+  if(mode==="missing"){const hideA=Math.random()<.5;st.cur.ans=hideA?m:a;st.cur.k=hideA?a:m;st.cur.txt=hideA?`${a} × <span>?</span> = ${a*m}`:`<span>?</span> × ${m} = ${a*m}`}
   else{st.cur.ans=a*m;st.cur.txt=`${a} × ${m} = <span>?</span>`}
   let h=`<div class="qw"><div class="card"><div class="q">${st.cur.txt}</div>`;
   if(mode==="choice"){const set=new Set([st.cur.ans]);while(set.size<4){const d=st.cur.ans+pick([-1,1])*(1+rnd(Math.max(3,a)));if(d>0)set.add(d)}
-    h+=`<div class="opts">${shuffle([...set]).map(o=>`<button data-o="${o}">${o}</button>`).join("")}</div>`}
-  else h+=`<input type="number" id="ans" class="ans" inputmode="numeric" placeholder="Your answer"><div style="text-align:center;margin-top:14px"><button class="pri" id="go">Check</button></div>`;
-  h+=`<div class="fb" id="fb"></div></div>${side()}</div>`;
+    h+=`<div class="opts">${shuffle([...set]).map((o,i)=>`<button data-o="${o}"><kbd>${i+1}</kbd>${o}</button>`).join("")}</div>`}
+  else h+=`<input type="number" id="ans" class="ans" inputmode="numeric" placeholder="Your answer" aria-label="Your answer"><div class="act"><button class="pri" id="go">Check</button>${mode!=="speed"?`<button class="sm" id="hintb">💡 Hint</button>`:""}</div><div class="hint hc" id="hintt"></div>`;
+  h+=`<div class="fb" id="fb" role="status" aria-live="polite"></div></div>${side()}</div>`;
   $("view").innerHTML=h;
   if($("exitw"))$("exitw").onclick=()=>{weakMode=false;update()};
   if(mode==="choice")document.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>check(+b.dataset.o));
-  else{$("go").onclick=()=>{const v=$("ans").value;if(v!=="")check(+v)};$("ans").addEventListener("keydown",e=>{if(e.key==="Enter")$("go").click()});$("ans").focus()}
+  else{$("go").onclick=()=>{const v=$("ans").value;if(v!=="")check(+v)};$("ans").addEventListener("keydown",e=>{if(e.key==="Enter")$("go").click()});$("ans").focus();
+    if($("hintb"))$("hintb").onclick=()=>{st.hinted=true;$("hintt").textContent="💡 "+hintFor(a,m,0);$("hintb").disabled=true;$("ans").focus()}}
 }
 function check(v){
-  if(st.over)return;
-  st.tot++;P.ans++;const{a,m,p}=st.cur,ok=v===st.cur.ans,k=a+"x"+m;
-  if(ok){st.score++;st.streak++;P.ok++;P.xp+=10+Math.min(st.streak,5);P.bs=Math.max(P.bs,st.streak);if(P.weak[k]&&--P.weak[k]<=0)delete P.weak[k]}
-  else{st.streak=0;P.weak[k]=(P.weak[k]||0)+1}
-  st.log.push([`${a} × ${m}`,ok]);touch();save();hud();
-  const fb=$("fb");fb.className="fb "+(ok?"ok":"bad");fb.textContent=ok?"✅ Correct!":`❌ It was ${st.cur.ans} (${a} × ${m} = ${p})`;
+  if(st.over||!st.cur||st.cur.done)return;st.cur.done=true;
+  const{a,m,p}=st.cur,ok=v===st.cur.ans,k=a+"x"+m,help=st.hinted;
+  st.tot++;record(a,m,ok,help);
+  if(ok){st.score++;if(!help)st.streak++;addXp(help?3:10+Math.min(st.streak,5));P.bs=Math.max(P.bs,st.streak);sfx("ok")}
+  else{st.streak=0;sfx("bad")}
+  st.log.push([`${a} × ${m}`,ok]);touch();checkAch();save();hud();
+  const fb=$("fb");fb.className="fb "+(ok?"ok":"bad");
   document.querySelectorAll("#view .qw button,#view .qw input").forEach(e=>e.disabled=true);
-  setTimeout(next,ok?500:1500);
+  if(ok){fb.textContent=help?"✅ Correct, with a hint":"✅ Correct!";setTimeout(next,500)}
+  else{
+    fb.innerHTML=`❌ It was ${st.cur.ans} (${a} × ${m} = ${p})<div class="hint">💡 ${hintFor(a,m,1)}</div>${mode==="speed"?"":`<button class="pri" id="cont">Continue</button>`}`;
+    if(mode==="speed")setTimeout(next,1200);
+    else{$("cont").onclick=next;setTimeout(()=>{const c=$("cont");if(c)c.focus()},80)}
+  }
 }
 function endSpeed(){
-  if(st.score>P.speed)P.speed=st.score;save();
-  $("view").innerHTML=`<div class="card" style="text-align:center"><div class="q">⏱️ Time's up!</div><p>You got <b>${st.score}</b> right out of ${st.tot}.<br>Best: ${P.speed}</p><button class="pri" onclick="start()">Play again</button></div>`;
+  const nb=st.score>P.speed&&st.score>0;if(st.score>P.speed)P.speed=st.score;checkAch();save();sfx("win");
+  $("view").innerHTML=`<div class="card" style="text-align:center"><div class="q">⏱️ Time's up!</div><p>You got <b>${st.score}</b> right out of ${st.tot}${st.tot?` (${Math.round(st.score/st.tot*100)}%)`:""}.<br>${nb?"🏅 New personal best!":"Best: "+P.speed}</p><button class="pri" id="again">Play again</button></div>`;
+  $("again").onclick=start;
+}
+
+/* ---------- Journey: adaptive level path. Bunch = preview -> practice -> exam preview -> exam. Perfect exams unlock stretch and jump-ahead. ---------- */
+const JB=[[2,3],[4,5],[6,7],[8,9],[10,11],[12,13],[14,15],[16,17],[18,19,20]],JEX=12,JPASS=10,JTO=15,JTOP=14;
+const JTIP={2:"Double the number.",3:"Add the number three times.",4:"Double it, then double again.",5:"Half of ×10, so answers end in 0 or 5.",6:"Take ×5, then add one more.",7:"Split into ×5 and ×2.",8:"Double three times.",9:"×10 minus the number. Digits add up to 9.",10:"Add a zero.",11:"Up to ×9 the digit repeats: 11 × 4 = 44.",12:"×10 plus ×2."};
+let JLB=[];
+const jt=s=>JB[s].join(" · "),jm=s=>!!(P.jr.stg[s]&&P.jr.stg[s].m),jsw=f=>Math.random()<.5?f:[f[1],f[0]];
+const jf=(s,x)=>{const o=[];for(const t of JB[s])for(let m=x?11:1;m<=(x?20:10);m++)o.push([t,m]);return o};
+const jprev=s=>JB.flatMap((_,t)=>t<s&&jm(t)?jf(t,0):[]);
+const jb=(a,t,c,s,x)=>`<button class="${c}" data-ja="${a}" data-js="${s||0}" data-jx="${x||0}">${t}</button>`;
+const jbox=h=>`<div class="card" style="max-width:700px;margin:0 auto">${h}</div>`;
+function jq(o){
+  let t0=Date.now(),q=o.qs.map(x=>[x[0],x[1],0]),i=0,first=0,right=0,miss=0,bad=[],cur,hinted=false;
+  const nx=()=>{
+    if(i>=q.length||(o.maxMiss&&miss>=o.maxMiss))return o.done({n:first,right,miss,bad,secs:Math.max(1,Math.round((Date.now()-t0)/1000))});
+    cur=q[i];hinted=false;const[a,m]=cur;
+    $("view").innerHTML=jbox(`<div class="bar2"><span class="hint" style="margin:0">${o.title}</span><span class="sp"></span><button class="sm" id="jx">Quit</button></div><div class="pb"><b style="width:${i/q.length*100}%"></b></div><div class="hint" style="text-align:center;margin:0">Question ${i+1} of ${q.length}</div><div class="q">${a} × ${m} = <span>?</span></div><input type="number" id="ans" class="ans" inputmode="numeric" placeholder="Your answer" aria-label="Your answer"><div class="act"><button class="pri" id="go">Check</button>${o.hint?`<button class="sm" id="hintb">💡 Hint</button>`:""}</div><div class="hint hc" id="hintt"></div><div class="fb" id="fb" role="status" aria-live="polite"></div>`);
+    const ans=$("ans"),go=$("go"),fb=$("fb");$("jx").onclick=o.quit;
+    if($("hintb"))$("hintb").onclick=()=>{hinted=true;$("hintt").textContent="💡 "+hintFor(a,m,0);$("hintb").disabled=true;ans.focus()};
+    go.onclick=()=>{
+      if(go.dataset.r){i++;return nx()}
+      if(ans.value==="")return;
+      const ok=+ans.value===a*m,help=hinted||!!cur[2];
+      if(!cur[2]){first++;if(ok)right++}
+      record(a,m,ok,help);if(ok)addXp(help?3:10);sfx(ok?"ok":"bad");touch();checkAch();save();hud();
+      ans.disabled=true;if($("hintb"))$("hintb").disabled=true;
+      if(ok){fb.className="fb ok";fb.textContent=hinted?"✅ Correct, with a hint":"✅ Correct!";go.disabled=true;i++;setTimeout(nx,500)}
+      else{miss++;if(!bad.some(b=>b[0]===a&&b[1]===m))bad.push([a,m]);fb.className="fb bad";fb.innerHTML=`❌ It was ${a*m}<div class="hint">💡 ${hintFor(a,m,1)}</div>`;if(o.requeue)q.splice(Math.min(q.length,i+4),0,[a,m,1]);go.textContent="Continue";go.dataset.r=1;go.focus()}};
+    ans.addEventListener("keydown",e=>{if(e.key==="Enter")go.click()});ans.focus()};
+  nx();
+}
+function journey(){
+  if(P.jr.start==null)return jWelcome();
+  const nx=JB.findIndex((_,s)=>!jm(s)),md=JB.filter((_,s)=>jm(s)).length;
+  const row=s=>{const d=P.jr.stg[s]||{},m=jm(s),n=s===nx;
+    return`<div class="js ${m?"m":""} ${n?"nx":""}"><div class="jn">${m?"✓":s+1}</div><div class="card"><div class="jh"><h3>Tables ${jt(s)}</h3><span class="hint" style="margin:0">${m?(d.sk?"Skipped ahead":d.r===20?"Stretched to ×20":"Mastered")+(d.st?" · "+"★".repeat(d.st)+"☆".repeat(3-d.st):"")+(jdue(s).length?" · "+jdue(s).length+" due":""):n?"⭐ Up next":"Not started"}</span></div><div class="act" style="justify-content:flex-start;margin-top:10px">${jb("pv",m?"Review":"Learn &amp; practice","sm",s)}${jb("to","Test out","sm",s)}${m&&d.r!==20?jb("pv","Stretch ×11 to ×20","sm",s,1):""}</div></div></div>`};
+  $("view").innerHTML=`<div class="card"><h2 style="margin:0">${nx<0?"🎉 You finished the path":"🧭 Up next: tables "+jt(nx)}</h2><p class="hint">${md} of ${JB.length} bunches mastered. Preview two tables, practise, check the exam preview, then take the exam. Already know a bunch? Test out and skip it.</p><div class="pb"><b style="width:${md/JB.length*100}%"></b></div><div class="act" style="justify-content:flex-start"><button class="pri" data-ja="cn">${nx<0?"Free practice":"Continue"}</button><button class="sm" data-ja="lv">Change my level</button></div></div>${jDueCard()}<div class="jp">${JB.map((_,s)=>row(s)).join("")}</div>`}
+function jWelcome(){$("view").innerHTML=jbox(`<h2 style="margin:0">Where should we start?</h2><p class="hint">Pick your level. You can test out of any bunch later, so you never repeat what you already know.</p><div class="jo"><button data-ja="nw"><b>I'm new to tables</b><small>Start with 2 and 3</small></button><button data-ja="k5"><b>I know tables up to 5</b><small>Start with 6 and 7</small></button><button data-ja="k10"><b>I know tables up to 9</b><small>Start with 10 and 11</small></button><button data-ja="qc"><b>Check me</b><small>A short quiz finds your level</small></button></div>`)}
+function jStart(s){P.jr.start=s;for(let t=0;t<s;t++)if(!jm(t))P.jr.stg[t]={m:1,sk:1,r:10,best:0};save();toast("Starting at tables "+jt(s));journey()}
+function jPlace(){
+  const qs=[];for(let s=0;s<8;s++){const t=JB[s],a=t[rnd(t.length)],m=shuffle([6,7,8,9,10]);qs.push([a,m[0]],[a,m[1]])}
+  jq({title:"Quick check",qs,maxMiss:2,hint:false,quit:jWelcome,done:r=>jStart(r.bad.length?Math.min(...r.bad.map(b=>JB.findIndex(x=>x.includes(b[0])))):8)})}
+function jPreview(s,x){
+  const nxt=s+1<JB.length?`After this: tables ${jt(s+1)}.`:"This is the last bunch.";
+  let h=`<div class="bar2"><b>Learn tables ${jt(s)}${x?" · ×11 to ×20":""}</b><span class="sp"></span>${jb("bk","Back to path","sm")}</div><p class="hint" style="margin:0 0 10px">Read the two tables, then hide the answers and test yourself. Tap an answer to hide or reveal it. ${nxt}</p><div class="grid">`;
+  JB[s].forEach(a=>{h+=`<div class="tbl" style="--c:${col(a)}"><h3>Table of ${a}</h3><div class="hint" style="margin:0;padding:8px 16px 4px">${JTIP[a]||"Split "+a+" into tens and ones."}</div><div class="body">`;for(let m=x?11:1;m<=(x?20:10);m++)h+=`<div class="line"><span>${a} × ${m}</span><span class="a">= <b>${a*m}</b></span></div>`;h+=`</div></div>`});
+  $("view").innerHTML=h+`</div><div class="act"><button class="sm" id="jh">Hide all answers</button>${jb("pr","Start practice","pri",s,x)}${jb("sk","I know these: go to exam preview","sm",s,x)}</div>`;
+  document.querySelectorAll(".a").forEach(e=>e.onclick=()=>e.classList.toggle("hide"));
+  $("jh").onclick=()=>document.querySelectorAll(".a").forEach(e=>e.classList.add("hide"))}
+function jPractice(s,x,only){
+  jq({title:(only?"Missed facts":"Practice")+" · tables "+jt(s),qs:only?shuffle(only.concat(only)).slice(0,20):shuffle(jf(s,x)),requeue:true,hint:true,quit:()=>jPreview(s,x),done:r=>jExamHint(s,x,r)})}
+function jExamHint(s,x,r){
+  const w=jf(s,x).map(f=>[f,(P.ms[fkey(...f)]||[0,0,0,0])[3]]).filter(a=>a[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,6),rv=jprev(s).length?3:0;
+  $("view").innerHTML=jbox(`<h2 style="margin:0">📝 Exam preview · tables ${jt(s)}${x?" · ×11 to ×20":""}</h2>${r?`<p class="hint">Practice finished: ${r.miss?r.miss+" slip"+(r.miss>1?"s":"")+", now repeated":"no slips"}.</p>`:""}<ul style="line-height:1.8"><li>${JEX} typed questions in mixed order</li><li>No hints during the exam</li><li>Pass with ${JPASS} correct. A perfect score unlocks bigger challenges.</li>${rv?`<li>${rv} quick review questions from bunches you finished</li>`:""}</ul>${w.length?`<p class="hint">Facts to watch</p><div class="weak">${w.map(([f])=>`<span>${f[0]} × ${f[1]}</span>`).join("")}</div>`:""}<div class="act">${jb("ex","Take the exam","pri",s,x)}${jb("pr","Practice more","sm",s,x)}${jb("bk","Back to path","sm")}</div>`)}
+function jExam(s,x){
+  const rv=jprev(s).length?3:0,qs=shuffle(shuffle(jf(s,x)).slice(0,JEX-rv).concat(shuffle(jprev(s)).slice(0,rv))).map(jsw);
+  jq({title:"Exam · tables "+jt(s),qs,hint:false,quit:()=>jExamHint(s,x),done:r=>jResult(s,x,r,JPASS,0)})}
+function jTest(s){jq({title:"Test out · tables "+jt(s),qs:shuffle(jf(s,0)).slice(0,JTO).map(jsw),hint:false,quit:journey,done:r=>jResult(s,0,r,JTOP,1)})}
+function jResult(s,x,r,pass,to){
+  const ok=r.right>=pass,perf=r.right===r.n,d=P.jr.stg[s]||{};JLB=r.bad;
+  if(ok){const was=jm(s);P.jr.stg[s]={m:1,sk:0,r:x?20:(d.r||10),best:Math.max(d.best||0,Math.round(r.right/r.n*100)),st:Math.max(d.st||0,perf?3:r.right>=r.n-1?2:1),ts:d.ts||Date.now()};if(to)for(let t=0;t<s;t++)if(!jm(t))P.jr.stg[t]={m:1,sk:1,r:10,best:0};if(!was)addXp(perf?60:30);checkAch();save();hud();sfx("win")}
+  const nxt=JB.findIndex((_,t)=>t>s&&!jm(t)),jmp=JB.findIndex((_,t)=>t>s+1&&!jm(t));
+  let a;
+  if(!ok)a=`<div class="act">${jb("pm","Practice missed facts","pri",s,x)}${jb("sk","Exam preview","sm",s,x)}${jb("bk","Back to path","sm")}</div>`;
+  else if(perf){const o=[];
+    if(nxt>=0)o.push(["pv",`Next: tables ${jt(nxt)}`,"Preview, then practice",nxt,0]);
+    if(!x)o.push(["pv","Stretch ×11 to ×20","Same tables, bigger numbers",s,1]);
+    if(jmp>=0)o.push(["to",`Jump ahead: tables ${jt(jmp)}`,"Test out and skip what you know",jmp,0]);
+    a=`<p style="text-align:center;font-weight:700">Flawless. Choose your next move:</p><div class="jo">${o.map(([k,t,sub,ss,xx])=>`<button data-ja="${k}" data-js="${ss}" data-jx="${xx}"><b>${t}</b><small>${sub}</small></button>`).join("")}</div><div class="act">${jb("bk","Back to path","sm")}</div>`}
+  else a=(nxt>=0?`<p class="hint" style="text-align:center">Coming up: tables ${jt(nxt)}. Its preview is ready.</p>`:"")+`<div class="act">${nxt>=0?jb("pv","Preview next bunch","pri",nxt,0):jb("bk","See your path","pri")}${jb("pr","Practice again","sm",s,x)}${jb("bk","Back to path","sm")}</div>`;
+  $("view").innerHTML=jbox(`<div class="big" style="font-size:2.6rem;margin-bottom:0">${r.right} / ${r.n}</div><div class="big" style="margin-top:4px">${ok?(perf?"Perfect":"Passed"):"Not yet"}${to?" · test out":""}</div><div class="hint" style="text-align:center;margin:0">⏱ ${r.secs}s total · ${(r.secs/Math.max(r.n,1)).toFixed(1)}s per question${ok?" · "+"★".repeat(perf?3:r.right>=r.n-1?2:1):""}</div><p class="hint" style="text-align:center">${ok?(to?"Bunch mastered. Earlier bunches skipped.":"Bunch mastered."):"You need "+pass+" correct. Practise the missed facts, then try again."}</p>${r.bad.length?`<div class="rt">${r.bad.map(([p,q])=>`<div><span>${p} × ${q}</span><b class="ok">${p*q}</b></div>`).join("")}</div>`:""}${ok?`<div class="act"><button class="sm" data-ja="ct">🏅 Certificate unlocked: edit and download</button></div>`:""}${a}`)}
+/* Daily review: mastered facts that are due again (Leitner schedule), so finished tables do not fade. */
+const jdue=s=>jf(s,0).concat(P.jr.stg[s]&&P.jr.stg[s].r===20?jf(s,1):[]).filter(([a,m],i,l)=>{const e=P.ms[fkey(a,m)];return e&&dn()-e[2]>=BOX_DAYS[e[0]]&&l.findIndex(f=>fkey(...f)===fkey(a,m))===i});
+function jdueAll(){const seen=new Set(),o=[];JB.forEach((_,s)=>{if(!jm(s))return;jdue(s).forEach(f=>{const k=fkey(...f);if(!seen.has(k)){seen.add(k);o.push(f)}})});return o.sort((a,b)=>P.ms[fkey(...a)][0]-P.ms[fkey(...b)][0])}
+function jDueCard(){
+  if(!JB.some((_,s)=>jm(s)))return"";const d=jdueAll();
+  return`<div class="tip"><span>${d.length?`🔁 <b>${d.length} fact${d.length>1?"s":""} due for review.</b> A short quiz keeps finished tables from fading.`:"✅ Reviews are all caught up."}</span>${d.length?`<button class="pri" data-ja="rv">Start review</button>`:""}</div>`}
+function jReview(){
+  const d=jdueAll().slice(0,12);if(!d.length)return journey();
+  jq({title:"Daily review",qs:shuffle(d).map(jsw),requeue:true,hint:true,quit:journey,done:r=>{addXp(10);save();hud();sfx("win");
+    $("view").innerHTML=jbox(`<div class="big" style="font-size:2.6rem;margin-bottom:0">${r.right} / ${r.n}</div><div class="big" style="margin-top:4px">Review done · +10 XP</div><div class="hint" style="text-align:center;margin:0">⏱ ${r.secs}s total</div>${r.bad.length?`<p class="hint">Facts to watch</p><div class="rt">${r.bad.map(([p,q])=>`<div><span>${p} × ${q}</span><b class="ok">${p*q}</b></div>`).join("")}</div>`:`<p class="ok" style="text-align:center;font-weight:700">No slips.</p>`}<div class="act">${jb("bk","Back to path","pri")}</div>`)}})}
+$("view").addEventListener("click",e=>{
+  const b=e.target.closest("[data-ja]");if(!b)return;const s=+b.dataset.js,x=+b.dataset.jx,nx=JB.findIndex((_,i)=>!jm(i));
+  ({bk:journey,pv:()=>jPreview(s,x),pr:()=>jPractice(s,x),pm:()=>jPractice(s,x,JLB),sk:()=>jExamHint(s,x),ex:()=>jExam(s,x),to:()=>jTest(s),nw:()=>jStart(0),k5:()=>jStart(2),k10:()=>jStart(4),qc:jPlace,rv:jReview,ct:()=>{CSEL="b"+s;mode="cert";start()},lv:()=>{P.jr.start=null;journey()},cn:()=>{if(nx<0){mode="type";start()}else jPreview(nx,0)}}[b.dataset.ja]||(()=>{}))()});
+
+/* ---------- My Map: grows from everything the user plays. Every game feeds P.ms and P.gm, so nothing is shown until it is played. ---------- */
+let MSEL=null;
+const MLAB=["Not started","Needs work","Learning","Good","Excellent"],MCOL=["var(--mute)","var(--bad)","var(--warn)","var(--acc)","var(--ok)"],MG=[["learn","📖 Learn"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed"],["test","📝 Test"]];
+function tstat(t){let seen=0,sum=0,miss=0,times=0;for(let m=1;m<=10;m++){const e=P.ms[fkey(t,m)];if(e){seen++;sum+=e[0];miss+=e[3];times+=e[1]}}const avg=seen?sum/seen:0;return{t,seen,avg,miss,times,lv:!seen?0:(seen>=8&&avg>=4)?4:avg>=2.5?3:avg>=1?2:1}}
+function jGo(t,k){$("tables").value=t;$("from").value=1;$("to").value=10;$("fromR").value=1;$("toR").value=10;weakMode=false;mode=k;update()}
+function skillMap(){
+  const T=Array.from({length:20},(_,i)=>tstat(i+1)),vis=T.filter(x=>x.seen);
+  if(!vis.length){$("view").innerHTML=`<div class="card" style="text-align:center;padding:44px 20px"><h2 style="margin:0">Your map is empty</h2><p class="hint">It grows as you play. Every game feeds it.</p><div class="act"><button class="pri" id="mgo">Start on the Journey</button></div></div>`;$("mgo").onclick=()=>{mode="path";start()};return}
+  const nb=JB.findIndex((_,s)=>!jm(s)),fr=[];(P.jr.start!=null&&nb>=0?JB[nb]:[]).concat(Array.from({length:19},(_,i)=>i+2)).forEach(t=>{if(fr.length<3&&!fr.includes(t)&&!T[t-1].seen)fr.push(t)});
+  const pos=t=>{const a=(t-1)/20*Math.PI*2-Math.PI/2;return[300+Math.cos(a)*165,215+Math.sin(a)*165]};
+  const node=(t,f)=>{const[x,y]=pos(t),s=T[t-1],r=f?17:15+Math.min(14,s.seen*1.5),c=f?"var(--mute)":MCOL[s.lv];
+    return`<line x1="300" y1="215" x2="${x}" y2="${y}" stroke="var(--line)" stroke-width="2" ${f?'stroke-dasharray="5 5"':""}/><g class="mn" data-mt="${t}" tabindex="0" role="button" aria-label="Table ${t}: ${f?"next, not started":MLAB[s.lv]}"><circle cx="${x}" cy="${y}" r="${r}" fill="${f?"var(--card)":c}" stroke="${MSEL===t?"var(--ink)":c}" stroke-width="${MSEL===t?4:3}" ${f?'stroke-dasharray="4 3"':""}/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="14" fill="${f?"var(--ink)":"#fff"}">${t}</text></g>`};
+  const det=()=>{if(!MSEL)return`<p class="hint" style="margin:0">Tap a table to see how you are doing and jump straight into a game.</p>`;const s=T[MSEL-1],f=!s.seen;
+    return`<h3 style="margin:0">Table of ${MSEL} · ${f?"Next up":MLAB[s.lv]}</h3><p class="hint">${f?"You have not played this table yet.":`${s.seen} of 10 facts tried · ${s.times?Math.max(0,Math.round((1-s.miss/s.times)*100)):0}% right · ${s.miss} slip${s.miss===1?"":"s"}`}</p><div class="act" style="justify-content:flex-start">${MG.map(([k,l])=>`<button class="${k===(f?"learn":"type")?"pri":"sm"}" data-g="${k}">${l}</button>`).join("")}</div>`};
+  const chips=a=>a.length?`<div class="weak">${a.map(s=>`<span data-mt="${s.t}" style="cursor:pointer;border:2px solid ${MCOL[s.lv]}">${s.t}</span>`).join("")}</div>`:`<p class="hint">None yet.</p>`;
+  const weak=vis.filter(s=>s.lv<=2).sort((a,b)=>a.avg-b.avg),strong=vis.filter(s=>s.lv>=3).sort((a,b)=>b.avg-a.avg),LB2=Object.fromEntries(MODES);
+  const gms=Object.entries(P.gm).filter(([k,g])=>g[0]>0&&LB2[k]);
+  const D=Array.from({length:14},(_,i)=>{const d=dn()-13+i,e=P.dd[d]||[0,0];return[d,e[0],e[1]]}),mx=Math.max(1,...D.map(d=>d[1]));
+  $("view").innerHTML=`<div class="card"><h2 style="margin:0">🗺️ My Map</h2><p class="hint">Only what you have played appears. Dashed circles are what to try next.</p>
+  <svg class="mg" viewBox="0 0 600 430" role="group" aria-label="Map of your tables"><circle cx="300" cy="215" r="165" fill="none" stroke="var(--line)" stroke-dasharray="2 6"/>${vis.map(s=>node(s.t,0)).join("")}${fr.map(t=>node(t,1)).join("")}<circle cx="300" cy="215" r="36" fill="var(--acc)"/><text x="300" y="214" text-anchor="middle" font-size="15" font-weight="800" fill="var(--acc-ink)">You</text><text x="300" y="232" text-anchor="middle" font-size="12" fill="var(--acc-ink)">Level ${lvOf()}</text></svg>
+  <div class="weak">${[1,2,3,4].map(i=>`<span style="border:2px solid ${MCOL[i]}">${MLAB[i]}</span>`).join("")}<span style="border:2px dashed var(--mute)">Next up</span></div></div>
+  <div class="card" id="det">${det()}</div>
+  <div class="card"><h2 style="margin:0 0 4px">Needs work</h2>${chips(weak)}${Object.keys(P.weak).length?`<div class="act" style="justify-content:flex-start"><button class="pri" id="mwk">Practice my weak facts</button></div>`:""}<h2 style="margin:14px 0 4px">Going well</h2>${chips(strong)}</div>
+  ${gms.length?`<div class="card"><h2 style="margin:0 0 6px">Games you play</h2>${gms.map(([k,g])=>{const a=Math.round(g[1]/g[0]*100);return`<div class="gb" data-gm="${k}" role="button" tabindex="0"><span>${LB2[k]}</span><i><b style="width:${a}%"></b></i><small>${g[0]} answers · ${a}%</small></div>`}).join("")}</div>`:""}
+  ${D.some(d=>d[1])?`<div class="card"><h2 style="margin:0 0 8px">Last 14 days</h2><div class="ab">${D.map(([d,a,o])=>`<div title="${a} answers"><i style="height:${a/mx*100}%"><b style="height:${a?o/a*100:0}%"></b></i>${new Date(d*864e5).toLocaleDateString(undefined,{weekday:"narrow",timeZone:"UTC"})}</div>`).join("")}</div><p class="hint">Green is the share you got right.</p></div>`:""}`;
+  const sel=t=>{const y=scrollY;MSEL=t;skillMap();scrollTo(0,y)};
+  $("view").querySelectorAll("[data-mt]").forEach(e=>{e.onclick=()=>sel(+e.dataset.mt);e.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();sel(+e.dataset.mt)}}});
+  $("view").querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>jGo(MSEL,b.dataset.g));
+  $("view").querySelectorAll("[data-gm]").forEach(b=>{const f=()=>{mode=b.dataset.gm;start()};b.onclick=f;b.onkeydown=ev=>{if(ev.key==="Enter")f()}});
+  if($("mwk"))$("mwk").onclick=()=>{weakMode=true;mode="type";start()}}
+
+/* ---------- Arcade: extra games. They share the same quiz engine and feed My Map. ---------- */
+const jEnd=(t,r,key,x)=>{sfx("win");$("view").innerHTML=jbox(`<div class="big" style="font-size:2.6rem;margin-bottom:0">${r.right} / ${r.n}</div><div class="big" style="margin-top:4px">${t}</div>${x||""}${r.bad.length?`<p class="hint">Facts to watch</p><div class="rt">${r.bad.map(([p,q])=>`<div><span>${p} × ${q}</span><b class="ok">${p*q}</b></div>`).join("")}</div>`:""}<div class="act"><button class="pri" data-ga="${key}">Play again</button><button class="sm" data-ga="home">Arcade</button></div>`)};
+function arcade(){
+  $("view").innerHTML=`<div class="card"><h2 style="margin:0">🎮 Arcade</h2><p class="hint">Extra games. Everything you play feeds My Map.</p><div class="jo">
+  <button data-ga="sv"><b>❤️ Survival</b><small>3 lives. Last as long as you can. Best: ${P.jr.surv||0}</small></button>
+  <button data-ga="od"><b>🕵️ Odd one out</b><small>Spot the wrong equation. Best: ${P.jr.odd||0} / 10</small></button>
+  <button data-ga="bs"><b>👹 Weak-spot boss</b><small>15 questions from the facts you miss most</small></button></div></div>`}
+function jSurv(){
+  const p=[];for(let a=2;a<=12;a++)for(let m=2;m<=12;m++)p.push([a,m]);
+  jq({title:"❤️ Survival · 3 lives",qs:Array.from({length:80},()=>jsw(smartPick(p))),maxMiss:3,hint:false,quit:arcade,done:r=>{const nb=r.right>(P.jr.surv||0);if(nb)P.jr.surv=r.right;save();jEnd("Game over",r,"sv",`<div class="hint" style="text-align:center;margin:0">${nb?"🏅 New best!":"Best: "+P.jr.surv}</div>`)}})}
+function jOdd(){
+  let i=0,sc=0;
+  const rd=()=>{
+    if(i>=10){P.jr.odd=Math.max(P.jr.odd||0,sc);save();return jEnd("Odd one out",{right:sc,n:10,bad:[]},"od")}
+    const u=new Set(),fs=[];while(fs.length<4){const a=2+rnd(11),m=2+rnd(11),k=fkey(a,m);if(!u.has(k)){u.add(k);fs.push([a,m])}}
+    const w=rnd(4),[a,m]=fs[w],off=pick([a,m,10,2,1]);let wp=a*m-off;if(wp<=0||Math.random()<.5)wp=a*m+off;
+    $("view").innerHTML=jbox(`<div class="bar2"><span class="hint" style="margin:0">Odd one out</span><span class="sp"></span><button class="sm" id="jx">Quit</button></div><div class="pb"><b style="width:${i*10}%"></b></div><div class="hint" style="text-align:center;margin:0">Round ${i+1} of 10</div><div class="q" style="font-size:1.6rem">Which equation is wrong?</div><div class="opts">${fs.map(([x,y],j)=>`<button data-o="${j}">${x} × ${y} = ${j===w?wp:x*y}</button>`).join("")}</div><div class="fb" id="fb" role="status" aria-live="polite"></div>`);
+    $("jx").onclick=arcade;
+    document.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>{const ok=+b.dataset.o===w;document.querySelectorAll(".opts button").forEach(x=>x.disabled=true);record(a,m,ok,false);if(ok){sc++;addXp(10)}sfx(ok?"ok":"bad");touch();checkAch();save();hud();
+      $("fb").className="fb "+(ok?"ok":"bad");$("fb").textContent=ok?"✅ Right! "+a+" × "+m+" is "+a*m+", not "+wp:"❌ The wrong one was "+a+" × "+m+" = "+wp+". It is "+a*m+".";setTimeout(()=>{i++;rd()},ok?900:2000)})};
+  rd()}
+function jBoss(){
+  const w=Object.entries(P.ms).filter(e=>e[1][3]>0).sort((a,b)=>b[1][3]-a[1][3]||a[1][0]-b[1][0]).slice(0,10).map(([k])=>k.split("x").map(Number));
+  if(w.length<3)return toast("Play a few games first. Your weak facts will show up here.");
+  jq({title:"👹 Weak-spot boss",qs:shuffle(w.concat(w)).slice(0,15).map(jsw),hint:true,quit:arcade,done:r=>jEnd(r.right>=r.n-1?"Boss defeated":"Boss survived",r,"bs")})}
+$("view").addEventListener("click",e=>{const b=e.target.closest("[data-ga]");if(b)({sv:jSurv,od:jOdd,bs:jBoss,home:arcade}[b.dataset.ga]||(()=>{}))()});
+
+/* ---------- Certificates: earned by completing bunches. The real name is typed by the user, kept only on this device, and separate from the game name and User ID. ---------- */
+const CS=Object.assign({name:"",g:false,id:false,b:false},LS.get("tt_cert")||{});
+let CSEL=null;
+const csave=()=>LS.set("tt_cert",CS);
+function certs(){
+  const o=[];JB.forEach((_,s)=>{const d=P.jr.stg[s];if(d&&d.m&&!d.sk)o.push({k:"b"+s,t:"Bunch mastered",sub:"Multiplication tables "+jt(s),d})});
+  if(JB.every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].m))o.push({k:"all",t:"Path complete",sub:"Multiplication tables 2 to 20",d:{ts:Math.max(0,...JB.map((_,s)=>P.jr.stg[s].ts||0))}});
+  return o}
+const cdate=d=>new Date(d.ts||Date.now()).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+function drawCert(cv,c,A){
+  const x=cv.getContext&&cv.getContext("2d");if(!x)return;
+  const W=1200,H=850,ff='"Segoe UI",system-ui,sans-serif',ac="#5b3df5",nm=CS.name||"Your name";
+  x.fillStyle="#fff";x.fillRect(0,0,W,H);x.strokeStyle=ac;x.lineWidth=14;x.strokeRect(30,30,W-60,H-60);x.lineWidth=3;x.strokeRect(52,52,W-104,H-104);x.textAlign="center";
+  const T=(t,y,sz,w,col)=>{x.fillStyle=col||"#151b34";x.font=`${w||700} ${sz}px ${ff}`;x.fillText(t,W/2,y)};
+  T("× Table Trainer",125,34,800,ac);T("Certificate of achievement",205,64,800);T("This certifies that",265,28,500,"#5f6887");
+  let sz=84;x.font=`800 ${sz}px ${ff}`;while(x.measureText(nm).width>W-260&&sz>30){sz-=4;x.font=`800 ${sz}px ${ff}`}
+  T(nm,365,sz,800,CS.name?ac:"#b8bdd6");x.fillStyle="#cfd4ea";x.fillRect(250,388,W-500,3);
+  T("has completed",445,28,500,"#5f6887");T(c.t,515,52,800);T(c.sub,565,34,600);
+  const d=c.d;
+  if(d.st)for(let i=0;i<3;i++){const cx=W/2+(i-1)*52,cy=608;x.beginPath();for(let k=0;k<10;k++){const r=k%2?8:19,a=-Math.PI/2+k*Math.PI/5;x[k?"lineTo":"moveTo"](cx+Math.cos(a)*r,cy+Math.sin(a)*r)}x.closePath();x.fillStyle=i<d.st?"#f2b705":"#e6e9f5";x.fill()}
+  T((d.best?"Best score "+d.best+"%   ·   ":"")+cdate(d),662,28,500,"#5f6887");
+  const ex=[];if(CS.g&&typeof U!=="undefined"&&U)ex.push("Game name: "+U.name);if(CS.id&&typeof U!=="undefined"&&U)ex.push("User ID: "+U.uid);if(ex.length)T(ex.join("   ·   "),702,22,600,"#5f6887");
+  if(CS.b&&A.length)T(A.slice(0,10).map(a=>a[1]).join(" "),748,36,500);
+  T("Progress recorded in Table Trainer. Scores are calculated on the device.",780,18,500,"#8a92b2")}
+function certScreen(){
+  const L=certs(),A=ACH.filter(a=>P.ach[a[0]]);
+  if(!L.length&&!A.length){$("view").innerHTML=`<div class="card" style="text-align:center;padding:44px 20px"><h2 style="margin:0">No certificates yet</h2><p class="hint">Master a bunch on the Journey to earn your first certificate. Badges you earn appear here too.</p><div class="act"><button class="pri" id="cgo">Go to the Journey</button></div></div>`;$("cgo").onclick=()=>{mode="path";start()};return}
+  const c=L.find(z=>z.k===CSEL),sw=(id,on,t)=>`<label class="tgl" for="${id}"><span class="sw"><input type="checkbox" id="${id}" ${on?"checked":""}><span></span></span>${t}</label>`;
+  $("view").innerHTML=`<div class="card"><h2 style="margin:0">🏅 Certificates and badges</h2><p class="hint">You earn a certificate by completing a bunch on the Journey. Choose one to edit and download it.</p>${L.length?L.map(z=>`<div class="lg2" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)"><span><b>${z.t}</b><br><span class="hint" style="margin:0">${z.sub} · ${cdate(z.d)}${z.d.st?" · "+"★".repeat(z.d.st):""}</span></span><button class="${z.k===CSEL?"pri":"sm"}" data-ck="${z.k}">${z.k===CSEL?"Editing":"Open"}</button></div>`).join(""):`<p class="hint">No certificate yet. Master a bunch to earn one.</p>`}</div>
+  ${c?`<div class="card"><h2 style="margin:0 0 4px">Edit certificate</h2><p class="hint" style="margin:0 0 8px">The name on a certificate is your real name. It stays on this device, is never uploaded, and is separate from your game name and public profile.</p><label for="cn">Name on certificate</label><input type="text" id="cn" maxlength="40" autocomplete="name" value="${esc(CS.name)}" placeholder="Your real name">
+  ${typeof U!=="undefined"&&U?sw("cg",CS.g,`Also show my game name (${esc(U.name)})`)+sw("ci",CS.id,`Also show my User ID (${esc(U.uid)})`):`<p class="hint">Sign in to optionally add your game name and User ID.</p>`}${A.length?sw("cb",CS.b,`Show my badges (${A.length} earned)`):""}
+  <canvas id="cv" width="1200" height="850" style="width:100%;height:auto;margin-top:12px;border-radius:12px;border:1px solid var(--line)" aria-label="Certificate preview"></canvas><div class="act"><button class="pri" id="cdl">Download PNG</button><button class="sm" id="cpr">Print</button></div></div>`:""}
+  ${A.length?`<div class="card"><h2 style="margin:0 0 6px">Badges you have earned</h2><div class="weak">${A.map(a=>`<span title="${esc(a[3])}">${a[1]} ${esc(a[2])}</span>`).join("")}</div></div>`:""}`;
+  $("view").querySelectorAll("[data-ck]").forEach(b=>b.onclick=()=>{const y=scrollY;CSEL=b.dataset.ck;certScreen();scrollTo(0,y)});
+  if(!c)return;
+  const cv=$("cv"),draw=()=>drawCert(cv,c,A);draw();
+  $("cn").oninput=e=>{CS.name=Array.from(e.target.value.trim().replace(/\s+/g," ")).slice(0,40).join("");csave();draw()};
+  [["cg","g"],["ci","id"],["cb","b"]].forEach(([i,k])=>{if($(i))$(i).onchange=e=>{CS[k]=e.target.checked;csave();draw()}});
+  const ok=()=>CS.name?true:(toast("Enter your name first."),$("cn").focus(),false);
+  $("cdl").onclick=()=>{if(ok())cv.toBlob(b=>{const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="certificate-"+c.k+".png";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)})};
+  $("cpr").onclick=()=>{if(!ok())return;const w=open("");if(!w)return toast("Allow pop-ups to print.");w.document.write(`<title>Certificate</title><img src="${cv.toDataURL()}" style="width:100%">`);w.document.close();setTimeout(()=>w.print(),300)}}
+
+/* ---------- Test mode: a fixed set of questions, no feedback until the end ---------- */
+let TS=null,tN=10;
+function testSetup(){
+  const n=pool().length;tN=Math.min(tN,Math.max(n,1));
+  $("view").innerHTML=`<div class="card" style="max-width:560px;margin:0 auto;text-align:center"><div class="big">📝 Take a test</div><p class="hint">Answer every question first. You see your score and mistakes at the end. Leave an answer blank to skip it.</p><div class="seg" id="tq" style="justify-content:center">${[10,20,30].map(x=>`<button data-n="${x}" class="${x===tN?"on":""}">${x} questions</button>`).join("")}</div><p class="hint">${n} different questions in your current selection${n<tN?`, so this test will have ${n}`:""}.</p><div class="act"><button class="pri" id="tgo">Start test</button></div></div>`;
+  $("tq").querySelectorAll("button").forEach(b=>b.onclick=()=>{tN=+b.dataset.n;$("tq").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
+  $("tgo").onclick=()=>{TS={q:shuffle(pool()).slice(0,tN),i:0,a:[],t0:Date.now()};testQ()};
+}
+function testQ(){
+  const[a,m]=TS.q[TS.i],n=TS.q.length,last=TS.i===n-1;
+  $("view").innerHTML=`<div class="card" style="max-width:640px;margin:0 auto"><div class="pb" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${TS.i}"><b style="width:${TS.i/n*100}%"></b></div><div class="hint" style="text-align:center;margin:0">Question ${TS.i+1} of ${n}</div><div class="q">${a} × ${m} = <span>?</span></div><input type="number" id="ans" class="ans" inputmode="numeric" placeholder="Your answer" aria-label="Your answer"><div class="act"><button class="pri" id="go">${last?"Finish test":"Next"}</button></div></div>`;
+  $("go").onclick=()=>{const v=$("ans").value;TS.a.push(v===""?null:+v);if(last)testDone();else{TS.i++;testQ()}};
+  $("ans").addEventListener("keydown",e=>{if(e.key==="Enter")$("go").click()});$("ans").focus();
+}
+function testDone(){
+  const n=TS.q.length,secs=Math.max(1,Math.round((Date.now()-TS.t0)/1000));let ok=0;const miss=[];
+  TS.q.forEach(([a,m],i)=>{const g=TS.a[i]===a*m;record(a,m,g);if(g)ok++;else miss.push([a,m,TS.a[i]])});
+  const pc=Math.round(ok/n*100);
+  addXp(ok*5);P.tests++;if(n>=10&&ok===n)P.perf++;
+  touch();checkAch();save();hud();sfx(pc>=80?"win":"ok");
+  const g=pc>=95?"Outstanding":pc>=80?"Great work":pc>=60?"Good progress":"Keep practicing";
+  $("view").innerHTML=`<div class="card" style="max-width:640px;margin:0 auto"><div class="big" style="font-size:2.6rem;margin-bottom:0">${ok} / ${n}</div><div class="big" style="margin-top:4px">${g} · ${pc}%</div>
+  <div class="stat three"><div><b>${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")}</b>total time</div><div><b>${(secs/n).toFixed(1)}s</b>per question</div><div><b>+${ok*5}</b>XP earned</div></div>
+  ${miss.length?`<h2 style="margin:0 0 4px">Review your mistakes</h2><div class="rt">${miss.map(([a,m,v])=>`<div><span>${a} × ${m}</span><span><span class="bad">${v===null?"skipped":v}</span> → <b class="ok">${a*m}</b></span></div>`).join("")}</div>`:`<p class="ok" style="text-align:center;font-weight:700">Perfect score. Nothing to review.</p>`}
+  <div class="act"><button class="pri" id="rt1">New test</button>${miss.length?`<button class="sm" id="rt2">Practice my mistakes</button>`:""}</div></div>`;
+  $("rt1").onclick=start;if($("rt2"))$("rt2").onclick=()=>{weakMode=true;mode="type";start()};
 }
 
 function match(){
   const items=shuffle(pool()).slice(0,6),ans=shuffle(items.map(([a,m])=>a*m));
   st.sel=null;st.done=0;st.n=items.length;st.tries=0;
-  $("view").innerHTML=`<div class="card"><div class="hint" style="margin:0 0 12px">Tap a question, then its answer.</div><div class="mt"><div>${items.map(([a,m])=>`<button data-v="${a*m}" class="mq opts" style="display:block;font-size:1.3rem;padding:14px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;font-weight:700">${a} × ${m}</button>`).join("")}</div><div>${ans.map(v=>`<button data-v="${v}" class="ma" style="font-size:1.3rem;padding:14px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;font-weight:700">${v}</button>`).join("")}</div></div><div class="fb" id="fb"></div></div>`;
+  $("view").innerHTML=`<div class="card"><div class="hint" style="margin:0 0 12px">Tap a question, then its answer.</div><div class="mt"><div>${items.map(([a,m])=>`<button data-v="${a*m}" class="mb mq">${a} × ${m}</button>`).join("")}</div><div>${ans.map(v=>`<button data-v="${v}" class="mb ma">${v}</button>`).join("")}</div></div><div class="fb" id="fb" role="status" aria-live="polite"></div></div>`;
   const qs=[...document.querySelectorAll(".mq")],as=[...document.querySelectorAll(".ma")];
-  const on=(x,y)=>{x.style.background=y?"var(--acc)":"var(--bg)";x.style.color=y?"#fff":""};
-  qs.forEach(q=>q.onclick=()=>{if(q.disabled)return;qs.forEach(x=>on(x,0));on(q,1);st.sel=q});
+  qs.forEach(q=>q.onclick=()=>{if(q.disabled)return;qs.forEach(x=>x.classList.remove("on"));q.classList.add("on");st.sel=q});
   as.forEach(a=>a.onclick=()=>{
     if(!st.sel||a.disabled)return;st.tries++;
-    if(st.sel.dataset.v===a.dataset.v){st.sel.disabled=a.disabled=true;st.sel.style.opacity=a.style.opacity=.4;on(st.sel,0);st.sel=null;st.done++;P.xp+=5;touch();save();hud();
-      if(st.done===st.n){$("fb").className="fb ok";$("fb").innerHTML=`🎉 All matched in ${st.tries} tries! <button class="pri" onclick="start()">Next round</button>`}}
-    else{$("fb").className="fb bad";$("fb").textContent="Not a match, try again"}
+    if(st.sel.dataset.v===a.dataset.v){st.sel.disabled=a.disabled=true;st.sel.classList.remove("on");st.sel=null;st.done++;addXp(5);sfx("ok");touch();checkAch();save();hud();
+      if(st.done===st.n){sfx("win");$("fb").className="fb ok";$("fb").innerHTML=`🎉 All matched in ${st.tries} tries! <button class="pri" id="nr">Next round</button>`;$("nr").onclick=start}}
+    else{sfx("bad");$("fb").className="fb bad";$("fb").textContent="Not a match, try again"}
   });
 }
 
 function prog(){
-  const acc=P.ans?Math.round(P.ok/P.ans*100):0,w=Object.entries(P.weak).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  $("view").innerHTML=`<div class="ph"><div><b>${Math.floor(P.xp/100)+1}</b>level</div><div><b>${P.xp}</b>total XP</div><div><b>${acc}%</b>accuracy</div><div><b>${P.ans}</b>answered</div><div><b>${P.bs}</b>best streak</div><div><b>${P.speed}</b>best speed round</div><div><b>${P.sk.best}</b>best day streak</div></div>
-  <div class="card"><h2 style="margin:0">Weak spots</h2>${w.length?`<div class="weak">${w.map(([k])=>`<span>${k.replace("x"," × ")}</span>`).join("")}</div><button class="pri" id="pw">Practice weak spots</button>`:`<p class="hint">Nothing here yet. Questions you miss show up so you can practice them.</p>`} <button class="sm" id="reset" style="margin-left:8px">Reset progress</button></div>`;
+  const T=tot(),acc=T.ans?Math.round(T.ok/T.ans*100):0,w=Object.entries(P.weak).sort((a,b)=>b[1]-a[1]).slice(0,12),t=dn();
+  const lvl=Math.floor(T.xp/100)+1,got=Object.keys(P.ach).length;
+  const days=Array.from({length:14},(_,i)=>t-13+i),vals=days.map(d=>P.dh[d]||0),mx=Math.max(1,...vals);
+  const bars=days.map((d,i)=>`<div class="${d===t?"t":""}" title="${vals[i]} XP"><i style="height:${Math.max(2,Math.round(vals[i]/mx*70))}px"></i>${"SMTWTFS"[new Date(d*864e5).getUTCDay()]}</div>`).join("");
+  const N=20;let mm=`<div class="mm" style="grid-template-columns:repeat(${N+1},1fr)"><div class="h">×</div>`;
+  for(let j=1;j<=N;j++)mm+=`<div class="h">${j}</div>`;
+  for(let i=1;i<=N;i++){mm+=`<div class="h">${i}</div>`;for(let j=1;j<=N;j++)mm+=`<div class="m${mlev(fact(i,j))}" data-a="${i}" data-b="${j}">${i*j}</div>`}
+  mm+=`</div>`;
+  const nm=Object.entries(P.ms).filter(([,e])=>mlev(e)===3).length;
+  $("view").innerHTML=`<div class="stack">
+  <div class="card hero"><div><div class="lvn">Level ${lvl}</div><div class="rk">${rankOf(lvl)}</div></div><div style="flex:1;min-width:200px"><div class="pb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${T.xp%100}"><b style="width:${T.xp%100}%"></b></div><div class="hint" style="margin:0">${100-T.xp%100} XP to level ${lvl+1}${U?" · account total":""}</div></div></div>
+  <div class="ph"><div><b>${T.xp}</b>total XP${U?" (account)":""}</div><div><b>${acc}%</b>accuracy</div><div><b>${T.ans}</b>answered</div><div><b>${nm}</b>facts mastered</div><div><b>${P.bs}</b>best streak</div><div><b>${P.speed}</b>best speed round</div><div><b>${P.tests}</b>tests taken</div><div><b>${P.sk.best}</b>best day streak</div></div>
+  <div class="card"><h2>Last 14 days</h2><div class="hint" style="margin:0">XP earned on this login. Today is highlighted.</div><div class="b14">${bars}</div></div>
+  <div class="card chart"><h2>Mastery map</h2><div class="hint" style="margin:0 0 8px" id="md">Tap a square to see how well you know that fact. Facts up to 20 × 20 are tracked.</div>${mm}<div class="lgd"><span><i></i>Not tried</span><span><i class="m1"></i>Learning</span><span><i class="m2"></i>Getting there</span><span><i class="m3"></i>Mastered</span></div></div>
+  <div class="card"><h2>Achievements <span class="hint">${got} of ${ACH.length}</span></h2><div class="ag">${ACH.map(([id,ic,ti,ds])=>`<div class="ac ${P.ach[id]?"":"lock"}"><div class="ai">${ic}</div><div><b>${ti}</b><span>${ds}</span></div></div>`).join("")}</div></div>
+  <div class="card"><h2>Weak spots</h2>${w.length?`<div class="weak">${w.map(([k])=>`<span>${k.replace("x"," × ")}</span>`).join("")}</div><button class="pri" id="pw">Practice weak spots</button>`:`<p class="hint" style="margin-top:4px">Nothing here yet. Questions you miss show up so you can practice them.</p>`} <button class="sm" id="reset" style="margin-left:8px">Reset ${U?"this login's":"my"} progress</button></div></div>`;
+  document.querySelectorAll(".mm [data-a]").forEach(e=>e.onclick=()=>{const a=+e.dataset.a,b=+e.dataset.b,f=fact(a,b);$("md").textContent=`${a} × ${b} = ${a*b}. `+(f?`${["","Learning","Getting there","Mastered"][mlev(f)]}. Seen ${f[1]} time${f[1]>1?"s":""}, missed ${f[3]}.`:"Not tried yet.")});
   if($("pw"))$("pw").onclick=()=>{weakMode=true;mode="type";start()};
-  $("reset").onclick=()=>{if(confirm("Reset all progress?")){P=def();save();start()}};
+  $("reset").onclick=()=>{if(confirm(U?"Reset the progress of this login? Its XP is removed from your account total.":"Reset all progress?")){if(U){delete OUTS[U.uid+":"+U.h];LS.set("tt_out",OUTS);P=norm();dupd(U.uid,{["logins."+U.h+".s"]:P}).catch(()=>{})}else{P=norm();save()}start()}};
 }
-update();authEmail();
+/* ================= Profile, public page, analytics =================
+ Firestore (same "accounts" collection):
+   accounts/{uid}.profile = {f:{field:value}, v:{field:"public"|"members"|"me"}, share:bool}   (owner's full copy)
+   accounts/p_{uid}  = public snapshot  (anyone with the link)
+   accounts/pm_{uid} = signed-in snapshot (only read by the app when the viewer is signed in)
+ Each field has its own visibility, so a field marked "Only me" is never copied into p_ or pm_. */
+const has=v=>v!==undefined&&v!==null&&String(v).trim()!=="";
+const AV=["🙂","😎","🦊","🐼","🦁","🐯","🚀","🧠","⭐","🎯","🐙","🦉"];
+const SOC=[["linkedin","LinkedIn","https://www.linkedin.com/in/","your-handle or full URL"],["github","GitHub","https://github.com/","username"],["x","X (Twitter)","https://x.com/","@handle"],["instagram","Instagram","https://instagram.com/","@handle"],["youtube","YouTube","https://youtube.com/@","@channel"],["facebook","Facebook","https://facebook.com/","username or full URL"],["website","Website","","https://your-site.com"]];
+const GAMES=[["gplay","Google Play Games ID","Player name or ID"],["steam","Steam ID","Friend code or name"],["xbox","Xbox Gamertag",""],["psn","PlayStation ID",""],["epic","Epic Games ID",""],["discord","Discord username",""],["chess","Chess.com / Lichess",""],["othergame","Other game IDs","e.g. Free Fire: 12345, BGMI: Name"]];
+const FIELDS=[
+ {k:"av",l:"Avatar",g:"a",w:5,t:"av",dv:"public"},
+ {k:"headline",l:"Headline",g:"a",w:5,t:"text",ph:"e.g. Class 8 student · loves maths",dv:"public"},
+ {k:"bio",l:"About me",g:"a",w:10,t:"area",ph:"A few lines about you and why you practise",dv:"public"},
+ {k:"dob",l:"Date of birth (shown as age only)",g:"a",w:5,t:"date",dv:"members"},
+ {k:"location",l:"City / country",g:"a",w:5,t:"text",ph:"e.g. Hyderabad, India",dv:"members"},
+ {k:"goal",l:"My learning goal",g:"a",w:5,t:"text",ph:"e.g. Master every table up to 20 by December",dv:"public"},
+ {k:"edu",l:"Education",g:"e",w:15,t:"area",ph:"School or college, course, years (one per line)",dv:"members"},
+ {k:"work",l:"Work / experience",g:"e",w:10,t:"area",ph:"Role, organisation, years (optional)",dv:"members"},
+ {k:"skills",l:"Skills",g:"e",w:5,t:"text",ph:"Comma separated: Maths, Python, Chess",dv:"public"},
+ {k:"hobbies",l:"Hobbies and interests",g:"i",w:10,t:"text",ph:"Comma separated: Cricket, Chess, Drawing",dv:"public"},
+ ...SOC.map(([k,l,,ph])=>({k,l,g:"s",w:0,t:"text",ph,dv:"members"})),
+ ...GAMES.map(([k,l,ph])=>({k,l,g:"g",w:0,t:"text",ph,dv:"members"}))
+];
+const CORE=FIELDS.filter(x=>x.w);
+function pscore(f){
+  let s=0;const miss=[];
+  for(const x of CORE){if(has(f[x.k]))s+=x.w;else miss.push([x.l,x.w,x.k])}
+  const sc=SOC.filter(x=>has(f[x[0]])).length,gc=GAMES.filter(x=>has(f[x[0]])).length;
+  s+=Math.min(15,sc*5)+Math.min(10,gc*5);
+  if(sc<3)miss.push(["a social profile",5,"linkedin"]);
+  if(gc<2)miss.push(["a gaming ID",5,"gplay"]);
+  return{s,miss:miss.sort((a,b)=>b[1]-a[1])};
+}
+const plabel=s=>s>=100?"All-star":s>=75?"Pro":s>=50?"Strong":s>=25?"Growing":"Starter";
+function ageOf(d){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||""));if(!m)return null;const n=new Date(),b=new Date(+m[1],+m[2]-1,+m[3]);if(isNaN(b))return null;let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a>=3&&a<=110?a:null}
+function linkOf(k,v){
+  v=String(v||"").trim();if(!v)return null;const s=SOC.find(x=>x[0]===k);
+  try{let u;if(/^https?:\/\//i.test(v))u=new URL(v);else if(k==="website")u=new URL("https://"+v);else if(s&&s[2])u=new URL(s[2]+encodeURIComponent(v.replace(/^@/,"")));else return null;return/^https?:$/.test(u.protocol)?u.href:null}catch(e){return null}
+}
+const fmt=n=>Number(n||0).toLocaleString();
+const copyTxt=async s=>{try{await navigator.clipboard.writeText(s);toast("Copied")}catch(e){const i=document.createElement("textarea");i.value=s;document.body.appendChild(i);i.select();try{document.execCommand("copy");toast("Copied")}catch(x){toast("Couldn't copy")}i.remove()}};
+
+/* ---- snapshots ---- */
+const tierOf=(pr,x)=>((pr.v||{})[x.k])||x.dv;
+function vf(pr,tier){const f=pr.f||{},o={};for(const x of FIELDS){const val=String(f[x.k]||"").trim();if(!val||tierOf(pr,x)!==tier)continue;if(x.k==="dob"){const a=ageOf(val);if(a!==null)o.dob=String(a)}else o[x.k]=val.slice(0,x.t==="area"?600:100)}return o}
+function allItems(pr){const f=pr.f||{},o=[];for(const x of FIELDS){const val=String(f[x.k]||"").trim();if(!val)continue;if(x.k==="dob"){const a=ageOf(val);if(a!==null)o.push(["dob",String(a),tierOf(pr,x)])}else o.push([x.k,val,tierOf(pr,x)])}return o}
+function buildPub(pr){
+  const T=tot(),lv=Math.floor(T.xp/100)+1,fm=vf(pr,"members");
+  return{uid:U.uid,un:pr.un||"",name:U.name,created:U.created||Date.now(),upd:Date.now(),lvl:lv,rank:rankOf(lv),xp:T.xp,acc:T.ans?Math.round(T.ok/T.ans*100):0,cur:P.sk.cur,best:P.sk.best,ach:Object.keys(P.ach).length,achN:ACH.length,nm:Object.keys(fm).length,f:vf(pr,"public")};
+}
+function buildMem(pr){
+  const T=tot(),t=dn();let mast="";
+  for(let i=1;i<=20;i++)for(let j=1;j<=20;j++)mast+=mlev(fact(i,j));
+  return{uid:U.uid,upd:Date.now(),ans:T.ans,speed:P.speed,tests:P.tests,bs:P.bs,mastered:mastered(),mast,d0:t,d14:Array.from({length:14},(_,i)=>P.dh[t-13+i]||0),achIds:Object.keys(P.ach),f:vf(pr,"members")};
+}
+let pubT=0;
+async function pubPush(){const pr=U.profile||{};await dset("p_"+U.uid,buildPub(pr));await dset("pm_"+U.uid,buildMem(pr))}
+async function pubDel(){await ddel("p_"+U.uid);await ddel("pm_"+U.uid)}
+function pubSync(force){if(!U||!(U.profile&&U.profile.share))return;if(!force&&Date.now()-pubT<60000)return;pubT=Date.now();pubPush().catch(()=>{pubT=0})}
+const shareURL=un=>profLink(un===undefined?(U&&U.profile&&U.profile.un):un);
+function shareText(){const T=tot(),lv=Math.floor(T.xp/100)+1,acc=T.ans?Math.round(T.ok/T.ans*100):0;return`I'm Level ${lv} (${rankOf(lv)}) on Table Trainer: ${fmt(T.xp)} XP, ${P.sk.cur}-day streak, ${acc}% accuracy.`}
+function shareHTML(un){
+  const u=shareURL(un),t=shareText(),e=encodeURIComponent,L=[["WhatsApp","https://wa.me/?text="+e(t+" "+u)],["LinkedIn","https://www.linkedin.com/sharing/share-offsite/?url="+e(u)],["X","https://twitter.com/intent/tweet?text="+e(t)+"&url="+e(u)],["Facebook","https://www.facebook.com/sharer/sharer.php?u="+e(u)],["Telegram","https://t.me/share/url?url="+e(u)+"&text="+e(t)],["Email","mailto:?subject="+e("My Table Trainer progress")+"&body="+e(t+"\n"+u)]];
+  return`<div class="shr">${L.map(([n,h])=>`<a class="sm" href="${esc(h)}" target="_blank" rel="noopener noreferrer">${n}</a>`).join("")}<button class="sm" data-sh="copy">🔗 Copy link</button>${navigator.share?`<button class="sm" data-sh="native">Share…</button>`:""}<button class="sm" data-sh="card">🖼 Download card</button></div>`;
+}
+function bindShare(root,un){
+  root.querySelectorAll("[data-sh]").forEach(b=>b.onclick=()=>{const a=b.dataset.sh;if(a==="copy")copyTxt(shareURL(un));else if(a==="card")cardPNG();else try{navigator.share({title:"My Table Trainer progress",text:shareText(),url:shareURL(un)})}catch(e){}});
+}
+function cardPNG(){
+  const c=document.createElement("canvas");c.width=1200;c.height=630;const g=c.getContext("2d"),T=tot(),lv=Math.floor(T.xp/100)+1,acc=T.ans?Math.round(T.ok/T.ans*100):0,F="Nunito,Segoe UI,system-ui,sans-serif";
+  const gr=g.createLinearGradient(0,0,1200,630);gr.addColorStop(0,"#5b3df5");gr.addColorStop(.6,"#8f5bff");gr.addColorStop(1,"#d946ef");g.fillStyle=gr;g.fillRect(0,0,1200,630);
+  g.fillStyle="#fff";g.font="800 34px "+F;g.fillText("✖  Table Trainer",60,85);
+  g.font="800 78px "+F;g.fillText(Array.from(U?U.name:"My progress").slice(0,22).join(""),60,230);
+  g.font="700 38px "+F;g.fillText("Level "+lv+" · "+rankOf(lv),60,292);
+  const K=[[fmt(T.xp),"Total XP"],[acc+"%","Accuracy"],[P.sk.cur+"🔥","Day streak"],[String(mastered()),"Tables mastered"]];
+  K.forEach(([n,l],i)=>{const x=60+i*278;g.fillStyle="rgba(255,255,255,.18)";g.fillRect(x,360,258,160);g.fillStyle="#fff";g.font="800 58px "+F;g.fillText(n,x+24,435);g.font="600 26px "+F;g.fillText(l,x+24,485)});
+  g.font="600 28px "+F;g.fillText("Practise multiplication. Build streaks. Master your tables.",60,586);
+  const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="table-trainer-progress.png";document.body.appendChild(a);a.click();a.remove();
+}
+
+/* ---- public / signed-in / owner page ---- */
+let PV=null;
+const SITE="https://practice-site.mobiledoctor.org.in/",PRETTY=false; /* PRETTY=true makes links look like /username (your host must then serve index.html for unknown paths) */
+const UN_RE=/^[a-z][a-z0-9_]{2,23}$/,UN_RESERVED=new Set(["admin","administrator","root","support","help","login","logout","signin","signup","index","home","api","www","about","privacy","terms","settings","profile","dashboard","table","tables","trainer","guest","anonymous","null","undefined","moderator","official"]);
+const PVID=()=>{let x=location.hash.match(/^#u=(TT-[A-HJ-NP-Z2-9]{10})$/);if(x)return x[1];x=location.hash.match(/^#\/@?([a-zA-Z][a-zA-Z0-9_]{2,23})\/?$/);if(x)return x[1].toLowerCase();x=location.pathname.match(/^\/@?([a-zA-Z][a-zA-Z0-9_]{2,23})\/?$/);return x&&!UN_RESERVED.has(x[1].toLowerCase())?x[1].toLowerCase():null};
+const profLink=un=>un?(PRETTY?SITE+un:SITE+"#/"+un):(U?SITE+"#u="+U.uid:SITE);
+function closePV(){PV=null;$("pubv").hidden=true;$("pubv").innerHTML="";if(PVID()){const b=/^\/@?[a-zA-Z]/.test(location.pathname)?"/":location.pathname;history.replaceState(null,"",b+location.search)}}
+function pvShell(inner){
+  const el=$("pubv");el.hidden=false;
+  el.innerHTML=`<div class="pvb"><div class="logo"><i aria-hidden="true">✖</i>Table Trainer</div><span class="sp"></span>${U?`<button class="ib" id="pva">👤 ${esc(Array.from(U.name).slice(0,12).join(""))}</button>`:`<button class="pri" id="pvs" style="padding:8px 14px">🔑 Login</button>`}<button class="sm" id="pvc">Open trainer</button></div><div class="pvw">${inner}</div>`;
+  if($("pva"))$("pva").onclick=()=>renderDash();if($("pvs"))$("pvs").onclick=()=>authHome();$("pvc").onclick=closePV;
+  el.querySelectorAll("[data-cp]").forEach(b=>b.onclick=()=>copyTxt(b.dataset.cp));
+  el.querySelectorAll("[data-signin]").forEach(b=>b.onclick=()=>authHome());
+  el.scrollTop=0;
+}
+function pvHTML(p,m,who,items){
+  const fs=Object.fromEntries(items.map(i=>[i[0],i])),val=k=>fs[k]?fs[k][1]:"";
+  const tag=k=>who==="owner"&&fs[k]?`<span class="tg" title="${fs[k][2]==="public"?"Public":fs[k][2]==="members"?"Signed-in only":"Only me"}">${fs[k][2]==="public"?"🌐":fs[k][2]==="members"?"🔒":"🙈"}</span>`:"";
+  const init=esc(val("av")||Array.from(p.name||"?")[0]||"?");
+  const chips=[];if(val("location"))chips.push("📍 "+esc(val("location")));if(val("dob"))chips.push("🎂 Age "+esc(val("dob")));chips.push("Joined "+new Date(p.created).toLocaleDateString(undefined,{month:"short",year:"numeric"}));
+  const hero=`<div class="cover"><div class="pav" aria-hidden="true">${init}</div><div style="flex:1;min-width:200px"><h1>${esc(p.name)}</h1>${p.un?`<div class="sub" style="opacity:.8">@${esc(p.un)}</div>`:""}${val("headline")?`<div class="sub">${esc(val("headline"))}</div>`:""}<div>${chips.map(c=>`<span class="chp">${c}</span>`).join("")}</div></div><div style="text-align:center"><div style="font-size:2.4rem;font-weight:800;line-height:1">Lv ${p.lvl}</div><div class="chp">${esc(p.rank)}</div></div></div>`;
+  const kp=`<div class="kp"><div><b>${p.lvl}</b>Level<small>${esc(p.rank)}</small></div><div><b>${fmt(p.xp)}</b>Total XP<small>${100-p.xp%100} to next level</small></div><div><b>${p.acc}%</b>Accuracy</div><div><b>${p.cur}🔥</b>Day streak<small>Best ${p.best}</small></div><div><b>${p.ach}/${p.achN}</b>Achievements</div></div><div class="pb" style="margin:0" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.xp%100}"><b style="width:${p.xp%100}%"></b></div>`;
+  const sec=(t,b)=>b?`<div class="card sec"><h2>${t}</h2>${b}</div>`:"";
+  const pills=s=>String(s).split(/[,;\n]/).map(x=>x.trim()).filter(Boolean).slice(0,24).map(x=>`<span class="pill">${esc(x)}</span>`).join("");
+  const about=(val("bio")?`<p class="pre">${esc(val("bio"))}${tag("bio")}</p>`:"")+(val("goal")?`<p><b>🎯 Goal:</b> ${esc(val("goal"))}${tag("goal")}</p>`:"");
+  const edu=val("edu")?`<p class="pre">${esc(val("edu"))}${tag("edu")}</p>`:"";
+  const work=(val("work")?`<p class="pre">${esc(val("work"))}${tag("work")}</p>`:"")+(val("skills")?`<div class="pills"><b class="hint" style="margin-right:4px">Skills</b>${pills(val("skills"))}${tag("skills")}</div>`:"");
+  const hob=val("hobbies")?`<div class="pills">${pills(val("hobbies"))}${tag("hobbies")}</div>`:"";
+  const soc=SOC.map(([k,l])=>{const u=linkOf(k,val(k));return u?`<a class="lnk" href="${esc(u)}" target="_blank" rel="noopener noreferrer nofollow">${l}${tag(k)}</a>`:""}).join("");
+  const gm=GAMES.map(([k,l])=>val(k)?`<button class="lnk" data-cp="${esc(val(k))}" title="Tap to copy"><small>${l}</small>&nbsp;${esc(val(k))}${tag(k)}</button>`:"").join("");
+  let mem="";
+  if(m){
+    const d=m.d0,mx=Math.max(1,...m.d14),bars=m.d14.map((v,i)=>`<div class="${i===13?"t":""}" title="${v} XP"><i style="height:${Math.max(2,Math.round(v/mx*70))}px"></i>${"SMTWTFS"[new Date((d-13+i)*864e5).getUTCDay()]}</div>`).join("");
+    const got=ACH.filter(a=>(m.achIds||[]).includes(a[0]));
+    mem=`<div class="kp"><div><b>${fmt(m.ans)}</b>Questions answered</div><div><b>${m.mastered}</b>Tables mastered</div><div><b>${m.speed}</b>Best speed round</div><div><b>${m.tests}</b>Tests taken</div><div><b>${m.bs}</b>Best answer streak</div></div>`
+     +sec("Activity (last 14 days)",`<div class="b14">${bars}</div>`)
+     +sec("Mastery map",`<div class="mm2">${[...String(m.mast||"")].map(c=>`<i class="m${c}"></i>`).join("")}</div><div class="lgd"><span><i></i>Not tried</span><span><i class="m1"></i>Learning</span><span><i class="m2"></i>Getting there</span><span><i class="m3"></i>Mastered</span></div>`)
+     +sec(`Achievements <span class="hint">${got.length} of ${ACH.length}</span>`,got.length?`<div class="ag">${got.map(([,ic,ti,ds])=>`<div class="ac"><div class="ai">${ic}</div><div><b>${ti}</b><span>${ds}</span></div></div>`).join("")}</div>`:`<p class="hint" style="margin:0">No achievements yet.</p>`);
+  }else{
+    mem=`<div class="card lk2"><div class="big" style="margin:0 0 6px">🔒 More details for signed-in users</div><p class="hint" style="margin:0 0 12px">Sign in with any Table Trainer account to see the mastery map, achievements, 14-day activity${p.nm?` and ${p.nm} more profile detail${p.nm>1?"s":""}`:""}.</p><button class="pri" data-signin>Sign in to unlock</button></div>`;
+  }
+  return hero+kp+sec("About",about)+sec("Education",edu)+sec("Work and skills",work)+sec("Hobbies and interests",hob)+sec("Social profiles",soc?`<div class="pills">${soc}</div>`:"")+sec("Gaming IDs",gm?`<div class="pills">${gm}</div>`:"")+mem
+   +`<div class="card" style="text-align:center"><b>Want a profile like this?</b><p class="hint" style="margin:6px 0 12px">Practise multiplication tables, build streaks and share your progress.</p><button class="pri" id="pvc2">Start practising</button></div>`;
+}
+async function showPublic(key){
+  PV=key;pvShell(`<div class="card" style="text-align:center">Loading profile…</div>`);
+  const nf=()=>pvShell(`<div class="card" style="text-align:center"><div class="big">🔍 Profile not found</div><p class="hint">No public profile exists at this address. The username may be misspelled, or the owner has turned the public page off.</p></div>`);
+  try{
+    let uid=key;
+    if(!/^TT-/.test(key)){const d=await dget("un_"+key);if(!d||!d.uid){nf();return}uid=d.uid}
+    if(U&&(U.uid===uid||(U.profile&&U.profile.un&&U.profile.un===key))){
+      const pr=U.profile||{};pvShell(`<div class="tip"><span>This is your own page. Tags show who can see each detail: 🌐 public, 🔒 signed-in, 🙈 only you. ${pr.share?"Your public page is <b>on</b>.":"Your public page is <b>off</b>, so others can't open this link yet."}</span><button class="pri" id="pe">✏️ Edit profile</button></div>`+pvHTML(buildPub(pr),buildMem(pr),"owner",allItems(pr)));$("pe").onclick=()=>{closePV();mode="profile";start();window.scrollTo({top:0,behavior:"smooth"})};hookCta();return}
+    let p=await dget("p_"+uid);
+    if(!p){const r=await dget("r_"+uid);if(r&&r.to){uid=r.to;p=await dget("p_"+uid)}}
+    if(!p){nf();return}
+    let m=null;if(U){try{m=await dget("pm_"+(p.uid||uid))}catch(e){}}
+    const items=Object.entries(p.f||{}).map(([k,v])=>[k,v,"public"]).concat(m?Object.entries(m.f||{}).map(([k,v])=>[k,v,"members"]):[]);
+    pvShell(pvHTML(p,m,m?"user":"anon",items));hookCta();
+  }catch(e){pvShell(`<div class="card" style="text-align:center">Can't load this profile. Check your connection and try again.</div>`)}
+}
+async function claimUn(un,old){const F=await fbp();await F.txn(async t=>{const d=un?await t.get("un_"+un):null,o=old&&old!==un?await t.get("un_"+old):null;if(d&&d.uid!==U.uid)throw new Error("taken");if(un)t.set("un_"+un,{uid:U.uid,at:Date.now()});if(o&&o.uid===U.uid)t.del("un_"+old)})}
+async function healUn(){const un=U&&U.profile&&U.profile.un;if(!un)return;try{const d=await dget("un_"+un);if(!d){await dset("un_"+un,{uid:U.uid,at:Date.now()});return}if(d.uid!==U.uid){const r=await resolve(d.uid);if(r&&r.uid===U.uid)await dset("un_"+un,{uid:U.uid,at:Date.now()})}}catch(e){}}
+const hookCta=()=>{const b=$("pvc2");if(b)b.onclick=closePV};
+addEventListener("hashchange",()=>{const id=PVID();if(id)showPublic(id);else if(PV)closePV()});
+
+/* ---- Profile tab ---- */
+let PD=null;
+function previewAs(t){
+  const pr={f:PD.f,v:PD.v,share:true},p=buildPub(pr),m=buildMem(pr),L={anon:"Public (not signed in)",user:"Signed-in user",owner:"You (owner)"};
+  const items=t==="owner"?allItems(pr):Object.entries(p.f).map(([k,v])=>[k,v,"public"]).concat(t==="user"?Object.entries(m.f).map(([k,v])=>[k,v,"members"]):[]);
+  PV=null;pvShell(`<div class="tip"><span>Preview: how this looks to <b>${L[t]}</b>. Unsaved edits are included.</span><button class="sm" id="pvx">Back to editing</button></div>`+pvHTML(p,t==="anon"?null:m,t,items));$("pvx").onclick=closePV;hookCta();
+}
+function profileT(){
+  if(!U){
+    $("view").innerHTML=`<div class="card" style="text-align:center;max-width:580px;margin:0 auto"><div class="big">👤 Build your profile</div><p class="hint">Create a free account to add your details (name, age, education, hobbies, social profiles, game IDs), get a profile score, and share a public progress page on LinkedIn, WhatsApp and more. Everything is optional and you choose who sees each detail.</p><div class="act"><button class="pri" id="ps">Sign in or create account</button></div></div>`;$("ps").onclick=()=>authHome();return;
+  }
+  const adm=true,dis="";
+  PD=JSON.parse(JSON.stringify(Object.assign({f:{},v:{},share:false},U.profile||{})));PD.f=PD.f||{};PD.v=PD.v||{};
+  const today=new Date().toISOString().slice(0,10);
+  const vsel=k=>`<select data-v="${k}" aria-label="Who can see this" ${dis}>${[["public","🌐 Public"],["members","🔒 Signed-in"],["me","🙈 Only me"]].map(([a,b])=>`<option value="${a}" ${(PD.v[k]||FIELDS.find(x=>x.k===k).dv)===a?"selected":""}>${b}</option>`).join("")}</select>`;
+  const inp=x=>{const v=esc(PD.f[x.k]||"");
+    if(x.t==="area")return`<textarea id="pf_${x.k}" data-k="${x.k}" maxlength="600" rows="3" placeholder="${esc(x.ph||"")}" ${dis}>${v}</textarea>`;
+    if(x.t==="av")return`<select id="pf_av" data-k="av" aria-label="Avatar" ${dis}><option value="">Use my initial</option>${AV.map(a=>`<option ${PD.f.av===a?"selected":""}>${a}</option>`).join("")}</select>`;
+    return`<input type="${x.t==="date"?"date":"text"}" id="pf_${x.k}" data-k="${x.k}" maxlength="100" ${x.t==="date"?`max="${today}"`:""} value="${v}" placeholder="${esc(x.ph||"")}" ${dis}>`};
+  const row=x=>`<div class="fr"><label for="pf_${x.k}">${x.l}${x.w?` <span class="tg">+${x.w}%</span>`:""}</label><div class="fi">${inp(x)}${vsel(x.k)}</div></div>`;
+  const grp=(t,d,g)=>`<div class="card"><h2 style="margin-top:0">${t}</h2>${d?`<p class="hint" style="margin:-4px 0 12px">${d}</p>`:""}${FIELDS.filter(x=>x.g===g).map(row).join("")}</div>`;
+  $("view").innerHTML=`<div class="pfw"><div id="pform" class="stack">
+   <div class="card"><h2 style="margin-top:0">Name and public link</h2><div class="fi"><input type="text" id="pf_name" maxlength="30" value="${esc(U.name)}" aria-label="Display name" ${dis}></div><label for="pf_un" style="margin-top:14px">Public username</label><div class="fi"><span class="hint" style="margin:0;align-self:center;white-space:nowrap">${SITE.replace("https://","")}${PRETTY?"":"#/"}</span><input type="text" id="pf_un" maxlength="24" value="${esc(PD.un||"")}" placeholder="yourname" autocapitalize="none" autocomplete="off" spellcheck="false"></div><div class="hint" id="unmsg" style="margin:6px 0 0">Letters, numbers and _ (3 to 24). Anyone can open this link to see your public details.</div><p class="hint" style="margin:10px 0 0">Always shown on your public page. Everything else is optional, and each detail has its own visibility: 🌐 anyone with the link, 🔒 only people signed in to Table Trainer, 🙈 only you.${adm?"":" Only guild admins can edit the profile."}</p></div>
+   ${grp("About you","Date of birth is never shown. Only your age appears.","a")}${grp("Education and work","","e")}${grp("Interests","","i")}${grp("Social profiles","Add up to 3 for +5% each. You can paste a handle or the full link.","s")}${grp("Gaming IDs","Google Play Games, Steam and more. +5% for each of the first two.","g")}
+   <div class="act" style="justify-content:flex-start"><button class="pri" id="psave" ${dis}>Save profile</button><span class="hint" id="pmsg" style="margin:0"></span></div></div>
+   <aside id="pfside" class="pfs"></aside></div>`;
+  const side=()=>{
+    const sc=pscore(PD.f),pc=sc.s;
+    $("pfside").innerHTML=`<div class="card"><div class="goal"><div class="ring ${pc>=100?"done":""}" style="--p:${pc};width:84px;height:84px"><b style="font-size:1.1rem">${pc}%</b></div><div><b>Profile strength</b><div style="font-size:1.3rem;font-weight:800;color:var(--acc-t)">${plabel(pc)}</div></div></div>
+     ${sc.miss.length?`<div class="hint" style="margin:12px 0 6px"><b>Next steps</b></div><div class="sug">${sc.miss.slice(0,4).map(([l,w,k])=>`<button class="sm" data-f="${k}">+${w}% Add ${l.toLowerCase()}</button>`).join("")}</div>`:`<p class="ok" style="font-weight:700;margin:12px 0 0">Complete profile. Nice work!</p>`}</div>
+     <div class="card"><div class="sr" style="padding-top:0"><div><b>Public page</b><small>Anyone with your link sees your public details.</small></div><label class="sw" style="margin:0"><input type="checkbox" id="psh" ${PD.share?"checked":""} ${dis}><span></span></label></div>
+     <label for="plink" style="margin-top:12px">Your link</label><div class="fi"><input type="text" id="plink" readonly value="${esc(shareURL(PD.un||""))}"><button class="sm" id="pcl">Copy</button></div>
+     <div class="hint" style="margin:6px 0 10px">${PD.share?"Save to publish your latest changes.":"Turn on the public page and save to make this link work."} <a href="${esc(shareURL(PD.un||""))}" target="_blank" rel="noopener">Open my page ↗</a></div>${shareHTML(PD.un||"")}
+     <div class="hint" style="margin:14px 0 6px"><b>Preview as</b></div><div class="shr"><button class="sm" data-pv="anon">Public</button><button class="sm" data-pv="user">Signed-in</button><button class="sm" data-pv="owner">Me</button></div></div>`;
+    $("pfside").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{const e=$("pf_"+b.dataset.f);if(e){e.scrollIntoView({behavior:"smooth",block:"center"});e.focus()}});
+    $("psh").onchange=e=>{PD.share=e.target.checked;side()};$("pcl").onclick=()=>copyTxt(shareURL(PD.un||""));
+    $("pfside").querySelectorAll("[data-pv]").forEach(b=>b.onclick=()=>previewAs(b.dataset.pv));bindShare($("pfside"),PD.un||"");
+  };
+  side();
+  let unT;$("pf_un").addEventListener("input",()=>{const v=$("pf_un").value.trim().toLowerCase().replace(/^@/,"");PD.un=v;side();const m=$("unmsg");clearTimeout(unT);if(!v){m.className="hint";m.textContent="No username: your link will use your User ID.";return}if(!UN_RE.test(v)||UN_RESERVED.has(v)){m.className="er";m.textContent="Use 3 to 24 letters, numbers or _, starting with a letter.";return}m.className="hint";m.textContent="Checking…";unT=setTimeout(async()=>{try{const d=await dget("un_"+v);if(PD.un!==v)return;const ok=!d||d.uid===U.uid;m.className=ok?"hint ok":"er";m.textContent=ok?"✅ @"+v+" is available":"That username is taken."}catch(e){m.textContent=""}},400)});
+  document.querySelectorAll("#pform [data-k]").forEach(e=>["input","change"].forEach(ev=>e.addEventListener(ev,()=>{PD.f[e.dataset.k]=e.value;side()})));
+  document.querySelectorAll("#pform [data-v]").forEach(e=>e.onchange=()=>{PD.v[e.dataset.v]=e.value});
+  $("psave").onclick=async()=>{
+    const b=$("psave");b.disabled=true;const nm=cleanName($("pf_name").value);
+    try{
+      const f={};for(const x of FIELDS){const v=String(PD.f[x.k]||"").trim();if(v)f[x.k]=v.slice(0,x.t==="area"?600:100)}
+      const un=String(PD.un||"").trim().toLowerCase().replace(/^@/,""),old=(U.profile||{}).un||"";
+      if(un&&(!UN_RE.test(un)||UN_RESERVED.has(un))){b.disabled=false;$("pmsg").textContent="That username isn't allowed. Use 3 to 24 letters, numbers or _.";return}
+      if(un!==old)await claimUn(un,old);
+      const prof={f,v:PD.v,share:!!PD.share,un,upd:Date.now()},up={profile:prof};if(nm&&nm!==U.name)up.name=nm;
+      await dupd(U.uid,up);U.profile=prof;if(up.name){U.name=nm;acctBtn()}
+      if(prof.share){pubT=Date.now();await pubPush()}else await pubDel();
+      toast(prof.share?"✅ Profile saved and published":"✅ Profile saved");profileT();
+    }catch(e){b.disabled=false;$("pmsg").textContent=e.message==="taken"?"That username is taken. Pick another one.":"Couldn't save. Check your connection and try again."}
+  };
+}
+
+/* ---- Analytics dashboard tab ---- */
+function dashT(){
+  const T=tot(),t=dn(),acc=T.ans?Math.round(T.ok/T.ans*100):0,lvl=Math.floor(T.xp/100)+1,need=100-T.xp%100;
+  const D=n=>Array.from({length:n},(_,i)=>t-n+1+i),L30=D(30),L14=D(14);
+  const xp30=L30.map(d=>P.dh[d]||0),mx=Math.max(1,...xp30),wk=xp30.slice(23).reduce((a,b)=>a+b,0),pw=xp30.slice(16,23).reduce((a,b)=>a+b,0);
+  const dlt=pw?Math.round((wk-pw)/pw*100):null,avg=wk/7,eta=avg>0?Math.ceil(need/avg):null,dd=P.dd||{};
+  const a14=L14.map(d=>{const e=dd[d];return e&&e[0]?Math.round(e[1]/e[0]*100):null});
+  const ents=Object.entries(P.ms),due=ents.filter(([,e])=>e[0]<5&&t-e[2]>=BOX_DAYS[e[0]]).length,mst=ents.filter(([,e])=>mlev(e)===3).length,act=L30.filter(d=>(P.dh[d]||0)>0).length;
+  const rows=Array.from({length:12},(_,i)=>{const a=i+1,c=[0,0,0,0];for(let m=1;m<=12;m++)c[mlev(fact(a,m))]++;return[a,c]});
+  const tried=rows.filter(([,c])=>c[0]<12).map(([a,c])=>[a,(c[3]*3+c[2]*2+c[1])/36]).sort((x,y)=>y[1]-x[1]);
+  const weakF=ents.filter(([,e])=>e[3]>0).sort((x,y)=>y[1][3]-x[1][3]||x[1][0]-y[1][0]).slice(0,8);
+  const ins=[];
+  if(tried.length>1)ins.push(`Strongest table: <b>×${tried[0][0]}</b>. Needs the most work: <b>×${tried[tried.length-1][0]}</b>.`);
+  else if(tried.length===1)ins.push(`You've started the <b>×${tried[0][0]}</b> table. Try another one to compare.`);
+  if(eta!==null)ins.push(`At your 7-day pace (${Math.round(avg)} XP a day) you reach <b>level ${lvl+1}</b> in about <b>${eta} day${eta>1?"s":""}</b>.`);else ins.push(`Practise today to start tracking your pace. ${need} XP to level ${lvl+1}.`);
+  if(due)ins.push(`<b>${due}</b> fact${due>1?"s are":" is"} due for review today. Switch on Smart review and practise.`);
+  if(P.sk.cur>0)ins.push(`You're on a <b>${P.sk.cur}-day streak</b>${P.sk.cur>=P.sk.best?" (a personal best!)":`. Your best is ${P.sk.best}.`}`);
+  const ps=U?pscore((U.profile||{}).f||{}).s:0;
+  const bars=(vals,lab,fn)=>vals.map((v,i)=>`<div class="${i===vals.length-1?"t":""}" title="${fn(v,i)}"><i style="height:${Math.max(2,v===null?2:Math.round(v))}px"></i>${lab(i)}</div>`).join("");
+  $("view").innerHTML=`<div class="stack">
+   <div class="bar2" style="margin:0"><h2 style="margin:0">Your dashboard</h2><span class="sp"></span><button class="sm" id="dsh">📤 Share progress</button><button class="sm" id="dcsv">⬇ Export CSV</button></div>
+   <div class="ph"><div><b>${lvl}</b>level · ${rankOf(lvl)}</div><div><b>${fmt(T.xp)}</b>total XP</div><div><b>${acc}%</b>accuracy</div><div><b>${fmt(T.ans)}</b>answered</div><div><b>${P.sk.cur}🔥</b>day streak</div><div><b>${mst}</b>facts mastered</div><div><b>${due}</b>due for review</div><div><b>${act}/30</b>active days</div></div>
+   <div class="cols"><div class="card"><h2 style="margin-top:0">XP, last 30 days</h2><div class="hint" style="margin:0">This week ${wk} XP${dlt===null?"":` (${dlt>=0?"+":""}${dlt}% vs last week)`}</div><div class="b14 b30">${bars(xp30.map(v=>v/mx*70),i=>i%5===4||i===29?new Date(L30[i]*864e5).getUTCDate():"&nbsp;",(v,i)=>xp30[i]+" XP")}</div></div>
+   <div class="card"><h2 style="margin-top:0">Accuracy, last 14 days</h2><div class="hint" style="margin:0">Share of answers that were right each day</div><div class="b14">${bars(a14.map(v=>v===null?null:v*.7),i=>"SMTWTFS"[new Date(L14[i]*864e5).getUTCDay()],(v,i)=>a14[i]===null?"No practice":a14[i]+"% of "+(dd[L14[i]]||[0])[0]+" answers")}</div></div></div>
+   <div class="cols"><div class="card"><h2 style="margin-top:0">Mastery by table (×1 to ×12)</h2>${rows.map(([a,c])=>`<div class="tr2"><b>×${a}</b><div class="sb" title="${c[3]} mastered, ${c[2]} getting there, ${c[1]} learning, ${c[0]} not tried"><i class="s3" style="width:${c[3]/12*100}%"></i><i class="s2" style="width:${c[2]/12*100}%"></i><i class="s1" style="width:${c[1]/12*100}%"></i></div><span>${Math.round(c[3]/12*100)}%</span></div>`).join("")}<div class="lgd"><span><i class="s3"></i>Mastered</span><span><i class="s2"></i>Getting there</span><span><i class="s1"></i>Learning</span><span><i></i>Not tried</span></div></div>
+   <div class="stack"><div class="card"><h2 style="margin-top:0">Insights</h2>${ins.map(x=>`<p style="margin:0 0 10px">${x}</p>`).join("")}</div>
+   <div class="card"><h2 style="margin-top:0">Trickiest facts</h2>${weakF.length?`<div class="rt">${weakF.map(([k,e])=>`<div><span>${k.replace("x"," × ")}</span><span class="bad">missed ${e[3]}× · seen ${e[1]}×</span></div>`).join("")}</div><div class="act" style="justify-content:flex-start"><button class="pri" id="dpw">Practise weak spots</button></div>`:`<p class="hint" style="margin:0">No misses recorded yet. Keep practising!</p>`}</div>
+   <div class="card"><h2 style="margin-top:0">Profile</h2>${U?`<div class="goal"><div class="ring ${ps>=100?"done":""}" style="--p:${ps}"><b>${ps}%</b></div><div><b>${plabel(ps)} profile</b><div class="hint" style="margin:0">${(U.profile||{}).share?"Public page is on.":"Public page is off."}</div></div></div><div class="act" style="justify-content:flex-start"><button class="sm" id="dpf">Edit profile</button></div>`:`<p class="hint" style="margin:0 0 10px">Sign in to build a profile and share a public progress page.</p><button class="sm" id="dsi">Sign in</button>`}</div></div></div></div>`;
+  $("dsh").onclick=()=>{openModal(`<div class="mh"><h2 id="mt">Share your progress</h2><button class="sm" id="mx">Close</button></div><p>${esc(shareText())}</p>${U&&U.profile&&U.profile.share?"":`<p class="hint">${U?"Your public page is off, so the link only opens the trainer. Turn it on in Profile to share a page with your details.":"Sign in and turn on your public page to share a personal link."}</p>`}${shareHTML()}`);$("mx").onclick=closeModal;bindShare(MD())};
+  $("dcsv").onclick=()=>dl("table-trainer-facts.csv",csvOut(),"text/csv");
+  if($("dpw"))$("dpw").onclick=()=>{weakMode=true;mode="type";start()};
+  if($("dpf"))$("dpf").onclick=()=>{mode="profile";start()};if($("dsi"))$("dsi").onclick=()=>authHome();
+}
+
+async function boot(){
+  acctBtn();const s=LS.get("tt_sess"),pid=PVID();if(pid)PV=pid;
+  if(s){try{const a=await resolve(s.uid);if(a&&a.logins&&a.logins[s.h]&&a.logins[s.h].t){login(a,s.h,0,s.uid);return}}catch(e){}}
+  if(pid)showPublic(pid);else authHome();
+}
+$("smart").checked=PREF.smart;$("smart").onchange=e=>{PREF.smart=e.target.checked;savePref()};
+tip();update();boot();
 </script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,deleteField,runTransaction,increment} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const app=initializeApp({apiKey:"AIzaSyD8LcxmPzoI5Ru8tL1oaWWUHsFJFn7MPfk",authDomain:"tabletrainer.firebaseapp.com",projectId:"tabletrainer",storageBucket:"tabletrainer.firebasestorage.app",messagingSenderId:"19695469245",appId:"1:19695469245:web:962552c71ac9448243edd4"});
-const db=getFirestore(app),auth=getAuth(app);
+const db=getFirestore(app),auth=getAuth(app),ref=id=>doc(db,"accounts",id),cl=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v===null?deleteField():(v&&v.__inc!==undefined?increment(v.__inc):v)]));
 window.FB={ready:signInAnonymously(auth).catch(e=>console.warn("Anonymous sign-in failed",e)),
-  get:async h=>{const x=await getDoc(doc(db,"accounts",h));return x.exists()?x.data():null},
-  set:(h,d)=>setDoc(doc(db,"accounts",h),d)};
+  get:async id=>{const x=await getDoc(ref(id));return x.exists()?x.data():null},
+  set:(id,d)=>setDoc(ref(id),d),
+  upd:(id,o)=>updateDoc(ref(id),cl(o)),
+  del:id=>deleteDoc(ref(id)),
+  txn:fn=>runTransaction(db,async t=>fn({get:async id=>{const x=await t.get(ref(id));return x.exists()?x.data():null},set:(id,d)=>t.set(ref(id),d),upd:(id,o)=>t.update(ref(id),cl(o)),del:id=>t.delete(ref(id))}))};
 </script>
 </body>
 </html>

@@ -461,9 +461,13 @@ const dev=()=>{const u=navigator.userAgent,os=/Android/.test(u)?"Android":/iPhon
 const ago=ts=>{if(!ts)return"never";const s=(Date.now()-ts)/1e3;return s<90?"just now":s<5400?Math.round(s/60)+" min ago":s<129600?Math.round(s/3600)+" h ago":Math.round(s/86400)+" d ago"};
 async function newUid(){const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";for(let i=0;i<8;i++){const id="TT-"+[...crypto.getRandomValues(new Uint8Array(10))].map(x=>A[x%32]).join("");if(!await dget(id))return id}throw new Error("id")}
 /* login -> accounts index. A login may sit in several accounts; merged accounts redirect to their successor. */
-const ixGet=async h=>{const d=await dget("i_"+h);return d?(d.uids||[d.uid]).filter(Boolean):[]};
-const ixAdd=async(h,u)=>{const l=await ixGet(h);if(!l.includes(u))await dset("i_"+h,{uids:[...l,u]})};
-const ixDel=async(h,u)=>{const l=(await ixGet(h)).filter(x=>x!==u);l.length?await dset("i_"+h,{uids:l}):await ddel("i_"+h)};
+const ixDoc=async h=>(await dget("i_"+h))||{};
+const ixList=d=>(d.uids||(d.uid?[d.uid]:[])).filter(Boolean);
+const ixGet=async h=>ixList(await ixDoc(h));
+const ixSave=async(h,uids,fa)=>{fa=(fa||[]).filter(Boolean).slice(0,20);if(!uids.length&&!fa.length)await ddel("i_"+h);else{const o={uids};if(fa.length)o.fa=fa;await dset("i_"+h,o)}};
+const ixAdd=async(h,u)=>{const d=await ixDoc(h),l=ixList(d);if(!l.includes(u))await ixSave(h,[...l,u],d.fa)};
+const ixDel=async(h,u)=>{const d=await ixDoc(h);await ixSave(h,ixList(d).filter(x=>x!==u),d.fa)};
+const ixFa=async(h,u,on)=>{const d=await ixDoc(h),f=(d.fa||[]).filter(x=>x!==u);if(on)f.push(u);await ixSave(h,ixList(d),f)};
 /* A merged guild's old ID is deleted and released to the ID pool. Until it is reused, a small redirect doc r_<oldId> points to the successor.
    Legacy tombstones (mergedInto) are still followed. */
 async function resolve(u){for(let i=0;i<8&&u;i++){const a=await dget(u);if(a&&!a.mergedInto)return a;if(a){u=a.mergedInto;continue}const r=await dget("r_"+u);if(!r||!r.to)return null;u=r.to}return null}
@@ -502,7 +506,7 @@ function flush(){
 }
 addEventListener("pagehide",flush);document.addEventListener("visibilitychange",()=>{if(document.hidden)flush()});
 async function poll(){if(!U||document.hidden)return;try{let a=await dget(U.uid);if(a&&!a.mergedInto&&a.pend&&a.pend<curEp()){await consolidate(a.pend);a=await dget(U.uid);if(a&&!a.mergedInto&&a.pend)dupd(U.uid,{pend:null}).catch(()=>{})}if(!a||a.mergedInto){const z=await resolve(U.uid);if(z&&z.uid!==U.uid&&z.logins&&z.logins[U.h]&&z.logins[U.h].t){login(z,U.h,0,U.uid);toast("Your guild was merged into "+z.uid);return}signOut(a?"This guild was merged. Please sign in again.":"This login was removed from the guild.",1);return}if(!a.logins||!a.logins[U.h]||!a.logins[U.h].t){signOut("This login was removed from the guild.",1);return}
-  U.name=a.name;U.profile=a.profile||{};U.lock=!!a.lock;U.base=a.base||null;U.logins=a.logins;U.roles=a.roles||allAdmin(a.logins);U.tree=a.tree||null;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp());gLoad(a);gAuto();acctBtn();hud();if(dashOn&&!A().contains(document.activeElement))renderDash()}catch(e){}}
+  U.name=a.name;U.profile=a.profile||{};U.lock=!!a.lock;U.base=a.base||null;U.logins=a.logins;U.roles=a.roles||allAdmin(a.logins);U.tree=a.tree||null;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp());gLoad(a);gAuto();adminFallback();if(++POLLN%4===0)socInit();acctBtn();hud();if(dashOn&&!A().contains(document.activeElement))renderDash()}catch(e){}}
 
 const phoneField=p=>`<label for="${p}c">Country (pick or type a name)</label><div class="ph2"><input type="text" id="${p}c" list="cl" value="India" autocomplete="off"><input type="text" id="${p}k" value="+91" inputmode="tel" aria-label="Country code"></div><label for="${p}n">Phone number</label><input type="text" id="${p}n" inputmode="numeric" placeholder="Phone number" autocomplete="off">`;
 const wire=(p,btn)=>{$(p+"c").oninput=()=>{const c=COUNTRIES.find(x=>x.n.toLowerCase()===$(p+"c").value.trim().toLowerCase());if(c)$(p+"k").value="+"+c.c};$(p+"n").onkeydown=e=>{if(e.key==="Enter")$(btn).click()}};
@@ -528,7 +532,7 @@ const acctBtn=()=>{$("acct").textContent=U?"👤 "+Array.from(U.name).slice(0,12
 $("hedit").onclick=()=>{closePV();A().hidden=true;mode="profile";start();window.scrollTo({top:0,behavior:"smooth"})};
 
 function authHome(msg=""){
-  shell(`<h2>Sign in or create account</h2><p class="hint" style="margin:0">Use any email or phone linked to your account. No password needed.</p>${mf("l")}${msgH(msg)}<button class="pri" id="go1">Continue</button><div class="two" style="margin-top:10px"><button class="sm" id="jn">Join with a User ID</button><button class="sm" id="gs">Continue as guest</button></div><label for="fu" style="margin-top:16px">View a public profile by username</label><div class="fi"><input type="text" id="fu" placeholder="username" autocapitalize="none" autocomplete="off" spellcheck="false"><button class="sm" id="fub">View</button></div>`);
+  shell(`<h2>Sign in or create account</h2><p class="hint" style="margin:0">Use any email or phone linked to your account. No password needed.</p>${mf("l")}${msgH(msg)}<button class="pri" id="go1">Continue</button><div class="two" style="margin-top:10px"><button class="sm" id="jn">Join with a guild code</button><button class="sm" id="gs">Continue as guest</button></div><label for="fu" style="margin-top:16px">View a public profile by username</label><div class="fi"><input type="text" id="fu" placeholder="username" autocapitalize="none" autocomplete="off" spellcheck="false"><button class="sm" id="fub">View</button></div>`);
   mfw("l","go1");
   $("go1").onclick=guard("go1",async()=>{const l=await rl("l");if(l.err){$("er").textContent=l.err;return}
     const seen=new Set(),L=[];
@@ -552,15 +556,26 @@ function authSignup(l){
     await dset(uid,a);await ixAdd(l.h,uid);login(a,l.h,true)});
 }
 function authJoin(){
-  shell(`<h2>Join an existing account</h2><p class="hint" style="margin:0">Enter the account's User ID and the email or phone you want to link. The owner will see your login on their dashboard.</p><label for="jid">User ID</label><input type="text" id="jid" placeholder="TT-XXXXXXXXXX" autocomplete="off" autocapitalize="characters">${mf("j")}${msgH("")}<button class="pri" id="go4">Join account</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
+  shell(`<h2>Join a guild</h2><p class="hint" style="margin:0">Enter the guild invite code (it looks like GD-ABCD2345) and the email or phone you want to link. Ask one of the guild's admins for the code. Private account IDs and public friend IDs can't be used to join.</p><label for="jid">Guild invite code</label><input type="text" id="jid" placeholder="GD-XXXXXXXX" autocomplete="off" autocapitalize="characters">${mf("j")}${msgH("")}<button class="pri" id="go4">Join guild</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
   mfw("j","go4");$("bk").onclick=()=>authHome();
-  $("go4").onclick=guard("go4",async()=>{const id=$("jid").value.trim().toUpperCase();if(!/^TT-[A-HJ-NP-Z2-9]{10}$/.test(id)){$("er").textContent="Enter a valid User ID.";return}
+  $("go4").onclick=guard("go4",async()=>{const code=$("jid").value.trim().toUpperCase().replace(/\s+/g,"");
+    if(/^(TT|FR)-/.test(code)){$("er").textContent="That is an account or friend ID. To join a guild you need its invite code (GD-…). Ask a guild admin.";return}
+    if(!JC_RE.test(code)){$("er").textContent="Enter a valid invite code, like GD-ABCD2345.";return}
     const l=await rl("j");if(l.err){$("er").textContent=l.err;return}
-    if((await ixGet(l.h)).includes(id)){$("er").textContent="That email or phone is already on this account. Go back and sign in.";return}
-    const a=await dget(id);if(!a||!a.logins){const r=a?null:await dget("r_"+id);$("er").textContent=r&&r.to?"That guild was merged. Use its new User ID: "+r.to:"No account found with that User ID.";return}
-    if(a.mergedInto){$("er").textContent="That account was merged into "+a.mergedInto+". Use that User ID instead.";return}
-    if(a.lock){$("er").textContent="This account doesn't allow joining with its User ID.";return}
-    const lg=mkLogin(l);const ro={...(a.roles||allAdmin(a.logins)),[l.h]:"member"};await dupd(id,{["logins."+l.h]:lg,roles:ro});await ixAdd(l.h,id);a.logins[l.h]=lg;a.roles=ro;login(a,l.h)});
+    const g=await dget("gj_"+code);if(!g||!g.uid){$("er").textContent="No guild found with that invite code. It may have been replaced by a new one.";return}
+    const a=await resolve(g.uid);if(!a||!a.logins){$("er").textContent="That guild no longer exists.";return}
+    const id=a.uid;
+    if((await ixGet(l.h)).includes(id)){$("er").textContent="That email or phone is already in this guild. Go back and sign in.";return}
+    if(a.lock){$("er").textContent="This guild is closed to new members right now.";return}
+    const lg=mkLogin(l),ro0=a.roles||allAdmin(a.logins),ro={...ro0,[l.h]:"member"},up={["logins."+l.h]:lg},fa=a.fa||{};
+    const headless=!hasAdmin(ro0,a.logins);let note="";
+    if(headless){
+      if(!Object.keys(fa).length){ro[l.h]="admin";note="You are the first member of a guild with no admin history, so you are its admin."}
+      else if(fa[l.h]){ro[l.h]="admin";up["fa."+l.h]=null;note="Welcome back. You were an admin here before, so your authority is restored."}
+      else{up["ar."+l.h]={m:l.m,at:Date.now()};a.ar={...(a.ar||{}),[l.h]:{m:l.m,at:Date.now()}};note="This guild has no admin. Your request was sent to the previous admins; they will be asked the next time they sign in."}
+    }
+    up.roles=ro;await dupd(id,up);await ixAdd(l.h,id);if(fa[l.h]&&ro[l.h]==="admin")ixFa(l.h,id,false).catch(()=>{});
+    a.logins[l.h]=lg;a.roles=ro;login(a,l.h);if(note)setTimeout(()=>toast(note),1800)});
 }
 function authLegacy(c){
   shell(`<h2>Welcome back, ${esc(c.d.name||"")}</h2><p class="hint" style="margin:0">We found your older profile for ${esc(c.l.m)}. Confirm one phone number from it to upgrade to the new account system.</p>${phoneField("v")}${msgH("")}<button class="pri" id="go3">Upgrade and sign in</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
@@ -576,7 +591,7 @@ function authLegacy(c){
 function login(a,h,isNew,from){
   U={uid:a.uid,name:a.name,created:a.created||Date.now(),profile:a.profile||{},h,logins:a.logins,lock:!!a.lock,base:a.base||null,roles:a.roles||allAdmin(a.logins),tree:a.tree||null,noMerge:!!a.noMerge,parents:a.parents||null,recycled:!!a.recycled,ep:null};gLoad(a);P=norm(a.logins[h].s);applyOut(a.uid,h);reclaim(a.uid,h,from);LS.set("tt_sess",{uid:a.uid,h});
   setTimeout(poll,1200);A().hidden=true;acctBtn();toast(isNew?`Account created. Your User ID: ${a.uid}`:`Welcome back, ${U.name}!`);
-  sync();update();flush();clearInterval(pollT);pollT=setInterval(poll,25000);pubT=0;setTimeout(autoLink,1500);setTimeout(adminProbe,3000);setTimeout(()=>{pubSync();healUn()},4000);if(PV)showPublic(PV);
+  sync();update();flush();clearInterval(pollT);pollT=setInterval(poll,25000);pubT=0;setTimeout(async()=>{await ensureIds();autoLink();setTimeout(()=>{pubSync();healUn()},2500);socInit();adminInbox()},800);setTimeout(adminProbe,3000);if(PV)showPublic(PV);
 }
 function signOut(msg="",skip){if(U&&!skip)flush();clearInterval(st.timer);clearInterval(pollT);try{localStorage.removeItem("tt_sess")}catch(e){}U=null;P=norm();acctBtn();update();if(PV)showPublic(PV);authHome(msg)}
 
@@ -605,7 +620,7 @@ function buildZ(accs,zid,edges,ep){
       s.xp=s.ans=s.ok=0;s.dh={};if(!logins[h])logins[h]={...l,s};roles[h]=roles[h]==="admin"||ro[h]==="admin"?"admin":"member"}}
   for(const h in base.by){if(logins[h]||base.by[h].left===undefined)delete base.by[h].left}
   const top=[...accs].sort((p,q)=>accXp(q)-accXp(p))[0];
-  return{...gMerge(accs),uid:zid,name:top.name,created:now,lock:false,logins,roles,base,profile:top.profile||{},parents:base.from,ep,
+  return{...gMerge(accs),...(top.fid?{fid:top.fid}:{}),...(top.jc?{jc:top.jc}:{}),fa:faMerge(accs,Object.keys(logins)),uid:zid,name:top.name,created:now,lock:false,logins,roles,base,profile:top.profile||{},parents:base.from,ep,
     tree:{u:zid,n:top.name,xp:base.xp,at:now,k:accs.map(nodeOf)},log:edges.map(g=>({a:g.na,b:g.nb,m:g.bm,at:g.at}))};
 }
 async function consolidate(ep){
@@ -632,8 +647,8 @@ async function consolidate(ep){
       if(!used&&await t.get(zid))return;
       const Z=buildZ(accs,zid,e.edges.filter(g=>!g.x&&c2.includes(g.a)),ep);Z.recycled=used;
       const hs=Object.keys(Z.logins),ix=await Promise.all(hs.map(h=>t.get("i_"+h)));
-      t.set(zid,Z);t.del("r_"+zid);
-      hs.forEach((h,i)=>{const u=((ix[i]&&(ix[i].uids||[ix[i].uid]))||[]).filter(k=>!c2.includes(k));u.push(zid);t.set("i_"+h,{uids:u})});
+      t.set(zid,Z);t.del("r_"+zid);accs.forEach(a=>{if(a.jc)t.set("gj_"+a.jc,{uid:zid,at:Date.now()})});
+      hs.forEach((h,i)=>{const u=((ix[i]&&(ix[i].uids||[ix[i].uid]))||[]).filter(k=>!c2.includes(k));u.push(zid);const o={uids:u};if(ix[i]&&ix[i].fa&&ix[i].fa.length)o.fa=ix[i].fa;t.set("i_"+h,o)});
       /* old guild docs are deleted; their IDs go back to the pool and leave a redirect to the new guild */
       accs.forEach(a=>{t.del(a.uid);t.set("r_"+a.uid,{to:zid,at:now})});
       t.set(POOL_DOC,{free:[...pl.free.filter(f=>f.id!==zid&&!skip.has(f.id)),...accs.map(a=>({id:a.uid,at:now}))].slice(-2000)});
@@ -673,20 +688,20 @@ function renderDash(msg=""){
   const ledH=Object.entries(led).sort((a,c)=>c[1].x-a[1].x).map(([h,e])=>`<div class="lg2"><span>${e.t==="email"?"✉️":"📱"} ${esc(e.m)} <span class="tg">${e.cur?(U.roles[h]==="admin"?"Admin":"Member"):"Former"}</span></span><b>${e.x} XP · ${T.xp?Math.round(e.x/T.xp*100):0}%</b></div>`).join("")+(unattr?`<div class="lg2"><span>Earlier history (not attributed)</span><b>${unattr} XP</b></div>`:"");
   const ep=U.ep,cmp=ep&&ep.status!=="done"?components(ep.edges).find(c=>c.includes(U.uid)):null;let mgH="";
   if(cmp)mgH=`<div class="lr me"><b>Temporary group ${tmpId(cmp)}</b> <span class="tg nw">${cmp.length} guilds</span><div class="hint" style="margin:4px 0 8px">Merges made this hour are collected under a temporary ID. In <b id="cd">…</b> everything is consolidated into one final guild with a new User ID, and every login moves there automatically.</div>${ep.edges.filter(g=>cmp.includes(g.a)||cmp.includes(g.b)).map(g=>`<div class="lg2" ${g.x?`style="text-decoration:line-through;opacity:.6"`:""}><span>${esc(g.na)} + ${esc(g.nb)}<div class="hint" style="margin:0">${esc(g.bm)} · ${ago(g.at)}</div></span>${!g.x&&adm&&(g.a===U.uid||g.b===U.uid)?`<button class="sm dg" data-ce="${g.id}">Cancel</button>`:""}</div>`).join("")}</div>`;
-  mgH+=`<p class="hint" style="margin:0 0 4px">Anyone in a guild can merge it with another guild at any time. Merges are collected for the hour, then every connected guild is combined into one new guild: all emails and phones, all scores and the full history. The new guild takes a User ID from the pool of IDs released by earlier merges (or a fresh one), and the old IDs are deleted and returned to the pool. Admins of either guild can cancel until the hour ends. After that it can't be undone.</p><label for="my">User ID of the other guild</label><input type="text" id="my" placeholder="TT-XXXXXXXXXX" autocomplete="off" autocapitalize="characters"><div class="er" id="er2"></div><button class="sm" id="mg">Merge</button><div class="hint" id="poolinfo" style="margin-top:10px"></div>`;
-  shell(`<div class="dh"><div class="av">${esc(Array.from(U.name)[0]||"?")}</div><div style="flex:1;min-width:0"><div class="two" style="grid-template-columns:1fr auto"><input type="text" id="dn" maxlength="30" value="${esc(U.name)}" aria-label="Guild name" ${adm?"":"disabled"}><button class="sm" id="sn" ${adm?"":"disabled"}>Save</button></div><div class="hint" style="margin-top:6px">User ID <b>${esc(U.uid)}</b> <button class="sm" id="cp">Copy</button></div>${U.parents&&U.parents.length?`<div class="hint" style="margin-top:6px">Formed by merging ${U.parents.map(esc).join(", ")}. Those IDs are retired and released for future merges${U.recycled?"; this User ID was recycled from an earlier merge":""}.</div>`:""}</div></div>
+  mgH+=`<p class="hint" style="margin:0 0 4px">Anyone in a guild can merge it with another guild at any time. Merges are collected for the hour, then every connected guild is combined into one new guild: all emails and phones, all scores and the full history. The new guild takes a User ID from the pool of IDs released by earlier merges (or a fresh one), and the old IDs are deleted and returned to the pool. Admins of either guild can cancel until the hour ends. After that it can't be undone.</p><label for="my">Invite code of the other guild</label><input type="text" id="my" placeholder="GD-XXXXXXXX" autocomplete="off" autocapitalize="characters"><div class="er" id="er2"></div><button class="sm" id="mg">Merge</button><div class="hint" id="poolinfo" style="margin-top:10px"></div>`;
+  shell(`<div class="dh"><div class="av">${esc(Array.from(U.name)[0]||"?")}</div><div style="flex:1;min-width:0"><div class="two" style="grid-template-columns:1fr auto"><input type="text" id="dn" maxlength="30" value="${esc(U.name)}" aria-label="Guild name" ${adm?"":"disabled"}><button class="sm" id="sn" ${adm?"":"disabled"}>Save</button></div><div class="hint" style="margin-top:6px">Private account ID <b>${esc(U.uid)}</b> <button class="sm" id="cp">Copy</button><div style="margin-top:4px">Used for certificates and recovery. Never share it. Friends use your Friend ID; new members use the guild invite code.</div></div>${U.parents&&U.parents.length?`<div class="hint" style="margin-top:6px">Formed by merging ${U.parents.map(esc).join(", ")}. Those IDs are retired and released for future merges${U.recycled?"; this User ID was recycled from an earlier merge":""}.</div>`:""}</div></div>
   <div class="ph" style="margin-top:14px"><div><b>${Math.floor(T.xp/100)+1}</b>level</div><div><b>${T.xp}</b>total XP</div><div><b>${acc}%</b>accuracy</div><div><b>${L.length}</b>logins</div></div>
-  <h2>Members and logins</h2><p class="hint" style="margin:0 0 10px">Admins manage the guild. Members can only leave. Don't recognise a login? An admin can remove it.</p>${rows}
+  ${succH()}<h2>Members and logins</h2><p class="hint" style="margin:0 0 10px">Admins manage the guild. Members can only leave. Don't recognise a login? An admin can remove it.</p>${rows}
   <h2>Contribution ledger</h2><p class="hint" style="margin:0 0 6px">Everyone who ever contributed, including former members and logins from merged guilds.</p>${ledH}
   ${U.tree?`<h2>Merge tree</h2><ul class="tree" style="margin-left:0;border:0;padding:0">${treeH(U.tree)}</ul>`:""}
   <h2>Merge guilds</h2>${mgH}
-  ${adm?`<h2>Add another email or phone</h2>${mf("a")}<button class="pri" id="ad">Add login</button><label class="tgl"><input type="checkbox" id="lk" ${U.lock?"checked":""}> Block anyone from joining with this User ID (only admins can add logins)</label><label class="tgl"><input type="checkbox" id="nm2" ${U.noMerge?"checked":""}> Block other guilds from merging with this one</label>`:""}${msgH(msg)}
+  ${adm?`<h2>Add another email or phone</h2>${mf("a")}<button class="pri" id="ad">Add login</button><label class="tgl"><input type="checkbox" id="lk" ${U.lock?"checked":""}> Block joining with the guild invite code (only admins can add logins)</label><label class="tgl"><input type="checkbox" id="nm2" ${U.noMerge?"checked":""}> Block other guilds from merging with this one</label>`:""}${msgH(msg)}
   <button class="sm" id="pf" style="margin-top:14px;width:100%">👤 Edit profile and public page</button><div class="two" style="margin-top:10px"><button class="sm" id="cl2">Close</button><button class="sm" id="lo">Sign out</button></div>`,1);
   dashOn=true;if(adm)mfw("a","ad");
   dget(POOL_DOC).then(p=>{const el=$("poolinfo");if(!el)return;const f=(p&&p.free)||[],n=Date.now(),ready=f.filter(x=>n-x.at>=RECYCLE_AFTER_MS).length;el.textContent=`ID pool: ${ready} ready for reuse, ${f.length-ready} resting for ${Math.round(RECYCLE_AFTER_MS/36e5)} h after a merge.`}).catch(()=>{});
   clearInterval(tickT);tickT=setInterval(()=>{const e=$("cd");if(!e||!dashOn){clearInterval(tickT);return}const r=(curEp()+1)*EPOCH_MS-Date.now();if(r<=0){clearInterval(tickT);poll()}else e.textContent=Math.floor(r/60000)+":"+String(Math.floor(r/1000)%60).padStart(2,"0")},1000);
   $("cl2").onclick=()=>{dashOn=false;A().hidden=true};$("pf").onclick=()=>{dashOn=false;A().hidden=true;mode="profile";start()};$("lo").onclick=()=>signOut();
-  $("cp").onclick=()=>{try{navigator.clipboard.writeText(U.uid);toast("User ID copied")}catch(e){}};
+  $("cp").onclick=()=>{try{navigator.clipboard.writeText(U.uid);toast("Account ID copied")}catch(e){}};
   $("sn").onclick=async()=>{const nm=cleanName($("dn").value);if(!nm)return renderDash("Enter a name.");try{await dupd(U.uid,{name:nm});U.name=nm;acctBtn();renderDash("✅ Name saved.")}catch(e){renderDash("Couldn't save. Check your connection.")}};
   if(adm){
     $("lk").onchange=async e=>{try{await dupd(U.uid,{lock:e.target.checked});U.lock=e.target.checked}catch(x){renderDash("Couldn't update. Check your connection.")}};
@@ -695,28 +710,32 @@ function renderDash(msg=""){
       if((await ixGet(l.h)).includes(U.uid)){$("er").textContent="That login is already on this guild.";return}
       const lg=mkLogin(l),ro={...U.roles,[l.h]:"member"};await dupd(U.uid,{["logins."+l.h]:lg,roles:ro});await ixAdd(l.h,U.uid);U.logins[l.h]=lg;U.roles=ro;renderDash("✅ Login added as a member.")});
   }
-  $("mg").onclick=guard("mg",async()=>{const e=$("er2"),id=$("my").value.trim().toUpperCase();e.textContent="";
-    if(!/^TT-[A-HJ-NP-Z2-9]{10}$/.test(id)){e.textContent="Enter the other guild's User ID.";return}
+  $("mg").onclick=guard("mg",async()=>{const e=$("er2"),code=$("my").value.trim().toUpperCase();e.textContent="";
+    if(!JC_RE.test(code)){e.textContent="Enter the other guild's invite code (GD-…). Ask one of its admins.";return}
+    const gj=await dget("gj_"+code);if(!gj||!gj.uid){e.textContent="No guild found with that invite code.";return}
+    const id=gj.uid;
     if(id===U.uid){e.textContent="That is this guild.";return}
     try{await proposeMerge(id)}catch(x){if(x.message==="noacct"){const r=await dget("r_"+id);if(r&&r.to){e.textContent="That guild was merged. Use its new User ID: "+r.to;return}}const M={noacct:"No guild found with that User ID.",merged:"A guild was already merged. Use its newer User ID.",blocked:"That guild doesn't accept merges.",closing:"This hour is closing. Try again in a moment.",full:"Too many merges this hour. Try next hour.",dup:"That merge is already queued this hour."};if(M[x.message]){e.textContent=M[x.message];return}throw x}
     await refresh();renderDash("✅ Merge queued. The final guild is created when the hour ends.")});
   A().querySelectorAll("[data-ce]").forEach(b=>b.onclick=async()=>{try{await cancelEdge("e_"+curEp(),b.dataset.ce);await refresh();renderDash("Merge cancelled.")}catch(e){renderDash("Couldn't cancel. It may have just closed.")}});
   A().querySelectorAll("[data-rl]").forEach(b=>b.onclick=async()=>{const[h,r]=b.dataset.rl.split(":"),ro={...U.roles,[h]:r};try{await dupd(U.uid,{roles:ro});U.roles=ro;renderDash("✅ Role updated.")}catch(e){renderDash("Couldn't update. Check your connection.")}});
-  A().querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>rmLogin(b.dataset.rm));
+  A().querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>rmLogin(b.dataset.rm));bindSucc();
 }
 async function rmLogin(h){
   const l=U.logins[h],me=h===U.h;
-  if(Object.values(U.logins).filter(x=>x.t).length<2)return renderDash("A guild needs at least one login.");
-  if(U.roles[h]==="admin"&&Object.values(U.roles).filter(r=>r==="admin").length<2)return renderDash("Make another login an admin first.");
-  if(!confirm(`${me?"Leave the guild with":"Remove"} ${l.m}?`))return;
+  const nAct=Object.values(U.logins).filter(x=>x.t).length,nAdm=Object.keys(U.logins).filter(k=>U.logins[k].t&&U.roles[k]==="admin").length,wasAdm=U.roles[h]==="admin";
+  let warn="";
+  if(nAct<2)warn="This is the last login. The guild stays dormant: its vault, history and invite code are kept. The next person who joins with the invite code asks your previous admins for authority.\n\n";
+  else if(wasAdm&&nAdm<2)warn="This is the last admin. Members can keep playing, but nobody can spend the vault until a new admin is approved by the previous admins.\n\n";
+  if(!confirm(warn+`${me?"Leave the guild with":"Remove"} ${l.m}?`))return;
   const keep=confirm(`Keep ${me?"your":"their"} contribution in the guild history?\n\nOK = keep it in the ledger (they did contribute).\nCancel = subtract it from the total (use for logins you don't know).`);
   try{const F=await fbp();
     await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("x");const lg=a.logins[h];if(!lg)return;
-      const s=h===U.h?P:norm(lg.s),o={["logins."+h]:null,["roles."+h]:null};
+      const s=h===U.h?P:norm(lg.s),o={["logins."+h]:null,["roles."+h]:null,["ar."+h]:null};if(((a.roles||allAdmin(a.logins))[h])==="admin")o["fa."+h]={m:lg.m,at:Date.now()};
       if(keep){const bs=a.base||{xp:0,ans:0,ok:0,dh:{},by:{},from:[],at:Date.now()},by=bs.by||{},e=by[h]||{m:lg.m,t:lg.t,xp:0,ans:0,ok:0};
         e.xp+=s.xp;e.ans+=s.ans;e.ok+=s.ok;e.left=Date.now();by[h]=e;bs.by=by;bs.xp+=s.xp;bs.ans+=s.ans;bs.ok+=s.ok;bs.dh=bs.dh||{};for(const d in s.dh)bs.dh[d]=(bs.dh[d]||0)+s.dh[d];o.base=bs}
       t.upd(U.uid,o)});
-    await ixDel(h,U.uid);if(me)return signOut("You left the guild.",1);
+    await ixDel(h,U.uid);if(wasAdm)ixFa(h,U.uid,true).catch(()=>{});if(me)return signOut("You left the guild.",1);
     await refresh();renderDash("✅ Done.")}catch(e){renderDash("Couldn't complete. Check your connection.")}
 }
 /* ---------- SECTION: USER MENU · dropdown under the name button ----------
@@ -733,9 +752,9 @@ const UM={
   render(){
     const un=myUn(),link=shareURL(un).replace(/^https?:\/\//,""),shared=!!(U.profile&&U.profile.share);
     const item=(k,i,t)=>`<button class="umi" role="menuitem" data-um="${k}"><span aria-hidden="true">${i}</span>${t}</button>`;
-    UM.el().innerHTML=`<div class="umh"><b>${esc(U.name)}</b><small>${un?"@"+esc(un):"Creating your public link…"}</small><small>${esc(link)} · ${shared?"public page on":"public page off"}</small><small>User ID <b>${esc(U.uid)}</b></small></div>`
+    UM.el().innerHTML=`<div class="umh"><b>${esc(U.name)}</b><small>${un?"@"+esc(un):"Creating your public link…"}</small><small>${esc(link)} · ${shared?"public page on":"public page off"}</small><small>Friend ID <b>${esc(U.fid||"…")}</b></small></div>`
       +item("profile","👤","Profile")+item("dash","📈","Dashboard")+item("page","🌐","View my public page")
-      +item("copy","🔗","Copy my public link")+item("id","🆔","Copy my User ID")+(navigator.share?item("share","📤","Share my link…"):"")
+      +item("copy","🔗","Copy my public link")+item("id","🆔","Copy my Friend ID")+(navigator.share?item("share","📤","Share my link…"):"")+item("soc","👥","Friends and followers"+(U.nrq?" ("+U.nrq+")":""))+(isAdmin()?item("jc","🔑","Copy guild invite code"):"")
       +`<div class="umsep"></div>`+item("guildhub","🏰","Guild Hub")+item("acct","🏢","Account and guild")+item("cfg","⚙️","Settings")+(ADMIN_OK?item("dev","🛠","Admin console"):"")
       +`<div class="umsep"></div>`+`<button class="umi out" role="menuitem" data-um="out"><span aria-hidden="true">🚪</span>Sign out</button>`;
   },
@@ -744,10 +763,10 @@ const UM={
     const tab=m=>{closePV();A().hidden=true;mode=m;start();window.scrollTo({top:0,behavior:"smooth"})};
     if(k==="profile")tab("profile");
     else if(k==="dash")tab("dash");
-    else if(k==="page"){const un=myUn();location.hash=un?"#/"+un:"#u="+U.uid}
+    else if(k==="page"){const un=myUn();location.hash=un?"#/"+un:"#u="+(U.fid||"")}
     else if(k==="copy")copyMyLink(false);
     else if(k==="share")copyMyLink(true);
-    else if(k==="id")copyTxt(U.uid);
+    else if(k==="id")copyTxt(U.fid||"");else if(k==="soc")socOpen();else if(k==="jc")copyTxt(U.jc||"");
     else if(k==="dev")location.hash="#dev";
     else if(k==="guildhub")tab("guild");
     else if(k==="acct")renderDash();
@@ -792,7 +811,7 @@ function streakUI(){
   const r=reward(n),today=P.dh[t]||0,g=PREF.goal,pc=Math.min(100,Math.round(today/g*100));
   $("streak").innerHTML=`<div class="f">🔥 ${s.cur}</div><div><b>day streak</b><div class="n">Best ${s.best}. ${done?"Done for today.":"Answer one question to keep it."}</div></div><div class="f">🛡️ ${s.prot}</div><div><b>protectors</b><div class="n">Used automatically when you miss a day</div></div><div class="days">${d}</div><div class="goal"><div class="ring ${pc>=100?"done":""}" style="--p:${pc}"><b>${pc}%</b></div><div><b>Daily goal</b><div class="n">${today} of ${g} XP today</div></div></div><div class="n" style="flex:1;min-width:210px">${done?"Tomorrow":"Today"} (day ${n}): ${r?`+${r} protector${r>1?"s":""}`:"no bonus"}<br>Next prime bonus: day ${p} gives +${p}</div>`;
 }
-function hud(){const x=tot().xp;$("sc").innerHTML=`<span>🔥 ${P.sk.cur}</span><span>🛡️ ${P.sk.prot}</span>${U?`<span title="Guild coins">🪙 ${P.cn||0}</span>`:""}${hasOut()?`<span title="Waiting to sync">⏳</span>`:""}`;streakUI();const lvl=Math.floor(x/100)+1;$("lv").textContent="Lv "+lvl;$("lv").title=rankOf(lvl);$("xpb").style.width=(x%100)+"%";$("xpt").textContent=x+" XP"}
+function hud(){const x=tot().xp;$("sc").innerHTML=`<span>🔥 ${P.sk.cur}</span><span>🛡️ ${P.sk.prot}</span>${U?`<span title="Your coins">🪙 ${P.cn||0}</span><span title="Guild vault (every member can see it)">🏰 ${Number((U.vault&&U.vault.c)||0).toLocaleString()}</span>`:""}${hasOut()?`<span title="Waiting to sync">⏳</span>`:""}`;streakUI();const lvl=Math.floor(x/100)+1;$("lv").textContent="Lv "+lvl;$("lv").title=rankOf(lvl);$("xpb").style.width=(x%100)+"%";$("xpt").textContent=x+" XP"}
 const rnd=n=>Math.floor(Math.random()*n),pick=a=>a[rnd(a.length)];
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
 const col=a=>`hsl(${(a*47+250)%360} 62% 48%)`;
@@ -1015,7 +1034,7 @@ function skillMap(){
   const det=()=>{if(!MSEL)return`<p class="hint" style="margin:0">Tap a table to see how you are doing and jump straight into a game.</p>`;const s=T[MSEL-1],f=!s.seen;
     return`<h3 style="margin:0">Table of ${MSEL} · ${f?"Next up":MLAB[s.lv]}</h3><p class="hint">${f?"You have not played this table yet.":`${s.seen} of 10 facts tried · ${s.times?Math.max(0,Math.round((1-s.miss/s.times)*100)):0}% right · ${s.miss} slip${s.miss===1?"":"s"}`}</p><div class="act" style="justify-content:flex-start">${MG.map(([k,l])=>`<button class="${k===(f?"learn":"type")?"pri":"sm"}" data-g="${k}">${l}</button>`).join("")}</div>`};
   const chips=a=>a.length?`<div class="weak">${a.map(s=>`<span data-mt="${s.t}" style="cursor:pointer;border:2px solid ${MCOL[s.lv]}">${s.t}</span>`).join("")}</div>`:`<p class="hint">None yet.</p>`;
-  const weak=vis.filter(s=>s.lv<=2).sort((a,b)=>a.avg-b.avg),strong=vis.filter(s=>s.lv>=3).sort((a,b)=>b.avg-a.avg),LB2=Object.fromEntries(MODES);
+  const weak=vis.filter(s=>s.lv<=2).sort((a,b)=>a.avg-b.avg),strong=vis.filter(s=>s.lv>=3).sort((a,b)=>b.avg-a.avg),LB2=Object.fromEntries([...MODES,...CAT]);
   const gms=Object.entries(P.gm).filter(([k,g])=>g[0]>0&&LB2[k]);
   const D=Array.from({length:14},(_,i)=>{const d=dn()-13+i,e=P.dd[d]||[0,0];return[d,e[0],e[1]]}),mx=Math.max(1,...D.map(d=>d[1]));
   $("view").innerHTML=`<div class="card"><h2 style="margin:0">🗺️ My Map</h2><p class="hint">Only what you have played appears. Dashed circles are what to try next.</p>
@@ -1212,17 +1231,17 @@ function vf(pr,tier){const f=pr.f||{},o={};for(const x of FIELDS){const val=Stri
 function allItems(pr){const f=pr.f||{},o=[];for(const x of FIELDS){const val=String(f[x.k]||"").trim();if(!val)continue;if(x.k==="dob"){const a=ageOf(val);if(a!==null)o.push(["dob",String(a),tierOf(pr,x)])}else o.push([x.k,val,tierOf(pr,x)])}return o}
 function buildPub(pr){
   const T=tot(),lv=Math.floor(T.xp/100)+1,fm=vf(pr,"members");
-  return{uid:U.uid,un:pr.un||"",name:U.name,created:U.created||Date.now(),upd:Date.now(),lvl:lv,rank:rankOf(lv),xp:T.xp,acc:T.ans?Math.round(T.ok/T.ans*100):0,cur:P.sk.cur,best:P.sk.best,ach:Object.keys(P.ach).length,achN:ACH.length,nm:Object.keys(fm).length,f:vf(pr,"public")};
+  return{uid:U.fid||"",un:pr.un||"",name:U.name,created:U.created||Date.now(),upd:Date.now(),lvl:lv,rank:rankOf(lv),xp:T.xp,acc:T.ans?Math.round(T.ok/T.ans*100):0,cur:P.sk.cur,best:P.sk.best,ach:Object.keys(P.ach).length,achN:ACH.length,nm:Object.keys(fm).length,f:vf(pr,"public")};
 }
 function buildMem(pr){
   const T=tot(),t=dn();let mast="";
   for(let i=1;i<=20;i++)for(let j=1;j<=20;j++)mast+=mlev(fact(i,j));
-  return{uid:U.uid,upd:Date.now(),ans:T.ans,speed:P.speed,tests:P.tests,bs:P.bs,mastered:mastered(),mast,d0:t,d14:Array.from({length:14},(_,i)=>P.dh[t-13+i]||0),achIds:Object.keys(P.ach),f:vf(pr,"members")};
+  return{uid:U.fid||"",upd:Date.now(),ans:T.ans,speed:P.speed,tests:P.tests,bs:P.bs,mastered:mastered(),mast,d0:t,d14:Array.from({length:14},(_,i)=>P.dh[t-13+i]||0),achIds:Object.keys(P.ach),f:vf(pr,"members")};
 }
 let pubT=0;
-async function pubPush(){const pr=U.profile||{};await dset("p_"+U.uid,buildPub(pr));await dset("pm_"+U.uid,buildMem(pr))}
-async function pubDel(){await ddel("p_"+U.uid);await ddel("pm_"+U.uid)}
-function pubSync(force){if(!U||!(U.profile&&U.profile.share))return;if(!force&&Date.now()-pubT<60000)return;pubT=Date.now();pubPush().catch(()=>{pubT=0})}
+async function pubPush(){await ensureIds();if(!U.fid)throw new Error("fid");const pr=U.profile||{};await dset("p_"+U.fid,buildPub(pr));await dset("pm_"+U.fid,buildMem(pr))}
+async function pubDel(){if(U.fid){await ddel("p_"+U.fid);await ddel("pm_"+U.fid)}await ddel("p_"+U.uid).catch(()=>{});await ddel("pm_"+U.uid).catch(()=>{})}
+function pubSync(force){if(!U||!(U.profile&&U.profile.share))return;if(!force&&Date.now()-pubT<30000)return;pubT=Date.now();pubPush().catch(()=>{pubT=0})}
 /* ---- PUBLIC LINK: automatic username ----
    Every signed-in user gets a unique username created for them the first time they sign in (like LinkedIn),
    built from the FIRST NAME only: "Rahul Kumar" -> rahul, or rahul4821 if "rahul" is taken. It can be changed
@@ -1249,7 +1268,7 @@ async function autoLink(){
     for(const c of unCandidates(U.name)){
       if(!U||(U.profile||{}).un)break;
       try{
-        const d=await dget("un_"+c);if(d&&d.uid!==U.uid)continue;
+        const d=await dget("un_"+c);if(d&&!mineId(d.uid))continue;
         await claimUn(c,"");
         const prof=Object.assign({f:{},v:{},share:false},U.profile||{},{un:c,upd:Date.now()});
         await dupd(U.uid,{profile:prof});U.profile=prof;LS.set("tt_un:"+U.uid,c);
@@ -1303,9 +1322,9 @@ let PV=null;
             true  -> https://tables.mobiledoctor.org.in/username     (also upload 404.html next to index.html) */
 const SITE="https://tables.mobiledoctor.org.in/",PRETTY=false;
 const UN_RE=/^[a-z][a-z0-9_]{2,23}$/,UN_RESERVED=new Set(["admin","administrator","root","support","help","login","logout","signin","signup","index","home","api","www","about","privacy","terms","settings","profile","dashboard","table","tables","trainer","guest","anonymous","null","undefined","moderator","official"]);
-const PVID=()=>{let x=location.hash.match(/^#u=(TT-[A-HJ-NP-Z2-9]{10})$/);if(x)return x[1];x=location.hash.match(/^#\/@?([a-zA-Z][a-zA-Z0-9_]{2,23})\/?$/);if(x)return x[1].toLowerCase();x=location.pathname.match(/^\/@?([a-zA-Z][a-zA-Z0-9_]{2,23})\/?$/);return x&&!UN_RESERVED.has(x[1].toLowerCase())?x[1].toLowerCase():null};
-const profLink=un=>un?(PRETTY?SITE+un:SITE+"#/"+un):(U?SITE+"#u="+U.uid:SITE);
-function closePV(){PV=null;$("pubv").hidden=true;$("pubv").innerHTML="";if(PVID()){const b=/^\/@?[a-zA-Z]/.test(location.pathname)?"/":location.pathname;history.replaceState(null,"",b+location.search)}}
+const PVID=()=>{let x=location.hash.match(/^#u=(FR-[A-HJ-NP-Z2-9]{8})$/);if(x)return x[1];x=location.hash.match(/^#\/@?([a-zA-Z][a-zA-Z0-9_]{2,23})\/?$/);if(x)return x[1].toLowerCase();x=location.pathname.match(/^\/@?([a-zA-Z][a-zA-Z0-9_]{2,23})\/?$/);return x&&!UN_RESERVED.has(x[1].toLowerCase())?x[1].toLowerCase():null};
+const profLink=un=>un?(PRETTY?SITE+un:SITE+"#/"+un):(U&&U.fid?SITE+"#u="+U.fid:SITE);
+function closePV(){PV=null;clearInterval(PVT);$("pubv").hidden=true;$("pubv").innerHTML="";if(PVID()){const b=/^\/@?[a-zA-Z]/.test(location.pathname)?"/":location.pathname;history.replaceState(null,"",b+location.search)}}
 function pvShell(inner){
   const el=$("pubv");el.hidden=false;
   el.innerHTML=`<div class="pvb"><div class="logo"><i aria-hidden="true">✖</i>Table Trainer</div><span class="sp"></span>${U?`<button class="ib" id="pva">👤 ${esc(Array.from(U.name).slice(0,12).join(""))}</button>`:`<button class="pri" id="pvs" style="padding:8px 14px">🔑 Login</button>`}<button class="sm" id="pvc">Open trainer</button></div><div class="pvw">${inner}</div>`;
@@ -1319,7 +1338,7 @@ function pvHTML(p,m,who,items){
   const tag=k=>who==="owner"&&fs[k]?`<span class="tg" title="${fs[k][2]==="public"?"Public":fs[k][2]==="members"?"Signed-in only":"Only me"}">${fs[k][2]==="public"?"🌐":fs[k][2]==="members"?"🔒":"🙈"}</span>`:"";
   const init=esc(val("av")||Array.from(p.name||"?")[0]||"?");
   const chips=[];if(val("location"))chips.push("📍 "+esc(val("location")));if(val("dob"))chips.push("🎂 Age "+esc(val("dob")));chips.push("Joined "+new Date(p.created).toLocaleDateString(undefined,{month:"short",year:"numeric"}));
-  const hero=`<div class="cover"><div class="pav" aria-hidden="true">${init}</div><div style="flex:1;min-width:200px"><h1>${esc(p.name)}</h1>${p.un?`<div class="sub" style="opacity:.8">@${esc(p.un)}</div>`:""}${p.uid?`<div class="sub" style="opacity:.85">User ID <b>${esc(p.uid)}</b> <button class="sm" data-cp="${esc(p.uid)}" style="padding:2px 8px;font-size:.75rem">Copy</button></div>`:""}${val("headline")?`<div class="sub">${esc(val("headline"))}</div>`:""}<div>${chips.map(c=>`<span class="chp">${c}</span>`).join("")}</div></div><div style="text-align:center"><div style="font-size:2.4rem;font-weight:800;line-height:1">Lv ${p.lvl}</div><div class="chp">${esc(p.rank)}</div></div></div>`;
+  const hero=`<div class="cover"><div class="pav" aria-hidden="true">${init}</div><div style="flex:1;min-width:200px"><h1>${esc(p.name)}</h1>${p.un?`<div class="sub" style="opacity:.8">@${esc(p.un)}</div>`:""}${FID_RE.test(p.uid||"")?`<div class="sub" style="opacity:.85">Friend ID <b>${esc(p.uid)}</b> <button class="sm" data-cp="${esc(p.uid)}" style="padding:2px 8px;font-size:.75rem">Copy</button></div>`:""}${val("headline")?`<div class="sub">${esc(val("headline"))}</div>`:""}<div>${chips.map(c=>`<span class="chp">${c}</span>`).join("")}</div></div><div style="text-align:center"><div style="font-size:2.4rem;font-weight:800;line-height:1">Lv ${p.lvl}</div><div class="chp">${esc(p.rank)}</div></div></div>`;
   const kp=`<div class="kp"><div><b>${p.lvl}</b>Level<small>${esc(p.rank)}</small></div><div><b>${fmt(p.xp)}</b>Total XP<small>${100-p.xp%100} to next level</small></div><div><b>${p.acc}%</b>Accuracy</div><div><b>${p.cur}🔥</b>Day streak<small>Best ${p.best}</small></div><div><b>${p.ach}/${p.achN}</b>Achievements</div></div><div class="pb" style="margin:0" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.xp%100}"><b style="width:${p.xp%100}%"></b></div>`;
   const sec=(t,b)=>b?`<div class="card sec"><h2>${t}</h2>${b}</div>`:"";
   const pills=s=>String(s).split(/[,;\n]/).map(x=>x.trim()).filter(Boolean).slice(0,24).map(x=>`<span class="pill">${esc(x)}</span>`).join("");
@@ -1345,23 +1364,22 @@ function pvHTML(p,m,who,items){
 }
 const pget=async id=>{try{return await dget(id)}catch(e){await new Promise(r=>setTimeout(r,900));return await dget(id)}};
 async function showPublic(key){
-  PV=key;pvShell(`<div class="card" style="text-align:center">Loading profile…</div>`);
+  clearInterval(PVT);PV=key;pvShell(`<div class="card" style="text-align:center">Loading profile…</div>`);
   const nf=()=>pvShell(`<div class="card" style="text-align:center"><div class="big">🔍 Profile not found</div><p class="hint">No public profile exists at this address. The username may be misspelled, or the owner has turned the public page off.</p></div>`);
   try{
     let uid=key;
-    if(!/^TT-/.test(key)){const d=await pget("un_"+key);if(!d||!d.uid){nf();return}uid=d.uid}
-    if(U&&(U.uid===uid||(U.profile&&U.profile.un&&U.profile.un===key))){
-      const pr=U.profile||{};pvShell(`<div class="tip"><span>This is your own page. Tags show who can see each detail: 🌐 public, 🔒 signed-in, 🙈 only you. ${pr.share?"Your public page is <b>on</b>.":"Your public page is <b>off</b>, so others can't open this link yet."}</span><button class="pri" id="pe">✏️ Edit profile</button></div>`+pvHTML(buildPub(pr),buildMem(pr),"owner",allItems(pr)));$("pe").onclick=()=>{closePV();mode="profile";start();window.scrollTo({top:0,behavior:"smooth"})};hookCta();return}
+    if(!FID_RE.test(key)){const d=await pget("un_"+key);if(!d||!d.uid){nf();return}uid=d.uid}
+    if(U&&(U.fid===uid||(U.profile&&U.profile.un&&U.profile.un===key))){
+      const pr=U.profile||{};pvShell(`<div class="tip"><span>This is your own page. Tags show who can see each detail: 🌐 public, 🔒 signed-in, 🙈 only you. ${pr.share?"Your public page is <b>on</b>.":"Your public page is <b>off</b>, so others can't open this link yet."}</span><button class="pri" id="pe">✏️ Edit profile</button></div>`+pvHTML(buildPub(pr),buildMem(pr),"owner",allItems(pr)));$("pe").onclick=()=>{closePV();mode="profile";start();window.scrollTo({top:0,behavior:"smooth"})};hookCta();socMount(U.fid,U.name,true);return}
     let p=await pget("p_"+uid);
-    if(!p){const r=await pget("r_"+uid);if(r&&r.to){uid=r.to;p=await pget("p_"+uid)}}
     if(!p){nf();return}
     let m=null;if(U){try{m=await dget("pm_"+(p.uid||uid))}catch(e){}}
     const items=Object.entries(p.f||{}).map(([k,v])=>[k,v,"public"]).concat(m?Object.entries(m.f||{}).map(([k,v])=>[k,v,"members"]):[]);
-    pvShell(pvHTML(p,m,m?"user":"anon",items));hookCta();
+    pvShell(pvHTML(p,m,m?"user":"anon",items));hookCta();socMount(p.uid||uid,p.name,false);pvLive(p.uid||uid,p);
   }catch(e){const dn2=e&&e.code==='permission-denied';pvShell(`<div class="card" style="text-align:center"><div class="big">⚠️ Can't load this profile</div><p class="hint">${dn2?"This browser isn't allowed to read public profiles right now. Try opening the link in Chrome or Safari.":"Check your connection and try again. If you opened this link inside another app (WhatsApp, Instagram), try your phone's browser."}${e&&(e.code||e.message)?` <small>(${esc(e.code||e.message)})</small>`:""}</p><button class="pri" id="pvr">Try again</button></div>`);const r=$("pvr");if(r)r.onclick=()=>showPublic(key)}
 }
-async function claimUn(un,old){const F=await fbp();await F.txn(async t=>{const d=un?await t.get("un_"+un):null,o=old&&old!==un?await t.get("un_"+old):null;if(d&&d.uid!==U.uid)throw new Error("taken");if(un)t.set("un_"+un,{uid:U.uid,at:Date.now()});if(o&&o.uid===U.uid)t.del("un_"+old)})}
-async function healUn(){const un=U&&U.profile&&U.profile.un;if(!un)return;try{const d=await dget("un_"+un);if(!d){await dset("un_"+un,{uid:U.uid,at:Date.now()});return}if(d.uid!==U.uid){const r=await resolve(d.uid);if(r&&r.uid===U.uid)await dset("un_"+un,{uid:U.uid,at:Date.now()})}}catch(e){}}
+async function claimUn(un,old){await ensureIds();if(!U.fid)throw new Error("fid");const F=await fbp();await F.txn(async t=>{const d=un?await t.get("un_"+un):null,o=old&&old!==un?await t.get("un_"+old):null;if(d&&!mineId(d.uid))throw new Error("taken");if(un)t.set("un_"+un,{uid:U.fid,at:Date.now()});if(o&&mineId(o.uid))t.del("un_"+old)})}
+async function healUn(){const un=U&&U.profile&&U.profile.un;if(!un||!U.fid)return;try{const d=await dget("un_"+un);if(!d){await dset("un_"+un,{uid:U.fid,at:Date.now()});return}if(d.uid===U.fid)return;if(d.uid===U.uid){await dset("un_"+un,{uid:U.fid,at:Date.now()});return}if(/^TT-/.test(d.uid)){const r=await resolve(d.uid);if(r&&r.uid===U.uid)await dset("un_"+un,{uid:U.fid,at:Date.now()})}}catch(e){}}
 const hookCta=()=>{const b=$("pvc2");if(b)b.onclick=closePV};
 addEventListener("hashchange",()=>{const id=PVID();if(id)showPublic(id);else if(PV)closePV()});
 
@@ -1387,7 +1405,7 @@ function profileT(){
   const row=x=>`<div class="fr"><label for="pf_${x.k}">${x.l}${x.w?` <span class="tg">+${x.w}%</span>`:""}</label><div class="fi">${inp(x)}${vsel(x.k)}</div></div>`;
   const grp=(t,d,g)=>`<div class="card"><h2 style="margin-top:0">${t}</h2>${d?`<p class="hint" style="margin:-4px 0 12px">${d}</p>`:""}${FIELDS.filter(x=>x.g===g).map(row).join("")}</div>`;
   $("view").innerHTML=`<div class="pfw"><div id="pform" class="stack">
-   <div class="card"><h2 style="margin-top:0">Name and public link</h2><div class="fi"><input type="text" id="pf_name" maxlength="30" value="${esc(U.name)}" aria-label="Display name" autocomplete="nickname" ${dis}></div><label for="pf_id" style="margin-top:14px">Your User ID <span class="tg">for guilds and teams</span></label><div class="fi"><input type="text" id="pf_id" readonly value="${esc(U.uid)}"><button class="sm" id="pf_idc">Copy</button></div><div class="hint" style="margin:6px 0 0">Friends type this ID under “Join an existing account” on the sign-in screen to join your guild or team.</div><label for="pf_un" style="margin-top:14px">Public username</label><div class="fi"><span class="hint" style="margin:0;align-self:center;white-space:nowrap">${SITE.replace("https://","")}${PRETTY?"":"#/"}</span><input type="text" id="pf_un" maxlength="24" value="${esc(PD.un||"")}" placeholder="yourname" autocapitalize="none" autocomplete="off" spellcheck="false"></div><div class="hint" id="unmsg" style="margin:6px 0 0">We created this link for you. You can change it any time: letters, numbers and _ (3 to 24).</div><p class="hint" style="margin:10px 0 0">Always shown on your public page. Everything else is optional, and each detail has its own visibility: 🌐 anyone with the link, 🔒 only people signed in to Table Trainer, 🙈 only you.${adm?"":" Only guild admins can edit the profile."}</p></div>
+   <div class="card"><h2 style="margin-top:0">Name and public link</h2><div class="fi"><input type="text" id="pf_name" maxlength="30" value="${esc(U.name)}" aria-label="Display name" autocomplete="nickname" ${dis}></div><label for="pf_id" style="margin-top:14px">Your Friend ID <span class="tg">public · for friend requests</span></label><div class="fi"><input type="text" id="pf_id" readonly value="${esc(U.fid||"Creating…")}"><button class="sm" id="pf_idc">Copy</button></div><div class="hint" style="margin:6px 0 0">People who open your profile link can send you a friend request or follow you. This ID can't be used to join your guild or to see anything private. Your private account ID (for certificates) stays hidden and is never put on your public page.</div><label for="pf_un" style="margin-top:14px">Public username</label><div class="fi"><span class="hint" style="margin:0;align-self:center;white-space:nowrap">${SITE.replace("https://","")}${PRETTY?"":"#/"}</span><input type="text" id="pf_un" maxlength="24" value="${esc(PD.un||"")}" placeholder="yourname" autocapitalize="none" autocomplete="off" spellcheck="false"></div><div class="hint" id="unmsg" style="margin:6px 0 0">We created this link for you. You can change it any time: letters, numbers and _ (3 to 24).</div><p class="hint" style="margin:10px 0 0">Always shown on your public page. Everything else is optional, and each detail has its own visibility: 🌐 anyone with the link, 🔒 only people signed in to Table Trainer, 🙈 only you.${adm?"":" Only guild admins can edit the profile."}</p></div>
    ${grp("About you","Date of birth is never shown. Only your age appears.","a")}${grp("Education and work","","e")}${grp("Interests","","i")}<div id="pmore" class="stack" ${SOC.concat(GAMES).some(x=>has(PD.f[x[0]]))?"":"hidden"}>${grp("Social profiles","Add up to 3 for +5% each. You can paste a handle or the full link.","s")}${grp("Gaming IDs","Google Play Games, Steam and more. +5% for each of the first two.","g")}</div><button class="sm" id="pmoreb" style="width:100%" ${SOC.concat(GAMES).some(x=>has(PD.f[x[0]]))?"hidden":""}>➕ View more: social profiles and gaming IDs</button>
    <div class="act" style="justify-content:flex-start"><button class="pri" id="psave" ${dis}>Save profile</button><span class="hint" id="pmsg" style="margin:0"></span></div></div>
    <aside id="pfside" class="pfs"></aside></div>`;
@@ -1398,15 +1416,18 @@ function profileT(){
      <div class="card"><div class="sr" style="padding-top:0"><div><b>Public page</b><small>Anyone with your link sees your public details.</small></div><label class="sw" style="margin:0"><input type="checkbox" id="psh" ${PD.share?"checked":""} ${dis}><span></span></label></div>
      <label for="plink" style="margin-top:12px">Your link</label><div class="fi"><input type="text" id="plink" readonly value="${esc(shareURL(PD.un||""))}"><button class="sm" id="pcl">Copy</button></div>
      <div class="hint" style="margin:6px 0 10px">${PD.share?"Save to publish your latest changes.":"Turn on the public page and save to make this link work."} <a href="${esc(shareURL(PD.un||""))}" target="_blank" rel="noopener">Open my page ↗</a></div>${shareHTML(PD.un||"")}
-     <div class="hint" style="margin:14px 0 6px"><b>Preview as</b></div><div class="shr"><button class="sm" data-pv="anon">Public</button><button class="sm" data-pv="user">Signed-in</button><button class="sm" data-pv="owner">Me</button></div></div>`;
+     <div class="hint" style="margin:14px 0 6px"><b>Preview as</b></div><div class="shr"><button class="sm" data-pv="anon">Public</button><button class="sm" data-pv="user">Signed-in</button><button class="sm" data-pv="owner">Me</button></div></div>
+     <div class="card"><div class="bar2" style="margin:0 0 8px"><b>🔴 Live preview</b><span class="sp"></span><span class="seg" id="pvtabs">${[["anon","Public"],["user","Signed-in"],["owner","Me"]].map(([k,l])=>`<button type="button" data-pt="${k}" class="${(PD.pvTab||"anon")===k?"on":""}">${l}</button>`).join("")}</span></div><div class="hint" style="margin:0 0 8px">Updates as you type and with your latest score, exactly as this person would see your page.${PD.share?"":" Your public page is off, so only you see this."}</div><div id="pfprev" class="pvw" style="padding:0;max-width:100%;max-height:560px;overflow:auto;gap:12px"></div></div>`;
+    $("pvtabs").querySelectorAll("[data-pt]").forEach(b=>b.onclick=()=>{PD.pvTab=b.dataset.pt;$("pvtabs").querySelectorAll("[data-pt]").forEach(x=>x.classList.toggle("on",x===b));renderPrev()});
+    renderPrev();
     $("pfside").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{const pm=$("pmore");if(pm&&pm.hidden){pm.hidden=false;if($("pmoreb"))$("pmoreb").hidden=true}const e=$("pf_"+b.dataset.f);if(e){e.scrollIntoView({behavior:"smooth",block:"center"});e.focus()}});
     $("psh").onchange=e=>{PD.share=e.target.checked;side()};$("pcl").onclick=()=>copyTxt(shareURL(PD.un||""));
     $("pfside").querySelectorAll("[data-pv]").forEach(b=>b.onclick=()=>previewAs(b.dataset.pv));bindShare($("pfside"),PD.un||"");
   };
   side();
-  $("pf_idc").onclick=()=>copyTxt(U.uid);
+  $("pf_idc").onclick=()=>copyTxt(U.fid||"");
   if($("pmoreb"))$("pmoreb").onclick=()=>{$("pmore").hidden=false;$("pmoreb").hidden=true};
-  let unT;$("pf_un").addEventListener("input",()=>{const v=$("pf_un").value.trim().toLowerCase().replace(/^@/,"");PD.un=v;side();const m=$("unmsg");clearTimeout(unT);if(!v){m.className="hint";m.textContent="No username: your link will use your User ID.";return}if(!UN_RE.test(v)||UN_RESERVED.has(v)){m.className="er";m.textContent="Use 3 to 24 letters, numbers or _, starting with a letter.";return}m.className="hint";m.textContent="Checking…";unT=setTimeout(async()=>{try{const d=await dget("un_"+v);if(PD.un!==v)return;const ok=!d||d.uid===U.uid;m.className=ok?"hint ok":"er";m.textContent=ok?"✅ @"+v+" is available":"That username is taken."}catch(e){m.textContent=""}},400)});
+  let unT;$("pf_un").addEventListener("input",()=>{const v=$("pf_un").value.trim().toLowerCase().replace(/^@/,"");PD.un=v;side();const m=$("unmsg");clearTimeout(unT);if(!v){m.className="hint";m.textContent="No username: your link will use your User ID.";return}if(!UN_RE.test(v)||UN_RESERVED.has(v)){m.className="er";m.textContent="Use 3 to 24 letters, numbers or _, starting with a letter.";return}m.className="hint";m.textContent="Checking…";unT=setTimeout(async()=>{try{const d=await dget("un_"+v);if(PD.un!==v)return;const ok=!d||mineId(d.uid);m.className=ok?"hint ok":"er";m.textContent=ok?"✅ @"+v+" is available":"That username is taken."}catch(e){m.textContent=""}},400)});
   document.querySelectorAll("#pform [data-k]").forEach(e=>["input","change"].forEach(ev=>e.addEventListener(ev,()=>{PD.f[e.dataset.k]=e.value;side()})));
   document.querySelectorAll("#pform [data-v]").forEach(e=>e.onchange=()=>{PD.v[e.dataset.v]=e.value});
   $("psave").onclick=async()=>{
@@ -1754,9 +1775,11 @@ function genQ(g,L){
   const q=fresh();q.nw=X.mo[q.k]||(q.f&&fact(...q.f))?0:1;return q;
 }
 function mixGen(){
-  const list=["mul","add","sub","bond","pw","div","seq","dbl","pct","eq","rou","root","frac","ten"];
-  const w=list.map(g=>{const c=g==="mul"?P.ans:(X.gp[g]||[0])[0];return c===0?4:2/(1+Math.log10(1+c))+.8});
-  let r=Math.random()*w.reduce((a,b)=>a+b,0),g=list[0];for(let i=0;i<list.length;i++){r-=w[i];if(r<=0){g=list[i];break}}
+  const list=mixList().filter(k=>!(PREF.mute||[]).includes(k)),fav=PREF.fav||[],disc=({low:.1,mid:.2,high:.4})[PREF.disc||"mid"];
+  const known=list.filter(gKnown),unk=list.filter(k=>!gKnown(k));let g;
+  if(unk.length&&(!known.length||Math.random()<disc))g=unk[Math.floor(Math.random()*unk.length)];
+  else{const pool=known.length?known:list,w=pool.map(k=>{const c=k==="mul"?P.ans:(X.gp[k]||[0])[0];return(2/(1+Math.log10(1+c))+.8)*(fav.includes(k)?2.5:1)});
+    let r=Math.random()*w.reduce((x,y)=>x+y,0);g=pool[0];for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){g=pool[i];break}}}
   X.lv=X.lv||{};
   if(g==="mul"){const p=[];for(let a=2;a<=12;a++)for(let m=1;m<=10;m++)p.push([a,m]);const f=smartPick(p),q=mulQ(f[0],f[1]);q.lab=LAB;LAB="";return q}
   return genQ(g,X.lv[g]||1);
@@ -1832,7 +1855,7 @@ LABG.splice(LABG.length-1,0,
 function recordOp(Q,ok,help){
   const e=X.mo[Q.k]||(X.mo[Q.k]=[0,0,0,0]);e[1]++;e[2]=dn();
   if(ok){if(!help)e[0]=Math.min(5,e[0]+1)}else{e[0]=0;e[3]++;oRetry(Q)}
-  {const g=P.gm[mode]||(P.gm[mode]=[0,0]);g[0]++;if(ok)g[1]++}
+  {const gk=(Q.g&&Q.g!=="mul")?Q.g:mode,g=P.gm[gk]||(P.gm[gk]=[0,0]);g[0]++;if(ok)g[1]++}
   P.ans++;out("ans",1);{const t=dn(),d=P.dd[t]||(P.dd[t]=[0,0]);d[0]++;if(ok){d[1]++;P.ok++;out("ok",1)}}
   const ks=Object.keys(X.mo);if(ks.length>900){ks.sort((a,b)=>X.mo[a][2]-X.mo[b][2]).slice(0,100).forEach(k=>delete X.mo[k])}
   tel(ok,{k:Q.k,nw:Q.nw,src:Q.g});
@@ -1893,7 +1916,7 @@ function labStart(g,style,lv){
    PLUS 3/4 · Shooter: the question sits at the head, answer-enemies fall,
    tap to LOCK a target, then FIRE (or turn on auto-fire).
    ===================================================================== */
-const SHS=[["tables","✖️ My tables (from the left panel)"],["add","➕ Addition"],["sub","➖ Subtraction"],["dmix","🎲 Daily mix (all games)"],["pw","🧱 Squares & cubes"],["div","➗ Division"],["bond","🔟 Number bonds"],["dbl","✌️ Doubles & halves"],["pct","％ Percentages"],["frac","🍕 Fractions of amounts"],["root","√ Square roots"]];
+const SHS=[["tables","✖️ My tables (from the left panel)"],["dmix","🎲 Daily mix (all games)"],...LABG.filter(r=>!["mix","chain","cmp","tf","seq","dmix"].includes(r[0])).map(r=>[r[0],r[1]+" "+r[2]])];
 function shooterT(){
   X.best=X.best||{};
   $("view").innerHTML=jbox(`<h2 style="margin:0">🔫 Shooter</h2><p class="hint">The question shows at the top. Enemies carrying answers fall toward you. Tap the right one to <b>lock</b> it, then press <b>Fire</b>. A wrong shot or a right answer that reaches the ground costs a life. Missed facts come back later, so you learn them.</p>
@@ -2012,7 +2035,7 @@ async function lbSync(){
   if(!U)return;
   try{const F=await fbp(),t=dn(),d=new Date(t*864e5),Y=d.getUTCFullYear(),M=d.getUTCMonth(),hid=X.hide||rsEff()>=2||X.tag==="Bot"||X.tag==="Hacker";
     const sum=f=>{let s=0;for(const k in X.xd)if(f(new Date(+k*864e5)))s+=X.xd[k];return s},k=pKeys(),h=U.h.slice(0,24),l=U.logins[U.h]||{};
-    const ent=x=>({n:masked(U.name),gn:Array.from(U.name).slice(0,30).join(""),u:U.uid,x:hid?0:x,l:lvOf(),y:l.t==="email"?1:2});
+    const ent=x=>({n:masked(U.name),gn:Array.from(U.name).slice(0,30).join(""),u:U.fid||("h"+U.h.slice(0,10)),x:hid?0:x,l:lvOf(),y:l.t==="email"?1:2});
     await Promise.all([[k.d,X.xd[t]||0],[k.m,sum(z=>z.getUTCFullYear()===Y&&z.getUTCMonth()===M)],[k.y,sum(z=>z.getUTCFullYear()===Y)],[k.a,P.xp]].map(([id,x])=>F.merge(id,{e:{[h]:ent(x)}}).catch(()=>{})));
   }catch(e){}
 }
@@ -2024,7 +2047,7 @@ const playedN=k=>Math.max(X.gp[k]?X.gp[k][0]:0,P.gm[k]?P.gm[k][0]:0);
 {const _m=match;match=function(){const c=X.gp.match||(X.gp.match=[0,0]);c[0]++;c[1]=dn();return _m.apply(this,arguments)}}
 function openCat(k){if(LABG.some(r=>r[0]===k)){mode="lab";start();labStart(k,"q","auto");return}mode=k;start()}
 function todayT(){
-  const t=dn(),lim=limitMin(),used=Math.round(usedSec()/60),xp=X.xd[t]||0,due=JB.some((_,s)=>jm(s))?jdueAll().length:0,np=CAT.filter(([k])=>!playedN(k));
+  const t=dn(),lim=limitMin(),used=Math.round(usedSec()/60),xp=X.xd[t]||0,due=JB.some((_,s)=>jm(s))?jdueAll().length:0,np=CAT.filter(([k])=>!playedN(k)&&!(PREF.mute||[]).includes(k));
   const newG=np.length?pick(np):null;
   $("view").innerHTML=`<div class="card"><h2 style="margin:0">🎯 Today</h2><p class="hint">${lim?`Daily practice: <b>${used}</b> of <b>${lim}</b> min · `:""}<b>${xp}</b> of ${CFG.dayCap} XP today. Short daily sessions build real mental speed.</p>
   <div class="pb"><b style="width:${lim?Math.min(100,used/lim*100):0}%"></b></div><div class="act" style="justify-content:flex-start"><button class="sm" id="tt1">⏱ Daily time</button><button class="sm" id="tt2">+15 min</button></div>
@@ -2034,8 +2057,8 @@ function todayT(){
    ${due?`<button data-td="rv"><b>🔁 Review · ${due} due</b><small>Keep finished tables from fading</small></button>`:""}
    ${newG?`<button data-td="new:${newG[0]}"><b>🆕 Try: ${newG[1]}</b><small>You have not played this yet</small></button>`:""}
    <button data-td="shoot"><b>🔫 Shooter</b><small>Lock on and shoot the answer</small></button></div></div>
-  <div class="card"><h2 style="margin:0 0 4px">All games</h2><p class="hint">Everything you play feeds one shared memory. 🆕 marks games you have not tried.</p><div class="ag fold-m shut" id="agl">${CAT.map(([k,n])=>{const c=playedN(k);return`<button class="ac ${c?"":"lock"}" data-oc="${k}" style="text-align:left;cursor:pointer"><div><b>${n}</b><span>${c?c+" answered":"🆕 not played yet"}</span></div></button>`}).join("")}</div><button class="sm fm" id="agm">View more games (${CAT.length-6}) ▾</button></div>`;
-  $("agm").onclick=()=>{const s=$("agl").classList.toggle("shut");$("agm").textContent=s?`View more games (${CAT.length-6}) ▾`:"View less ▴"};
+  <div class="card"><h2 style="margin:0 0 4px">All games</h2><p class="hint">Everything you play feeds one shared memory. 🆕 marks games you have not tried.</p><div class="ag fold-m shut" id="agl">${CAT.map(([k,n])=>{const c=playedN(k);return`<button class="ac ${c?"":"lock"}" data-oc="${k}" style="text-align:left;cursor:pointer"><div><b>${n}</b><span>${c?c+" answered":"🆕 not played yet"}</span></div></button>`}).join("")}</div><button class="sm fm" id="agm">View more games (${CAT.length-6}) ▾</button></div>${interestsH()}`;
+  bindInterests();$("agm").onclick=()=>{const s=$("agl").classList.toggle("shut");$("agm").textContent=s?`View more games (${CAT.length-6}) ▾`:"View less ▴"};
   $("tt1").onclick=openTime;$("tt2").onclick=()=>{X.ex[dn()]=(X.ex[dn()]||0)+15;delete X.dn["f"+dn()];xnow();updTmr();todayT()};
   $("view").querySelectorAll("[data-oc]").forEach(b=>b.onclick=()=>openCat(b.dataset.oc));
   $("view").querySelectorAll("[data-td]").forEach(b=>b.onclick=()=>{const a=b.dataset.td;
@@ -2087,7 +2110,7 @@ function boardsT(){
     if(BD.tk!==tokB||!$("bl"))return;
     const E=Object.entries((doc&&doc.e)||{}).map(([h,v])=>({h,...v})).filter(v=>v.x>0);let L;
     if(BD.scope==="ind")L=E.map(v=>({key:v.h,name:v.n+(v.y===1?" ✉️":v.y===2?" 📱":""),x:v.x,l:v.l,me:U&&v.h===U.h.slice(0,24)}));
-    else{const m={};for(const v of E){const o=m[v.u]||(m[v.u]={key:v.u,name:v.gn||v.n,x:0,l:0,n:0,me:U&&v.u===U.uid});o.x+=v.x;o.l=Math.max(o.l,v.l);o.n++}L=Object.values(m).map(o=>({...o,name:o.name+(o.n>1?" ("+o.n+" logins)":"")}))}
+    else{const m={};for(const v of E){const o=m[v.u]||(m[v.u]={key:v.u,name:v.gn||v.n,x:0,l:0,n:0,me:U&&v.u===(U.fid||("h"+U.h.slice(0,10)))});o.x+=v.x;o.l=Math.max(o.l,v.l);o.n++}L=Object.values(m).map(o=>({...o,name:o.name+(o.n>1?" ("+o.n+" logins)":"")}))}
     L.sort((a,b)=>b.x-a.x);
     $("bl").innerHTML=L.length?L.slice(0,30).map((v,i)=>`<div class="lbr ${v.me?"me":""}"><span class="rk2">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm">${esc(v.name)}${v.me?" · you":""}</span><small>Lv ${v.l}</small><b>${fmt(v.x)} XP</b></div>`).join("")+(L.length>30?`<p class="hint">Showing the top 30 of ${L.length}.</p>`:""):`<p class="hint">Nobody has scored in this period yet. Be the first!</p>`;
   });
@@ -2184,11 +2207,11 @@ const gLevel=()=>{const t=gv().t||0;let l=1;GC.lv.forEach((v,i)=>{if(t>=v)l=i+1}
 const gOn=k=>(gv()[k]||0)>Date.now();
 function gXpMult(){return !U?1:1+(gLevel()-1)*.02+(gOn("x")?.25:0)}
 function earnCoins(xp){if(!U||!(xp>0))return;const g=Math.floor(xp*GC.rate*(gOn("k")?2:1));if(g>0){P.cn=(P.cn||0)+g;out("cn",g)}}
-function gLoad(a){if(!U||!a)return;U.vault=a.vault||{};U.ct=a.ct||{};U.pd=a.pd||{};U.dr=a.dr||{};U.cl=a.cl||{};U.ql=a.ql||null;setTimeout(gClaim,400)}
+function gLoad(a){if(!U||!a)return;U.vault=a.vault||{};U.ct=a.ct||{};U.pd=a.pd||{};U.dr=a.dr||{};U.cl=a.cl||{};U.ql=a.ql||null;U.vl=a.vl||{};U.fid=a.fid||U.fid||null;U.jc=a.jc||null;U.fa=a.fa||{};U.ar=a.ar||{};setTimeout(gClaim,400)}
 function gMerge(accs){const v={c:0,t:0,x:0,k:0,d:{}},ct={},pd={},dr={},cl={};
   for(const a of accs){const w=a.vault||{};v.c+=w.c||0;v.t+=w.t||0;v.x=Math.max(v.x,w.x||0);v.k=Math.max(v.k,w.k||0);for(const d in w.d||{})v.d[d]=(v.d[d]||0)+w.d[d];
     for(const h in a.ct||{})ct[h]=(ct[h]||0)+a.ct[h];for(const h in a.pd||{})if(!pd[h]||pd[h][0]<=a.pd[h][0])pd[h]=a.pd[h];Object.assign(dr,a.dr||{});for(const id in a.cl||{})cl[id]=Object.assign(cl[id]||{},a.cl[id])}
-  return{vault:v,ct,pd,dr,cl}}
+  return{vault:v,ct,pd,dr,cl,vl:vlMerge(accs),fa:faMerge(accs)}}
 const gLeft=ms=>{const m=Math.max(0,Math.ceil(ms/6e4));return m>=60?Math.floor(m/60)+" h "+(m%60)+" min":m+" min"};
 const gPaidToday=h=>{const p=(U.pd||{})[h];return p&&p[0]===dn()?p[1]:0};
 const gErr={short:"Not enough coins.",gone:"This guild changed. Reload and try again.",amt:"Enter a whole number of coins (1 or more).",admin:"Only guild admins can do this.",closed:"Registration for this round is closed.",dup:"Already done.",full:"This round is full.",late:"Too late for this round.",done:"Already paid today."};
@@ -2205,6 +2228,7 @@ async function gPay(amt,auto){
     if(auto){const ap=l.ap||{};if(!ap.on||(ap.amt||0)-today<amt)throw new Error("done")}
     const u={["logins."+h+".s.cn"]:{__inc:-amt},"vault.c":{__inc:amt},"vault.t":{__inc:amt},["vault.d."+t]:{__inc:amt},["ct."+h]:{__inc:amt},["pd."+h]:[t,today+amt]};
     for(const d in (a.vault||{}).d||{})if(+d<t-9)u["vault.d."+d]=null;
+    vlAdd(u,a,{k:"pay",m:l.m,a:amt,at:Date.now()});
     tx.upd(uid,u)});
   const a=await dget(uid);if(a&&a.logins&&a.logins[h]){const o=OUTS[uid+":"+h];P.cn=((a.logins[h].s||{}).cn||0)+((o&&o.cn)||0);U.logins=a.logins;gLoad(a)}
   hud();gBoardPush();return amt}
@@ -2226,6 +2250,7 @@ async function gBuy(k){
     if(k==="xp")u["vault.x"]=Math.min(now+7*864e5,Math.max(now,v.x||0)+GC.xp.ms);
     else if(k==="cn")u["vault.k"]=Math.min(now+7*864e5,Math.max(now,v.k||0)+GC.cn.ms);
     else{u["dr."+rid(6)]={k:"pr",n:1,at:now};for(const o in a.dr||{})if((a.dr[o].at||0)<now-12*864e5){u["dr."+o]=null;u["cl."+o]=null}}
+    vlAdd(u,a,{k:"buy",p:k,m:((a.logins||{})[U.h]||{}).m||"",a:cost,at:now});
     tx.upd(U.uid,u)});
   const a=await dget(U.uid);gLoad(a);return cost}
 /* each member claims a drop once (checked inside a transaction so two devices can't both claim) */
@@ -2244,11 +2269,11 @@ async function gClaim(){
 function gPow(e,t){let s=0;String(e&&e.d||"").split(",").forEach(p=>{const q=p.split(":");if(+q[0]>t-7)s+=+q[1]||0});return s}
 async function gBoardPush(){
   if(!U)return;try{const F=await fbp(),t=dn(),d=(gv().d)||{};let s="";for(const k in d)if(+k>t-9)s+=(s?",":"")+k+":"+d[k];
-    await F.merge("lbp_0",{e:{[U.uid]:{gn:Array.from(U.name).slice(0,30).join(""),d:s,l:gLevel(),n:Object.values(U.logins).filter(l=>l.t).length}}});delete BD.cache.lbp_0}catch(e){}}
+    if(!LS.get("tt_lbp:"+U.uid))F.upd("lbp_0",{["e."+U.uid]:null}).then(()=>LS.set("tt_lbp:"+U.uid,1)).catch(()=>{});await F.merge("lbp_0",{e:{[U.fid||U.uid]:{gn:Array.from(U.name).slice(0,30).join(""),d:s,l:gLevel(),n:Object.values(U.logins).filter(l=>l.t).length}}});delete BD.cache.lbp_0}catch(e){}}
 async function gBoardShow(){
   const el=$("gbd");if(!el)return;const doc=await bdGet("lbp_0"),t=dn();if(!$("gbd"))return;
   const L=Object.entries((doc&&doc.e)||{}).map(([u,e])=>({u,e,p:gPow(e,t)})).filter(x=>x.p>0).sort((a,b)=>b.p-a.p);
-  $("gbd").innerHTML=L.length?L.slice(0,20).map((x,i)=>`<div class="lbr ${x.u===U.uid?"me":""}"><span class="rk2">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm">${esc(x.e.gn||"Guild")}${x.u===U.uid?" · you":""}</span><small>${GC.lvn[Math.max(0,Math.min(5,(x.e.l||1)-1))]}</small><b>${fmt(x.p)} 🪙</b></div>`).join(""):`<p class="hint">No guild has paid in the last 7 days. Be the first!</p>`}
+  $("gbd").innerHTML=L.length?L.slice(0,20).map((x,i)=>`<div class="lbr ${x.u===(U.fid||U.uid)?"me":""}"><span class="rk2">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm">${esc(x.e.gn||"Guild")}${x.u===(U.fid||U.uid)?" · you":""}</span><small>${GC.lvn[Math.max(0,Math.min(5,(x.e.l||1)-1))]}</small><b>${fmt(x.p)} 🪙</b></div>`).join(""):`<p class="hint">No guild has paid in the last 7 days. Be the first!</p>`}
 
 /* ---- Team Bounty Quiz: one round every 30 minutes, same questions for everyone, driven by the clock ---- */
 const qSlot=(t=Date.now())=>{const r=Math.floor(t/GC.qSlot),s=r*GC.qSlot;return{r,s,L:s+GC.qReg,E:s+GC.qReg+GC.qN*GC.qT,S:s+GC.qSettle,N:s+GC.qSlot}};
@@ -2273,7 +2298,7 @@ async function qRegister(){
     if(z&&z.teams&&z.teams[U.uid])throw new Error("dup");if(z&&Object.keys(z.teams||{}).length>=GC.qMax)throw new Error("full");
     const tm={n:Array.from(U.name).slice(0,30).join(""),at:Date.now()};
     if(z)tx.upd(id,{["teams."+U.uid]:tm});else tx.set(id,{r:q.r,teams:{[U.uid]:tm},p:{},done:false});
-    tx.upd(U.uid,{"vault.c":{__inc:-GC.qEntry}})});
+    {const u={"vault.c":{__inc:-GC.qEntry}};vlAdd(u,a,{k:"quiz",m:((a.logins||{})[U.h]||{}).m||"",a:GC.qEntry,at:Date.now()});tx.upd(U.uid,u)}});
   const a=await dget(U.uid);gLoad(a);QG.doc=await dget(id);QG.dt=Date.now();QG.key=""}
 async function qSubmit(){
   const S=QG.S;if(!S||S.sub||!U)return;S.sub=1;
@@ -2352,7 +2377,7 @@ function guildHub(){
   const act=[gOn("x")?`<span class="gh-chip">🚀 XP +25% · ${gLeft(v.x-Date.now())} left</span>`:"",gOn("k")?`<span class="gh-chip">🪙 Coins ×2 · ${gLeft(v.k-Date.now())} left</span>`:"",lv>1?`<span class="gh-chip">⭐ Guild level bonus +${(lv-1)*2}% XP</span>`:""].join("");
   const perk=(k)=>{const c=GC[k],cost=k==="pr"?Math.max(c.min,c.per*mem.length):c.cost,can=adm&&(v.c||0)>=cost;
     return`<div class="gh-perk"><span class="ic">${c.ico}</span><div class="tx"><b>${c.name}</b><small>${c.desc}</small></div><button class="sm" data-buy="${k}" ${can?"":"disabled"}>${fmt(cost)} 🪙</button></div>`};
-  $("view").innerHTML=`<div class="card"><div class="two" style="grid-template-columns:1fr auto"><h2 style="margin:0">🏰 ${esc(U.name)}</h2><span class="tg">${GC.lvn[lv-1]} · Lv ${lv}</span></div>
+  $("view").innerHTML=`${hubBanner()}<div class="card"><div class="two" style="grid-template-columns:1fr auto"><h2 style="margin:0">🏰 ${esc(U.name)}</h2><span class="tg">${GC.lvn[lv-1]} · Lv ${lv}</span></div>
     <p class="hint" style="margin:4px 0 0">Members pay coins into the guild vault. The vault buys boosters and gifts for everyone, enters the Team Bounty Quiz, and pushes your guild up the Guild Power board.</p>
     <div class="gh-t"><div><b>${fmt(v.c||0)} 🪙</b>in the vault</div><div><b>${fmt(p7)}</b>power (7 days)</div><div><b>${paidN}/${mem.length}</b>paid today</div><div><b>${fmt(bal)} 🪙</b>your coins</div></div>
     ${nx?`<div class="pb" style="margin:12px 0 4px"><b style="width:${Math.min(100,(tt-GC.lv[lv-1])/(nx-GC.lv[lv-1])*100)}%"></b></div><div class="hint" style="margin:0">${fmt(nx-tt)} 🪙 more contributed to reach level ${lv+1}. Each level adds +2% XP for every member.</div>`:`<div class="hint" style="margin-top:10px">Top level reached.</div>`}
@@ -2364,21 +2389,266 @@ function guildHub(){
     <label class="tgl"><input type="checkbox" id="gap1" ${ap.on?"checked":""}> Auto-pay every day</label>
     <div class="gh-amt"><input type="number" id="gap2" min="1" max="${GC.maxDaily}" step="1" value="${ap.amt||20}" aria-label="Coins per day"><span class="hint" style="margin:0">coins per day (up to ${GC.maxDaily})</span><button class="sm" id="gap3">Save</button></div><div class="er" id="gae"></div></div>
 
-  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">🎁 Guild perks</h2><p class="hint" style="margin:0 0 10px">${adm?"You are an admin, so you can spend the vault. Everyone in the guild gets the benefit.":"Only guild admins can spend the vault. Everyone in the guild gets the benefit."}</p>${perk("xp")}${perk("cn")}${perk("pr")}<div class="er" id="gbe"></div></div>
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">🎁 Guild perks <span class="tg">🔐 admins only</span></h2><p class="hint" style="margin:0 0 10px">${adm?"You are an admin, so you can spend the vault. Everyone in the guild gets the benefit.":"Only guild admins can spend the vault. Everyone in the guild gets the benefit."}</p>${perk("xp")}${perk("cn")}${perk("pr")}<div class="er" id="gbe"></div></div>
 
   <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">🏆 Team Bounty Quiz</h2><div id="gar"><p class="hint">Loading…</p></div>
     <p class="hint" style="margin:10px 0 0">A new round every 30 minutes, on the clock. In the first 18 minutes an admin enters the guild (${GC.qEntry} 🪙 from the vault). Then ${GC.qN} questions go live for everyone at once. Scores are calculated in the browser and checked by fair-play rules, and coins have no cash value.</p></div>
 
   <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">📊 Guild Power · last 7 days</h2><p class="hint" style="margin:0 0 8px">Ranked by coins each guild paid in during the last 7 days. Guilds that stop paying slide down.</p><div id="gbd"><div class="hint">Loading…</div></div></div>
 
-  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 6px">👥 Who paid</h2>${mem.sort((a,b)=>((U.ct||{})[b[0]]||0)-((U.ct||{})[a[0]]||0)).map(([h,l])=>`<div class="lg2"><span>${l.t==="email"?"✉️":"📱"} ${esc(l.m)}${h===U.h?" · you":""} ${gPaidToday(h)?`<span class="tg">✓ paid today</span>`:""}${l.ap&&l.ap.on?`<span class="tg nw">auto ${l.ap.amt}/day</span>`:""}</span><b>${fmt((U.ct||{})[h]||0)} 🪙</b></div>`).join("")}</div>`;
+  ${vaultLogH()}<div class="card" style="margin-top:14px"><h2 style="margin:0 0 6px">👥 Who paid</h2>${mem.sort((a,b)=>((U.ct||{})[b[0]]||0)-((U.ct||{})[a[0]]||0)).map(([h,l])=>`<div class="lg2"><span>${l.t==="email"?"✉️":"📱"} ${esc(l.m)}${h===U.h?" · you":""} ${gPaidToday(h)?`<span class="tg">✓ paid today</span>`:""}${l.ap&&l.ap.on?`<span class="tg nw">auto ${l.ap.amt}/day</span>`:""}</span><b>${fmt((U.ct||{})[h]||0)} 🪙</b></div>`).join("")}</div>`;
   const amt=()=>Math.floor(+$("gam").value);
   $("view").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{$("gam").value=b.dataset.q==="all"?bal:Math.min(+b.dataset.q,bal)});
   $("gpay").onclick=async()=>{const b=$("gpay"),e=$("gpe");b.disabled=true;e.textContent="";try{const n=await gPay(amt());toast(`🏰 ${n} 🪙 paid to ${U.name}`);guildHub()}catch(x){e.textContent=gMsg(x);b.disabled=false}};
   $("gap3").onclick=async()=>{const e=$("gae");e.textContent="";try{await gSetAuto($("gap1").checked,$("gap2").value);toast($("gap1").checked?"🔁 Auto-pay is on":"Auto-pay is off");gAuto();guildHub()}catch(x){e.textContent=x.message==="amt"?gErr.amt:gMsg(x)}};
   $("view").querySelectorAll("[data-buy]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{const c=await gBuy(b.dataset.buy);toast(`${GC[b.dataset.buy].ico} ${GC[b.dataset.buy].name} bought for ${fmt(c)} 🪙`);guildHub()}catch(x){$("gbe").textContent=gMsg(x);b.disabled=false}});
-  arenaMount();gBoardShow();
+  arenaMount();gBoardShow();hubBind();
   gRef=setInterval(async()=>{if(mode!=="guild"||!$("gpay")){clearInterval(gRef);return}if(document.hidden)return;const ae=document.activeElement;if(ae&&ae.tagName==="INPUT")return;try{const a=await dget(U.uid);if(a&&a.logins){U.logins=a.logins;gLoad(a)}guildHub()}catch(e){}},30000)}
+
+/* ---------- SECTION: IDENTITY · SOCIAL · ADMIN SUCCESSION ----------
+   Three separate IDs, each with ONE job (so a public profile can never be used to reach private or guild data):
+     uid  TT-XXXXXXXXXX  PRIVATE account ID. Certificates, sign-in, merges. Never written to any public document.
+     fid  FR-XXXXXXXX    PUBLIC friend ID. Lives in the public profile (p_<fid>), friend requests and follows (sc_<fid>).
+     jc   GD-XXXXXXXX    GUILD invite code. Only admins see it; gj_<code> -> guild. Joining needs this, never the uid or fid.
+   accounts/sc_<fid> = {fl:{fid:{n,at}} followers, fg: following, rq: incoming friend requests, fr: friends}
+   Account doc extras: fid, jc, fa {h:{m,at}} former admins, ar {h:{m,at}} open admin requests, vl {id:{k,m,a,at}} vault ledger.
+   accounts/i_<h> = {uids:[...], fa:[guild uids where this login used to be admin]}  -> lets a former admin be asked later. */
+const ALPHA="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",FID_RE=/^FR-[A-HJ-NP-Z2-9]{8}$/,JC_RE=/^GD-[A-HJ-NP-Z2-9]{8}$/,GA_WAIT_MS=7*864e5;
+const rndCode=p=>p+[...crypto.getRandomValues(new Uint8Array(8))].map(x=>ALPHA[x%32]).join("");
+const mineId=x=>!!U&&!!x&&(x===U.fid||x===U.uid);
+let POLLN=0,PVT=null,idBusy=null;
+
+/* ---- make sure this account has a Friend ID and a guild invite code; move old public data off the private ID ---- */
+function ensureIds(){
+  if(!U)return Promise.resolve();
+  if(U.fid&&U.jc)return Promise.resolve();
+  if(idBusy)return idBusy;
+  idBusy=(async()=>{
+    const F=await fbp();
+    for(let i=0;i<6&&U&&!(U.fid&&U.jc);i++){
+      const nf=rndCode("FR-"),nj=rndCode("GD-"),uid=U.uid;let res=null;
+      try{
+        await F.txn(async t=>{
+          const a=await t.get(uid);if(!a||a.mergedInto)return;
+          const s=a.fid?null:await t.get("sc_"+nf),g=a.jc?null:await t.get("gj_"+nj);
+          if(s||g)throw new Error("clash");
+          const up={};let fid=a.fid,jc=a.jc;
+          if(!fid){fid=nf;up.fid=nf;t.set("sc_"+nf,{fl:{},rq:{},fr:{},fg:{}})}
+          if(!jc){jc=nj;up.jc=nj;t.set("gj_"+nj,{uid,at:Date.now()})}
+          if(Object.keys(up).length)t.upd(uid,up);
+          res={fid,jc};
+        });
+      }catch(e){if(e.message!=="clash")break}
+      if(res&&U&&U.uid===uid){U.fid=res.fid;U.jc=res.jc}
+    }
+    /* one-time clean-up: the old public documents were keyed by the private ID, so remove them (they are rewritten under the Friend ID) */
+    if(U&&U.fid&&!LS.get("tt_mig:"+U.uid)){try{await ddel("p_"+U.uid);await ddel("pm_"+U.uid);LS.set("tt_mig:"+U.uid,1)}catch(e){}}
+  })().finally(()=>{idBusy=null});
+  return idBusy;
+}
+
+/* ---- friends, followers, requests ---- */
+const scDoc=async f=>{try{return(await dget("sc_"+f))||{fl:{},rq:{},fr:{},fg:{}}}catch(e){return null}};
+const myNm=()=>Array.from(U.name).slice(0,30).join("");
+const scW=(f,o)=>dupd("sc_"+f,o);
+const SC={
+  follow:async(t,n)=>{await scW(t,{["fl."+U.fid]:{n:myNm(),at:Date.now()}});await scW(U.fid,{["fg."+t]:{n:n||"Player",at:Date.now()}})},
+  unfollow:async t=>{await scW(t,{["fl."+U.fid]:null});await scW(U.fid,{["fg."+t]:null})},
+  request:async t=>{await scW(t,{["rq."+U.fid]:{n:myNm(),at:Date.now()}})},
+  cancel:async t=>{await scW(t,{["rq."+U.fid]:null})},
+  accept:async(x,n)=>{await scW(U.fid,{["rq."+x]:null,["fr."+x]:{n:n||"Player",at:Date.now()}});await scW(x,{["fr."+U.fid]:{n:myNm(),at:Date.now()}})},
+  decline:async x=>{await scW(U.fid,{["rq."+x]:null})},
+  unfriend:async x=>{await scW(U.fid,{["fr."+x]:null});await scW(x,{["fr."+U.fid]:null})}
+};
+const cnt=m=>Object.keys(m||{}).length;
+/* the Friend / Follow bar shown on a public profile */
+async function socMount(fid,name,own){
+  const w=$("pubv").querySelector(".pvw");if(!w||!FID_RE.test(fid||""))return;
+  let box=$("socb");if(!box){box=document.createElement("div");box.id="socb";box.className="card";box.style.margin="0";const hero=w.querySelector(".cover");hero?hero.after(box):w.prepend(box)}
+  const draw=async()=>{
+    if(!document.body.contains(box))return;
+    const d=await scDoc(fid),chips=d?`<span class="tg">👥 ${cnt(d.fr)} friend${cnt(d.fr)===1?"":"s"}</span><span class="tg">⭐ ${cnt(d.fl)} follower${cnt(d.fl)===1?"":"s"}</span>`:"";
+    if(own){box.innerHTML=`<div class="bar2" style="margin:0">${chips}<span class="sp"></span><button class="sm" id="socm">👥 Friends and requests${U.nrq?" ("+U.nrq+")":""}</button></div>`;$("socm").onclick=()=>socOpen();return}
+    if(!U){box.innerHTML=`<div class="bar2" style="margin:0">${chips}<span class="sp"></span><button class="pri" id="sf1">➕ Add friend</button><button class="sm" id="sf2">⭐ Follow</button></div>`;$("sf1").onclick=$("sf2").onclick=()=>authHome("Sign in to add friends and follow people.");return}
+    await ensureIds();if(!U||!U.fid||!document.body.contains(box))return;
+    if(fid===U.fid){box.remove();return}
+    const mine=await scDoc(U.fid),isFr=d&&d.fr&&d.fr[U.fid],isReq=d&&d.rq&&d.rq[U.fid],isFol=d&&d.fl&&d.fl[U.fid],theyAsked=mine&&mine.rq&&mine.rq[fid];
+    const b=(id,t,c)=>`<button class="${c||"sm"}" id="${id}">${t}</button>`;
+    box.innerHTML=`<div class="bar2" style="margin:0">${chips}<span class="sp"></span>${isFr?b("sfu","✅ Friends · Unfriend"):theyAsked?b("sfa","✅ Accept request","pri")+b("sfd","Decline"):isReq?b("sfc","⏳ Request sent · Cancel"):b("sfr","➕ Add friend","pri")}${isFol?b("sfn","⭐ Following · Unfollow"):b("sff","⭐ Follow")}</div>${d?"":`<p class="hint" style="margin:6px 0 0">Couldn't load friend data.</p>`}`;
+    const act=(id,fn,msg)=>{const e=$(id);if(e)e.onclick=async()=>{e.disabled=true;try{await fn();if(msg)toast(msg)}catch(x){toast("Couldn't update. Check your connection.")}draw()}};
+    act("sfr",()=>SC.request(fid),"👋 Friend request sent");act("sfc",()=>SC.cancel(fid));act("sfu",()=>confirm("Remove this friend?")?SC.unfriend(fid):0);
+    act("sfa",()=>SC.accept(fid,name),"✅ You are now friends");act("sfd",()=>SC.decline(fid));
+    act("sff",()=>SC.follow(fid,name),"⭐ Following");act("sfn",()=>SC.unfollow(fid));
+  };
+  draw();
+}
+/* Friends, requests, followers, following + find by @username or Friend ID */
+async function socOpen(){
+  if(!U){authHome();return}
+  openModal(`<div class="mh"><h2 id="mt">👥 Friends and followers</h2><button class="sm" id="mx">Close</button></div><label for="socq">Find a person by @username or Friend ID</label><div class="fi"><input type="text" id="socq" placeholder="@username or FR-XXXXXXXX" autocapitalize="none" autocomplete="off" spellcheck="false"><button class="sm" id="socg">Open</button></div><div id="socbody"><p class="hint">Loading…</p></div>`);
+  $("mx").onclick=closeModal;
+  const go=()=>{let v=$("socq").value.trim();if(!v)return;if(/^fr-/i.test(v)){v=v.toUpperCase();if(!FID_RE.test(v)){toast("That Friend ID doesn't look right");return}closeModal();location.hash="#u="+v}else{v=v.replace(/^@/,"").toLowerCase();if(!UN_RE.test(v)){toast("Enter a valid username");return}closeModal();location.hash="#/"+v}};
+  $("socg").onclick=go;$("socq").onkeydown=e=>{if(e.key==="Enter")go()};
+  await ensureIds();
+  const draw=async()=>{
+    const el=$("socbody");if(!el)return;const d=await scDoc(U.fid);
+    if(!d){el.innerHTML=`<p class="hint">Couldn't load. Check your connection.</p>`;return}
+    U.nrq=cnt(d.rq);
+    const list=(m,btn)=>Object.entries(m||{}).sort((a,b)=>(b[1].at||0)-(a[1].at||0)).map(([f,e])=>`<div class="lg2"><span><button class="sm" data-view="${f}">${esc(e.n||"Player")}</button> <small class="hint">${f}</small></span><span>${btn(f)}</span></div>`).join("")||`<p class="hint" style="margin:4px 0">Nobody yet.</p>`;
+    el.innerHTML=`<h3 style="margin:14px 0 4px">Friend requests ${cnt(d.rq)?`<span class="tg nw">${cnt(d.rq)}</span>`:""}</h3>${list(d.rq,f=>`<button class="sm" data-acc="${f}">Accept</button> <button class="sm dg" data-dec="${f}">Decline</button>`)}
+    <h3 style="margin:14px 0 4px">Friends (${cnt(d.fr)})</h3>${list(d.fr,f=>`<button class="sm dg" data-unf="${f}">Unfriend</button>`)}
+    <h3 style="margin:14px 0 4px">Following (${cnt(d.fg)})</h3>${list(d.fg,f=>`<button class="sm dg" data-unfol="${f}">Unfollow</button>`)}
+    <h3 style="margin:14px 0 4px">Followers (${cnt(d.fl)})</h3>${list(d.fl,()=>"")}`;
+    const nm=(f)=>((d.rq[f]||d.fr[f]||d.fg[f]||d.fl[f])||{}).n;
+    const act=(sel,fn)=>el.querySelectorAll(sel).forEach(b=>b.onclick=async()=>{b.disabled=true;try{await fn(b)}catch(x){toast("Couldn't update. Check your connection.")}draw();if(!UM.el().hidden)UM.render()});
+    act("[data-acc]",b=>SC.accept(b.dataset.acc,nm(b.dataset.acc)));act("[data-dec]",b=>SC.decline(b.dataset.dec));
+    act("[data-unf]",b=>confirm("Remove this friend?")?SC.unfriend(b.dataset.unf):0);act("[data-unfol]",b=>SC.unfollow(b.dataset.unfol));
+    el.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{closeModal();location.hash="#u="+b.dataset.view});
+  };
+  draw();
+}
+let socToast=false;
+async function socInit(){
+  if(!U)return;try{await ensureIds();if(!U||!U.fid)return;const d=await scDoc(U.fid),n=d?cnt(d.rq):0;U.nrq=n;
+    if(n&&!socToast){socToast=true;toast(`👋 ${n} new friend request${n>1?"s":""}. Open the menu → Friends and followers.`)}
+    if(!UM.el().hidden)UM.render()}catch(e){}
+}
+
+/* ---- guild authority and succession ---- */
+const hasAdmin=(roles,logins)=>Object.keys(logins||{}).some(k=>logins[k]&&logins[k].t&&(roles||{})[k]==="admin");
+async function reqAdmin(){
+  const F=await fbp();
+  await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("gone");
+    if(hasAdmin(a.roles||allAdmin(a.logins||{}),a.logins))throw new Error("has");
+    const me=(a.logins||{})[U.h];if(!me)throw new Error("gone");
+    t.upd(U.uid,{["ar."+U.h]:{m:me.m,at:Date.now()}})});
+  const a=await dget(U.uid);if(a)gLoad(a);
+}
+/* approve/decline: done by a former admin (popup) or automatically after GA_WAIT_MS with no answer */
+async function decideAdmin(gu,rh,ok){
+  const F=await fbp();
+  await F.txn(async t=>{const a=await t.get(gu);if(!a||a.mergedInto)throw new Error("gone");
+    if(!a.ar||!a.ar[rh])return;
+    const u={};for(const k in a.ar)u["ar."+k]=null;
+    if(ok){if(hasAdmin(a.roles||allAdmin(a.logins||{}),a.logins))throw new Error("has");
+      if(a.logins&&a.logins[rh]){u["roles."+rh]="admin";u["fa."+rh]=null}}
+    else{for(const k in a.ar)if(k!==rh)delete u["ar."+k]}
+    t.upd(gu,u)});
+  if(ok)ixFa(rh,gu,false).catch(()=>{});
+}
+async function adminFallback(){
+  if(!U||hasAdmin(U.roles,U.logins))return;
+  const q=Object.entries(U.ar||{}).sort((a,b)=>(a[1].at||0)-(b[1].at||0))[0];
+  if(q&&Date.now()-(q[1].at||0)>GA_WAIT_MS){try{await decideAdmin(U.uid,q[0],true);const a=await dget(U.uid);if(a){U.roles=a.roles||U.roles;gLoad(a)}toast("🛡️ No answer from previous admins. The oldest request was approved.")}catch(e){}}
+}
+/* A former admin signs in: if a guild they used to run has no admin now, ask them (approve a request, or return as admin) */
+async function adminInbox(force){
+  if(!U)return;
+  try{
+    const d=await ixDoc(U.h),items=[];
+    for(const u of(d.fa||[]).filter(x=>x!==U.uid).slice(0,8)){
+      const a=await dget(u);
+      if(!a||a.mergedInto||!a.fa||!a.fa[U.h]){ixFa(U.h,u,false).catch(()=>{});continue}
+      if(hasAdmin(a.roles||allAdmin(a.logins||{}),a.logins))continue;
+      if(!force&&Date.now()-(LS.get("tt_inb:"+u)||0)<12*36e5)continue;
+      items.push({u,name:a.name,reqs:Object.entries(a.ar||{})});
+    }
+    if(items.length)showAdminInbox(items);
+  }catch(e){}
+}
+function showAdminInbox(items){
+  const h=items.map(it=>`<div class="lr"><b>${esc(it.name)}</b><div class="hint" style="margin:4px 0 8px">You were an admin of this guild, and it has no admin now.</div>${it.reqs.length?it.reqs.map(([rh,r])=>`<div class="lg2"><span>${esc(r.m)} <small class="hint">asked ${ago(r.at)}</small></span><span><button class="sm" data-ia="${it.u}|${rh}|1">Approve as admin</button> <button class="sm dg" data-ia="${it.u}|${rh}|0">Decline</button></span></div>`).join(""):`<p class="hint" style="margin:0 0 8px">Nobody has asked yet.</p>`}<button class="sm" data-ir="${it.u}">↩️ Return as admin myself</button></div>`).join("");
+  openModal(`<div class="mh"><h2 id="mt">🛡️ A guild needs an admin</h2><button class="sm" id="mx">Later</button></div>${h}<div class="er" id="iner"></div>`);
+  $("mx").onclick=()=>{items.forEach(i=>LS.set("tt_inb:"+i.u,Date.now()));closeModal()};
+  MD().querySelectorAll("[data-ia]").forEach(b=>b.onclick=async()=>{const[u,rh,ok]=b.dataset.ia.split("|");b.disabled=true;try{await decideAdmin(u,rh,ok==="1");toast(ok==="1"?"✅ New admin approved":"Request declined");closeModal();adminInbox(true)}catch(e){b.disabled=false;$("iner").textContent=e.message==="has"?"This guild already has an admin.":"Couldn't save. Check your connection."}});
+  MD().querySelectorAll("[data-ir]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await returnAdmin(b.dataset.ir);toast("✅ You are an admin of that guild again. Sign in with it from the account chooser.");closeModal()}catch(e){b.disabled=false;$("iner").textContent=e.message==="has"?"This guild already has an admin.":"Couldn't save. Check your connection."}});
+}
+async function returnAdmin(gu){
+  const F=await fbp(),cur=U.logins[U.h];if(!cur)throw new Error("x");
+  await F.txn(async t=>{const a=await t.get(gu);if(!a||a.mergedInto||!a.fa||!a.fa[U.h])throw new Error("gone");
+    if(hasAdmin(a.roles||allAdmin(a.logins||{}),a.logins))throw new Error("has");
+    const u={["logins."+U.h]:mkLogin({t:cur.t,m:cur.m}),["roles."+U.h]:"admin",["fa."+U.h]:null};for(const k in a.ar||{})u["ar."+k]=null;
+    t.upd(gu,u)});
+  await ixAdd(U.h,gu);await ixFa(U.h,gu,false);
+}
+async function rotateJc(){
+  if(!isAdmin())throw new Error("admin");
+  const F=await fbp();
+  for(let i=0;i<5;i++){const nj=rndCode("GD-");
+    try{await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("gone");if(await t.get("gj_"+nj))throw new Error("clash");
+      if(a.jc)t.del("gj_"+a.jc);t.set("gj_"+nj,{uid:U.uid,at:Date.now()});t.upd(U.uid,{jc:nj})});U.jc=nj;return}catch(e){if(e.message!=="clash")throw e}}
+  throw new Error("x");
+}
+/* dashboard block: headless banner + invite code (admins only) */
+function succH(){
+  if(!U)return"";
+  const head=!hasAdmin(U.roles,U.logins),ar=Object.entries(U.ar||{}),fa=Object.values(U.fa||{}),mine=(U.ar||{})[U.h];let h="";
+  if(head)h+=`<div class="lr me"><b>⚠️ This guild has no admin</b><div class="hint" style="margin:4px 0 8px">Nobody can spend the vault or manage members right now. ${fa.length?"Previous admins ("+fa.map(x=>esc(x.m)).join(", ")+") are asked to approve the next admin the next time they sign in.":"No previous admin was recorded."}${mine?" Your request is waiting. If nobody answers in 7 days it is approved automatically.":""}</div>${mine?"":`<button class="sm" data-ra="1">🙋 Request admin</button>`}${ar.length?`<div class="hint" style="margin-top:8px">Waiting: ${ar.map(([,r])=>esc(r.m)+" ("+ago(r.at)+")").join(", ")}</div>`:""}</div>`;
+  if(isAdmin())h+=`<h2>Guild invite code</h2><p class="hint" style="margin:0 0 6px">The only way to join this guild. It is different from your private account ID and your public Friend ID. Only admins can see it. If it leaks, make a new one.</p><div class="fi"><input type="text" id="jcv" readonly value="${esc(U.jc||"Creating…")}" aria-label="Guild invite code"><button class="sm" id="jcc">Copy</button><button class="sm dg" id="jcn">New code</button></div>`;
+  return h;
+}
+function bindSucc(){
+  A().querySelectorAll("[data-ra]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await reqAdmin();renderDash("✅ Request sent to the previous admins.")}catch(e){renderDash(e.message==="has"?"This guild already has an admin.":"Couldn't send. Check your connection.")}});
+  const c=$("jcc");if(c)c.onclick=()=>copyTxt(U.jc||"");
+  const n=$("jcn");if(n)n.onclick=async()=>{if(!confirm("Make a new invite code? The old code stops working immediately."))return;try{await rotateJc();renderDash("✅ New invite code created.")}catch(e){renderDash("Couldn't create a new code. Check your connection.")}};
+}
+
+/* ---- Guild Hub extras: everyone sees the vault ledger, only admins spend ---- */
+function vlAdd(u,a,e){const id=rid(6),old=Object.entries(a.vl||{}).sort((x,y)=>(y[1].at||0)-(x[1].at||0));u["vl."+id]=e;old.slice(29).forEach(([k])=>{u["vl."+k]=null})}
+function vlMerge(accs){const all=[];for(const a of accs)for(const k in a.vl||{})all.push([k,a.vl[k]]);all.sort((x,y)=>(y[1].at||0)-(x[1].at||0));return Object.fromEntries(all.slice(0,30))}
+function faMerge(accs,keep){const o={};for(const a of accs)Object.assign(o,a.fa||{});for(const h of keep||[])delete o[h];return Object.fromEntries(Object.entries(o).slice(0,20))}
+function hubBanner(){
+  if(!U||hasAdmin(U.roles,U.logins))return"";const mine=(U.ar||{})[U.h];
+  return`<div class="tip" style="margin:0 0 12px"><span>⚠️ <b>This guild has no admin.</b> Members can still pay coins, but nobody can spend the vault. ${mine?"Your request is waiting for a previous admin.":"Ask for authority and the guild's previous admins will be asked to approve you."}</span>${mine?"":`<button class="pri" id="hra">🙋 Request admin</button>`}</div>`;
+}
+function hubBind(){const b=$("hra");if(b)b.onclick=async()=>{b.disabled=true;try{await reqAdmin();toast("✅ Request sent to previous admins");guildHub()}catch(e){toast(e.message==="has"?"This guild already has an admin":"Couldn't send. Check your connection.")}}}
+function vaultLogH(){
+  const L=Object.values(U.vl||{}).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,12);
+  const row=e=>`<div class="lg2"><span>${e.k==="pay"?"➕":"➖"} ${esc(e.m||"A member")} ${e.k==="pay"?"paid in":e.k==="buy"?"bought "+esc((GC[e.p]||{}).name||"a perk"):"entered the Team Bounty Quiz"} <small class="hint">${ago(e.at)}</small></span><b>${e.k==="pay"?"+":"−"}${fmt(e.a||0)} 🪙</b></div>`;
+  return`<div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">📜 Vault activity <span class="tg">everyone can see</span></h2><p class="hint" style="margin:0 0 8px">Every coin that goes into or out of the guild vault is listed here. All members can look, only admins can spend.</p>${L.length?L.map(row).join(""):`<p class="hint" style="margin:0">No vault activity yet.</p>`}</div>`;
+}
+
+/* ---- Games: every game in the catalogue is part of the Daily mix and Shooter automatically ----
+   Known game   = answered at least once. Unknown game = never answered. The mix mostly serves known games (⭐ = more, 🚫 = never)
+   and a few discovery questions from unknown games; answering one question makes a game "known". */
+const MIX_SKIP=new Set(["mix","chain","dmix"]);
+const mixList=()=>["mul",...Object.keys(GENS).filter(k=>!MIX_SKIP.has(k))];
+const gKnown=k=>k==="mul"?P.ans>0:((X.gp[k]||[0])[0]>0||(P.gm[k]||[0])[0]>0);
+const gNames=()=>({mul:"✖️ Times tables",...Object.fromEntries(CAT)});
+function interestsH(){
+  const N=gNames(),fav=PREF.fav||[],mute=PREF.mute||[];
+  return`<div class="card"><h2 style="margin:0 0 4px">🎛 My games</h2><p class="hint">⭐ shows a game more often in your Daily mix and Shooter. 🚫 hides it. Games you have never answered (🆕) appear now and then so you can discover them; after one answer they become part of <i>your</i> games. New games added to the app show up here by themselves.</p>
+  <label for="dsc">Discovery: how often to try new games</label><select id="dsc">${[["low","Rarely"],["mid","Sometimes"],["high","Often"]].map(([v,l])=>`<option value="${v}" ${(PREF.disc||"mid")===v?"selected":""}>${l}</option>`).join("")}</select>
+  <div class="ag" style="margin-top:10px">${mixList().map(k=>`<div class="ac ${gKnown(k)?"":"lock"}"><div><b>${N[k]||k}</b><span>${gKnown(k)?"✅ known":"🆕 not tried"}</span><span><button class="sm" data-fv="${k}">${fav.includes(k)?"⭐ Favourite":"☆ Favourite"}</button> <button class="sm" data-mt="${k}">${mute.includes(k)?"🚫 Hidden":"Hide"}</button></span></div></div>`).join("")}</div></div>`;
+}
+function bindInterests(){
+  const tog=(key,k)=>{const a=PREF[key]||[],i=a.indexOf(k);if(i>=0)a.splice(i,1);else a.push(k);PREF[key]=a;if(key==="fav"&&a.includes(k))PREF.mute=(PREF.mute||[]).filter(x=>x!==k);if(key==="mute"&&a.includes(k))PREF.fav=(PREF.fav||[]).filter(x=>x!==k);savePref();todayT()};
+  $("view").querySelectorAll("[data-fv]").forEach(b=>b.onclick=()=>tog("fav",b.dataset.fv));
+  $("view").querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>tog("mute",b.dataset.mt));
+  const d=$("dsc");if(d)d.onchange=()=>{PREF.disc=d.value;savePref()};
+}
+
+/* ---- Public page: live ---- */
+function pvLive(fid,p0){
+  clearInterval(PVT);let last=p0.upd||0,at=Date.now();
+  const chip=()=>{const w=$("pubv").querySelector(".pvw");if(!w)return;let c=$("pvlive");if(!c){c=document.createElement("div");c.id="pvlive";c.className="hint";c.style.cssText="text-align:right;margin:0";w.prepend(c)}c.innerHTML=`<span style="color:#e11d48">●</span> Live · checked ${ago(at)}`};
+  chip();
+  PVT=setInterval(async()=>{
+    if(!PV||document.hidden||$("pubv").hidden)return;
+    try{const p=await dget("p_"+fid);if(!p)return;at=Date.now();
+      if((p.upd||0)!==last){last=p.upd||0;let m=null;if(U){try{m=await dget("pm_"+fid)}catch(e){}}
+        const items=Object.entries(p.f||{}).map(([k,v])=>[k,v,"public"]).concat(m?Object.entries(m.f||{}).map(([k,v])=>[k,v,"members"]):[]),w=$("pubv").querySelector(".pvw"),sc=$("pubv").scrollTop;
+        if(w){w.innerHTML=pvHTML(p,m,m?"user":"anon",items);$("pubv").querySelectorAll("[data-cp]").forEach(b=>b.onclick=()=>copyTxt(b.dataset.cp));$("pubv").querySelectorAll("[data-signin]").forEach(b=>b.onclick=()=>authHome());hookCta();socMount(fid,p.name,false);$("pubv").scrollTop=sc}}
+      chip()}catch(e){}
+  },15000);
+}
+/* live preview inside the profile editor (re-drawn on every keystroke, includes unsaved edits and your current stats) */
+function renderPrev(){
+  const el=$("pfprev");if(!el||!PD)return;const t=PD.pvTab||"anon",pr={f:PD.f,v:PD.v,share:true,un:PD.un||""},p=buildPub(pr),m=buildMem(pr);
+  const items=t==="owner"?allItems(pr):Object.entries(p.f).map(([k,v])=>[k,v,"public"]).concat(t==="user"?Object.entries(m.f).map(([k,v])=>[k,v,"members"]):[]);
+  const sc=el.scrollTop;el.innerHTML=pvHTML(p,t==="anon"?null:m,t,items);el.scrollTop=sc;
+  el.querySelectorAll("button").forEach(b=>{b.type="button";b.tabIndex=-1});
+}
 
 /* ---------- SECTION: WIRING (start-up) ---------- */
 function plusMode(m){if(m==="today"){todayT();return true}if(m==="lab"){labHome();return true}if(m==="shoot"){shooterT();return true}if(m==="board"){boardsT();return true}if(m==="guild"){guildHub();return true}return false}

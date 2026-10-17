@@ -207,7 +207,7 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
 <header><div class="hd">
   <div class="logo"><i aria-hidden="true">✖</i>Table Trainer</div><div class="sp"></div>
   <div class="lvl" id="sc" style="gap:12px"></div><div class="lvl"><span id="lv">Lv 1</span><div class="bar"><b id="xpb" style="width:0"></b></div><span class="lg" id="xpt"></span></div>
-  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="acct"></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
+  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="tmrb" hidden aria-label="Daily practice time"></button><button class="ib" id="acct"></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
 </div></header>
 
 <div class="app">
@@ -231,7 +231,7 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
   <div id="view" tabindex="-1"></div>
 </main>
 </div>
-<footer class="ft">Table Trainer · Progress is saved on this device and syncs to your guild when you are signed in.</footer>
+<footer class="ft">Table Trainer · Progress is saved on this device and syncs to your guild when you are signed in. <a href="privacy.html">Privacy</a></footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div id="auth" hidden></div>
@@ -240,7 +240,7 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
 <div id="sheet" class="printonly" aria-hidden="true"></div>
 <script>
 const $=id=>document.getElementById(id);
-const MODES=[["path","🧭 Journey"],["map","🗺️ My Map"],["arcade","🎮 Arcade"],["cert","🏅 Certificates"],["learn","📖 Learn"],["chart","🔢 Chart"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["test","📝 Test"],["dash","📈 Dashboard"],["profile","👤 Profile"],["prog","📊 Progress"]];
+const MODES=[["path","🧭 Journey"],["map","🗺️ My Map"],["arcade","🎮 Arcade"],["today","🎯 Today"],["lab","🧮 Math Lab"],["shoot","🔫 Shooter"],["board","🏆 Boards"],["cert","🏅 Certificates"],["learn","📖 Learn"],["chart","🔢 Chart"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["test","📝 Test"],["dash","📈 Dashboard"],["profile","👤 Profile"],["prog","📊 Progress"]];
 let mode="path",st={},weakMode=false;
 const def=()=>({xp:0,ans:0,ok:0,bs:0,speed:0,tests:0,perf:0,weak:{},dh:{},ms:{},dd:{},gm:{},jr:{start:null,stg:{}},ach:{},sk:{cur:0,best:0,last:null,prot:0,h:{}}});
 const norm=o=>{const p=Object.assign(def(),o||{});p.sk=Object.assign(def().sk,p.sk||{});p.weak=p.weak||{};p.dh=p.dh||{};p.ms=p.ms||{};p.ach=p.ach||{};p.dd=p.dd||{};p.jr=Object.assign({start:null,stg:{}},p.jr||{});p.jr.stg=p.jr.stg||{};p.gm=p.gm||{};return p};
@@ -653,6 +653,7 @@ const dn=(d=new Date())=>Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getD
 const isPrime=n=>{if(n<2)return false;for(let i=2;i*i<=n;i++)if(n%i===0)return false;return true};
 const reward=n=>isPrime(n)?n:(n%2?1:0);
 const addXp=n=>{
+  n=typeof xpAdj==="function"?xpAdj(n):n;if(!(n>0))return;
   const was=Math.floor(tot().xp/100);P.xp+=n;out("xp",n);out("dh",n);const t=dn();P.dh[t]=(P.dh[t]||0)+n;for(const k in P.dh)if(+k<t-30)delete P.dh[k];
   const now=Math.floor(tot().xp/100);if(now>was){sfx("win");toast(`⬆️ Level ${now+1}: ${rankOf(now+1)}!`)}
   if(P.dh[t]>=PREF.goal&&PREF.goalDay!==t){PREF.goalDay=t;savePref();sfx("win");toast("🎯 Daily goal reached!")}
@@ -702,7 +703,7 @@ $("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{mode=b.dataset.k;st
 
 function start(){
   document.querySelectorAll(".tab").forEach(b=>{b.classList.toggle("on",b.dataset.k===mode);b.setAttribute("aria-selected",b.dataset.k===mode)});
-  clearInterval(st.timer);hud();document.body.classList.toggle("jr",["path","map","arcade","cert"].includes(mode));
+  clearInterval(st.timer);hud();document.body.classList.toggle("jr",["path","map","arcade","cert","today","lab","shoot","board"].includes(mode));
   st={score:0,tot:0,streak:0,time:60,over:false,log:[]};
   if(mode==="prog")return prog();
   if(mode==="dash")return dashT();
@@ -712,6 +713,7 @@ function start(){
   if(mode==="map")return skillMap();
   if(mode==="arcade")return arcade();
   if(mode==="cert")return certScreen();
+  if(typeof plusMode==="function"&&plusMode(mode))return;
   if(!pool().length){$("view").innerHTML=`<div class="card">${weakMode?"No weak spots yet. Keep practicing!":"Pick a table on the left to begin."}</div>`;return}
   if(mode==="learn")return learn();
   if(mode==="match")return match();
@@ -976,7 +978,7 @@ function testSetup(){
   const n=pool().length;tN=Math.min(tN,Math.max(n,1));
   $("view").innerHTML=`<div class="card" style="max-width:560px;margin:0 auto;text-align:center"><div class="big">📝 Take a test</div><p class="hint">Answer every question first. You see your score and mistakes at the end. Leave an answer blank to skip it.</p><div class="seg" id="tq" style="justify-content:center">${[10,20,30].map(x=>`<button data-n="${x}" class="${x===tN?"on":""}">${x} questions</button>`).join("")}</div><p class="hint">${n} different questions in your current selection${n<tN?`, so this test will have ${n}`:""}.</p><div class="act"><button class="pri" id="tgo">Start test</button></div></div>`;
   $("tq").querySelectorAll("button").forEach(b=>b.onclick=()=>{tN=+b.dataset.n;$("tq").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
-  $("tgo").onclick=()=>{TS={q:shuffle(pool()).slice(0,tN),i:0,a:[],t0:Date.now()};testQ()};
+  $("tgo").onclick=()=>{TS={q:(typeof mixN==="function"?mixN(pool(),tN):shuffle(pool()).slice(0,tN)),i:0,a:[],t0:Date.now()};testQ()};
 }
 function testQ(){
   const[a,m]=TS.q[TS.i],n=TS.q.length,last=TS.i===n-1;
@@ -999,7 +1001,7 @@ function testDone(){
 }
 
 function match(){
-  const items=shuffle(pool()).slice(0,6),ans=shuffle(items.map(([a,m])=>a*m));
+  const items=(typeof mixN==="function"?mixN(pool(),6):shuffle(pool()).slice(0,6)),ans=shuffle(items.map(([a,m])=>a*m));
   st.sel=null;st.done=0;st.n=items.length;st.tries=0;
   $("view").innerHTML=`<div class="card"><div class="hint" style="margin:0 0 12px">Tap a question, then its answer.</div><div class="mt"><div>${items.map(([a,m])=>`<button data-v="${a*m}" class="mb mq">${a} × ${m}</button>`).join("")}</div><div>${ans.map(v=>`<button data-v="${v}" class="mb ma">${v}</button>`).join("")}</div></div><div class="fb" id="fb" role="status" aria-live="polite"></div></div>`;
   const qs=[...document.querySelectorAll(".mq")],as=[...document.querySelectorAll(".ma")];
@@ -1276,11 +1278,642 @@ async function boot(){
   if(pid)showPublic(pid);else authHome();
 }
 $("smart").checked=PREF.smart;$("smart").onchange=e=>{PREF.smart=e.target.checked;savePref()};
+/* =====================================================================
+   PLUS 1/4 · Integrity core: telemetry, trust score, player tags,
+   restrictions, daily XP cap, daily play timer, developer sync.
+   Everything here is additive: existing functions are wrapped, never replaced.
+   ===================================================================== */
+const MAXLV=19; /* "Legend" is the top rank in the existing app */
+let CFG={dayCap:1200}; /* live-tunable by the developer (doc cfg_live) */
+const defX=()=>({xd:{},td:{},ans:{},gp:{},mo:{},n:0,fast:0,unt:0,noin:0,hid:0,blur:0,paste:0,newN:0,newOk:0,win:[],log:[],fl:{},ev:[],tag:"New",tr:100,mx:0,mxi:[],run:0,ar:0,okc:0,ls:0,dn:{},ex:{},hide:false,rst:0});
+const XK=()=>"tt_x:"+(U?U.uid+":"+U.h:"guest");
+let X=Object.assign(defX(),LS.get(XK())||{}),XR={vd:null,rs:null};
+let xsT=0;const xsave=()=>{const n=Date.now();if(n-xsT<2500)return;xsT=n;LS.set(XK(),X)};
+const xnow=()=>{xsT=0;xsave()};
+const ixId=()=>"ix_"+U.h.slice(0,24);
+function evt(t,d){X.ev.push([Date.now(),t,String(d).slice(0,80)]);if(X.ev.length>25)X.ev.shift()}
+function xswitch(){X=Object.assign(defX(),LS.get(XK())||{});XR={vd:null,rs:null};updTmr();if(U){xpull();cfgPull()}}
+async function cfgPull(){try{const d=await dget("cfg_live");if(d&&d.dayCap>=200)CFG.dayCap=d.dayCap}catch(e){}}
+
+/* ---------- raw signals ---------- */
+const T={qs:performance.now(),kt:0,pt:0,ut:0,pa:0,bl:false,lt:0,la:Date.now(),qe:null};
+function qMark(){T.qs=performance.now();T.kt=T.pt=T.ut=T.pa=0;T.bl=false}
+const trusted=()=>{T.lt=performance.now();T.la=Date.now()};
+addEventListener("keydown",e=>{if(e.isTrusted){T.kt++;trusted()}else if(performance.now()-T.lt>1500)T.ut++},true);
+addEventListener("input",e=>{if(e.isTrusted){T.kt++;trusted()}},true);
+addEventListener("pointerdown",e=>{if(e.isTrusted){T.pt++;trusted()}},true);
+addEventListener("touchstart",e=>{if(e.isTrusted){T.pt++;trusted()}},{capture:true,passive:true});
+/* The app itself calls button.click() after Enter, so a synthetic click only counts when no real key/tap happened just before it. */
+addEventListener("click",e=>{if(!e.isTrusted&&performance.now()-T.lt>1500&&e.target&&e.target.closest&&e.target.closest("#view,#modal"))T.ut++},true);
+addEventListener("paste",e=>{if(e.isTrusted&&e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))T.pa++},true);
+addEventListener("blur",()=>{T.bl=true});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)T.bl=true});
+let LAB="";
+new MutationObserver(()=>{const q=document.querySelector("#view .q");if(q&&q!==T.qe){T.qe=q;qMark();
+  if(LAB){const fb=$("fb");if(fb&&!fb.textContent){fb.className="fb";fb.textContent=LAB==="retry"?"🔁 You missed this one earlier. Try it again":"🆕 New fact. Tap Hint if you are unsure"}LAB=""}}
+}).observe($("view"),{childList:true,subtree:true});
+
+/* ---------- per-answer telemetry ---------- */
+const RT=[];let batchMeta=null;
+function tel(ok,m){
+  m=m||{};let g=m.gap!=null?m.gap:performance.now()-T.qs;if(!(g>=0))g=0;
+  const f=m.f!=null?m.f:((T.kt+T.pt===0?1:0)|(T.ut>0?2:0)|(document.hidden?4:0)|(T.bl&&ok?8:0)|(T.pa?16:0));
+  const fl=f|(g<450?32:0),src=m.src||mode;
+  X.n++;X.win.push([Math.round(g),ok?1:0,fl,m.nw?1:0]);if(X.win.length>60)X.win.shift();
+  X.log.push([Math.floor(Date.now()/1000),src,m.k||"",ok?1:0,Math.round(g),fl]);if(X.log.length>60)X.log.shift();
+  if(fl&1)X.noin++;if(fl&2)X.unt++;if(fl&4)X.hid++;if(fl&8)X.blur++;if(fl&16)X.paste++;if(fl&32)X.fast++;
+  if(m.nw){X.newN++;if(ok)X.newOk++}
+  X.run=ok?X.run+1:0;
+  const d=dn();X.ans[d]=(X.ans[d]||0)+1;
+  const c=X.gp[src]||(X.gp[src]=[0,0]);c[0]++;c[1]=d;
+  const now=Date.now();RT.push(now);while(RT.length&&now-RT[0]>60000)RT.shift();
+  if(X.n%10===0||fl&(2|4)||X.n<12&&X.n%4===0)judge();
+  xsave();xsync();
+}
+function metrics(){
+  const w=X.win,n=w.length;if(n<8)return null;
+  const gs=w.map(r=>r[0]).sort((a,b)=>a-b),med=gs[n>>1],mean=gs.reduce((a,b)=>a+b,0)/n,
+    sd=Math.sqrt(w.reduce((a,r)=>a+(r[0]-mean)*(r[0]-mean),0)/n),sh=f=>w.filter(r=>r[2]&f).length/n;
+  return{n,med,cv:mean?sd/mean:0,fast:sh(32),noin:sh(1),unt:sh(2),hid:w.filter(r=>r[2]&4).length,blur:sh(8),acc:w.filter(r=>r[1]).length/n,paste:w.filter(r=>r[2]&16).length};
+}
+function tamper(){return P.ok>P.ans||P.xp>15*P.ans+1500||P.speed>75||P.bs>P.ok||P.sk.best>4000}
+function maxInfo(){
+  const o=[];if(lvOf()>=MAXLV)o.push("Top rank (level "+MAXLV+"+)");
+  if(JB.every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].m))o.push("Journey complete");
+  if(ACH.every(a=>P.ach[a[0]]))o.push("All badges");
+  let n=0;for(let i=1;i<=20;i++)for(let j=i;j<=20;j++)if(mlev(fact(i,j))===3)n++;if(n>=210)o.push("All 20×20 facts mastered");
+  if(P.speed>=50)o.push("Speed round 50+");return o;
+}
+function recentApm(){const now=Date.now();return RT.filter(t=>now-t<=60000).length}
+function judge(){
+  const M=metrics(),fl={};let pen=0;const add=(k,p)=>{fl[k]=p;pen+=p};
+  if(M){
+    if(M.n>=10){if(M.fast>.5)add("superfast-answers",40);else if(M.fast>.25)add("fast-answers",20)}
+    if(M.n>=15&&M.cv<.12&&M.med<3000)add("uniform-timing",25);
+    if(M.n>=8&&M.noin>.3)add("no-human-input",50);
+    if(M.unt>.05)add("synthetic-events",45);
+    if(M.hid>=3)add("answers-in-hidden-tab",25);
+    if(M.paste>=1)add("pasted-answers",Math.min(30,15*M.paste));
+    if(M.n>=20&&M.blur>.3&&M.acc>.95)add("tab-switch-then-correct",20);
+    if(X.run>=150&&M.med<1000)add("flawless-and-fast",20);
+  }
+  if(recentApm()>45)add("rate-over-45-per-min",30);
+  if(navigator.webdriver)add("webdriver",40);
+  if(X.newN>=40&&X.newOk/X.newN>=.98&&X.blur>=10)add("perfect-on-unseen",15);
+  const tam=tamper();if(tam)fl.tamper=100;
+  const tr=tam?0:Math.max(0,100-pen),old=X.tag,oldAr=X.ar||0;
+  X.fl=fl;X.tr=tr;
+  const hard=fl["no-human-input"]||fl["synthetic-events"]||fl.webdriver||fl["superfast-answers"]||fl["rate-over-45-per-min"],
+        ai=fl["tab-switch-then-correct"]||fl["perfect-on-unseen"]||fl["pasted-answers"],mi=maxInfo(),lv=lvOf();
+  X.tag=tam?"Hacker":(tr<=30&&hard)?"Bot":(ai&&tr<85)?"AI-assisted":(tr<60&&X.n>=20)?"Suspicious":X.n<30?"New":(lv>=MAXLV||mi.length>=2)?"Max":lv>=13?"Pro":lv>=8?"Proficient":lv>=4?"Medium":"Novice";
+  /* automatic restriction with hysteresis: rises at once, falls one step after 3 clean checks */
+  let want=X.n<20&&!tam?0:tr>=70?0:tr>=50?1:tr>=30?2:3;if(tam)want=3;
+  if(want>oldAr){X.ar=want;X.okc=0}else if(want<oldAr){if(++X.okc>=3){X.ar=oldAr-1;X.okc=0}}else X.okc=0;
+  if(X.ar>oldAr){const top=Object.keys(fl).sort((a,b)=>fl[b]-fl[a])[0]||"";evt("restrict",X.ar+" "+top);toast("⚠️ Unusual play pattern ("+top.replace(/-/g," ")+"). XP is reduced while we verify. Play normally and it clears by itself.")}
+  if(X.tag!==old)evt("tag",old+" → "+X.tag);
+  if(mi.length&&!X.mx){X.mx=Date.now();X.mxi=mi;evt("max",mi.join(", "));toast("👑 You reached the top: "+mi[0]+". Amazing!");xsync(true)}
+  else if(mi.length!==(X.mxi||[]).length){X.mxi=mi}
+  if(X.tag!==old||X.ar!==oldAr)xsync(true);
+  xsave();
+}
+function rsEff(){const v=XR.vd;if(v==="genuine")return 0;let r=X.ar||0;if(XR.rs!=null)r=XR.rs;if(v==="bot")r=Math.max(r,2);return r}
+/* every XP gain goes through here (one-line hook inside addXp) */
+function xpAdj(n){
+  if(!(n>0))return n;const t=dn();let f=[1,.5,.1,0][rsEff()];
+  if(timeUp())f=0;
+  const used=X.xd[t]||0;
+  if(used>=CFG.dayCap){f=0;if(!X.dn["c"+t]){X.dn["c"+t]=1;toast("🎯 Daily XP cap reached ("+CFG.dayCap+"). Keep practising. XP is back tomorrow.")}}
+  else n=Math.min(n,CFG.dayCap-used);
+  n=f>0?Math.max(1,Math.round(n*f)):0;X.xd[t]=used+n;
+  for(const d in X.xd)if(+d<t-400)delete X.xd[d];
+  return n;
+}
+/* ---------- developer sync ---------- */
+async function xsync(force){
+  if(!U||(!force&&Date.now()-X.ls<90000))return;X.ls=Date.now();
+  try{const F=await fbp(),M=metrics()||{},t=dn(),ds={},an={},tm={};
+    for(let d=t-400;d<=t;d++)if(X.xd[d])ds[d]=X.xd[d];for(let d=t-60;d<=t;d++){if(X.ans[d])an[d]=X.ans[d];if(X.td[d])tm[d]=Math.round(X.td[d])}
+    const l=U.logins[U.h]||{};
+    await F.merge(ixId(),{u:U.uid,h:U.h.slice(0,24),n:U.name,m:l.m||"",ty:l.t||"",tg:X.tag,tr:X.tr,fl:Object.keys(X.fl),lv:lvOf(),xp:P.xp,ans:P.ans,ok:P.ok,
+      md:M.med||0,cv:+(M.cv||0).toFixed(2),fs:+(M.fast||0).toFixed(2),ni:+(M.noin||0).toFixed(2),ts:Date.now(),mx:X.mx||0,mxi:X.mxi||[],ar:X.ar||0,hide:!!X.hide,
+      ds,an,tm,lg:X.log.slice(-40),ev:X.ev.slice(-15),pl:Object.fromEntries(Object.entries(X.gp).map(([k,v])=>[k,v[0]])),dv:dev(),ver:2});
+  }catch(e){X.ls=0}
+}
+async function xpull(){
+  if(!U)return;
+  try{const h=U.h.slice(0,24),[d,v]=await Promise.all([dget("ix_"+h),dget("ixd_"+h)]);
+    if(d){for(const k in d.ds||{})X.xd[k]=Math.max(X.xd[k]||0,d.ds[k]);for(const k in d.tm||{})X.td[k]=Math.max(X.td[k]||0,d.tm[k]);if(!X.hide&&d.hide)X.hide=true}
+    /* developer verdicts live in ixd_<login>, writable only by the developer allowlist */
+    XR={vd:(v&&v.vd)||null,rs:v&&v.rs!=null?v.rs:null};
+    if(v&&v.rst&&v.rst>(X.rst||0)){X.rst=v.rst;X.win=[];X.ar=0;X.okc=0;X.tr=100;X.fl={};X.run=0;X.tag="New";evt("reset","Developer reset")}
+    xnow();updTmr();
+  }catch(e){}
+}
+addEventListener("pagehide",()=>{xnow();xsync(true)});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){xnow();xsync(true)}});
+
+/* ---------- daily play timer ---------- */
+if(PREF.dailyMin===undefined){PREF.dailyMin=30;savePref()}
+const limitMin=()=>PREF.dailyMin?Math.min(180,PREF.dailyMin+(X.ex[dn()]||0)):0;
+const usedSec=()=>X.td[dn()]||0;
+function timeUp(){const t=dn();return !!(PREF.dailyMin&&(X.dn["f"+t]||(limitMin()>0&&usedSec()>=180*60)))}
+function updTmr(){
+  const b=$("tmrb");if(!b)return;
+  if(!PREF.dailyMin){b.hidden=true;return}
+  b.hidden=false;const rem=limitMin()*60-usedSec();
+  if(X.dn["f"+dn()]){b.textContent="✅ Done today";return}
+  b.textContent="⏱ "+(rem>0?Math.floor(rem/60)+":"+String(Math.floor(rem%60)).padStart(2,"0"):"0:00");
+}
+function tmrUp(){
+  if(document.getElementById("tmup"))return;
+  const used=Math.round(usedSec()/60),lim=limitMin(),canMore=lim<180;
+  const d=document.createElement("div");d.id="tmup";
+  d.style.cssText="position:fixed;inset:0;z-index:28;background:rgba(10,14,30,.6);display:grid;place-items:center;padding:20px";
+  d.innerHTML=`<div class="card" role="dialog" aria-modal="true" style="max-width:440px;text-align:center"><div style="font-size:2.6rem">⏰</div><h2 style="margin:6px 0">Today's practice time is complete</h2><p class="hint">You practised <b>${used} min</b> today and earned <b>${X.xd[dn()]||0} XP</b>. Short daily practice beats one long session, so come back tomorrow to keep your streak growing.</p><div class="act">${canMore?`<button class="pri" data-m="15">+15 min</button><button class="sm" data-m="30">+30 min</button>`:""}<button class="sm" data-m="0">Finish for today</button></div><p class="hint" style="margin-bottom:0">If you finish, you can still practise, but XP pauses until tomorrow.</p></div>`;
+  document.body.appendChild(d);
+  d.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const m=+b.dataset.m,t=dn();
+    if(m){X.ex[t]=(X.ex[t]||0)+m;delete X.dn["f"+t];toast("Added "+m+" minutes. Enjoy!")}else{X.dn["f"+t]=1;evt("finish","day "+t);toast("Great work today. See you tomorrow! 👋")}
+    d.remove();xnow();updTmr();xsync(true)});
+}
+setInterval(()=>{
+  if(document.hidden||Date.now()-T.la>45000)return;const t=dn();
+  X.td[t]=(X.td[t]||0)+1;updTmr();
+  const lim=limitMin();if(lim&&!X.dn["f"+t]&&usedSec()>=lim*60&&X.dn["p"+t+"_"+lim]!==1){X.dn["p"+t+"_"+lim]=1;tmrUp()}
+  if(X.td[t]%20===0)xnow();
+},1000);
+setInterval(()=>{if(U&&!document.hidden){xpull();cfgPull()}},120000);
+
+/* ---------- hooks: wrap existing functions without changing them ---------- */
+{const _r=record;record=function(a,m,ok,help){
+  const had=a<=MS_MAX&&m<=MS_MAX&&!!P.ms[fkey(a,m)];_r.apply(this,arguments);
+  try{const b=batchMeta;tel(ok,b?{gap:b.gap,f:b.f,k:"mul:"+fkey(a,m),nw:!had}:{k:"mul:"+fkey(a,m),nw:!had});if(!ok)rqAdd(a,m)}catch(e){}}}
+{const _t=testQ;testQ=function(){if(TS){TS._k=(TS._k||0)+T.kt+T.pt;TS._u=(TS._u||0)+T.ut}return _t.apply(this,arguments)}}
+{const _d=testDone;testDone=function(){
+  const n=TS.q.length,k=(TS._k||0)+T.kt+T.pt,u=(TS._u||0)+T.ut;
+  batchMeta={gap:(Date.now()-TS.t0)/n,f:(k===0?1:0)|(u>0?2:0)};try{return _d.apply(this,arguments)}finally{batchMeta=null}}}
+{const _l=login;login=function(){_l.apply(this,arguments);xswitch()}}
+{const _s=signOut;signOut=function(){try{xnow();xsync(true)}catch(e){}_s.apply(this,arguments);xswitch()}}
+{const _h=hud;hud=function(){_h.apply(this,arguments);updTmr()}}
+
+/* =====================================================================
+   PLUS 2/4 · Connected question engine + Math Lab games
+   One shared memory: missed facts come back after 2-4 questions in ANY game,
+   a never-seen fact is slipped in every ~4 questions, old facts return when due.
+   ===================================================================== */
+const R=(lo,hi)=>lo+rnd(hi-lo+1);
+const RQ=[];let QC=0,lastNew=0;
+function rqAdd(a,m){const k=fkey(a,m);if(RQ.some(r=>r.k===k))return;RQ.push({k,f:[a,m],due:QC+2+rnd(3),at:Date.now()});while(RQ.length>8)RQ.shift()}
+/* replaces the pick used by Practice, Choose, Missing, Speed and Survival (same name, richer rules) */
+smartPick=function(p){
+  if(p.length<2)return p[0];
+  QC++;const t=dn(),prev=st.cur&&fkey(st.cur.a,st.cur.m),now=Date.now();
+  for(let i=RQ.length-1;i>=0;i--)if(now-RQ[i].at>20*60000)RQ.splice(i,1);
+  const ri=RQ.findIndex(r=>r.due<=QC&&r.k!==prev);
+  if(ri>=0){const r=RQ.splice(ri,1)[0];LAB="retry";return r.f}
+  const unseen=p.filter(([a,m])=>!fact(a,m)&&fkey(a,m)!==prev);
+  if(unseen.length&&QC-lastNew>=4){lastNew=QC;LAB="new";return pick(unseen)}
+  if(QC%5===0){const wk=Object.keys(P.weak).map(k=>k.split("x").map(Number)).filter(f=>f[0]<=MS_MAX&&f[1]<=MS_MAX&&fkey(f[0],f[1])!==prev);if(wk.length)return pick(wk)}
+  const w=p.map(([a,m])=>{if(fkey(a,m)===prev)return 0;const e=fact(a,m);if(!e)return 3;return(6-e[0])*((t-e[2])>=BOX_DAYS[e[0]]?2:.5)+(e[3]?1:0)});
+  let r=Math.random()*w.reduce((x,y)=>x+y,0);
+  for(let i=0;i<p.length;i++){r-=w[i];if(r<=0)return p[i]}
+  return p[p.length-1];
+};
+/* n questions: ~30% never seen, ~25% missed before, ~30% due for review, rest known */
+function mixN(p,n){
+  const u=new Map();p.forEach(f=>u.set(fkey(f[0],f[1]),f));const t=dn(),nw=[],ms=[],du=[];
+  for(const[k,f]of u){const e=P.ms[k];if(!e)nw.push(f);else if(e[3]>0&&e[0]<=2)ms.push(f);else if(t-e[2]>=BOX_DAYS[e[0]])du.push(f)}
+  const take=(a,c)=>shuffle(a).slice(0,Math.max(0,c));
+  let out=[...take(nw,Math.max(nw.length?1:0,Math.round(n*.3))),...take(ms,Math.round(n*.25)),...take(du,Math.round(n*.3))];
+  const have=new Set(out.map(f=>fkey(f[0],f[1])));
+  out=out.concat(shuffle([...u.values()].filter(f=>!have.has(fkey(f[0],f[1]))))).slice(0,n);
+  return shuffle(out).map(f=>Math.random()<.5?f:[f[1],f[0]]);
+}
+
+/* ---------- step-by-step hints ---------- */
+function addH(x,y,full){
+  if(y<10){const o=x%10;if(o+y>=10){const nd=10-o,s=x+nd;return full?`Make a ten first: ${x} + ${nd} = ${s}, then + ${y-nd} = ${s+y-nd}`:`Make the next ten first: ${x} + ${nd} = ${s}, then add the ${y-nd} that is left`}
+    return full?`Add the ones: ${o} + ${y} = ${o+y}, so ${x} + ${y} = ${x+y}`:`Just add the ones: ${o} + ${y}`}
+  const u=y>=100?100:10,lo=y%u,hi=y-lo,s=x+hi;
+  if(!lo)return full?`${x} + ${hi} = ${s}`:`Add ${y} in one step: ${x} + ${hi}`;
+  return full?`${x} + ${hi} = ${s}, then ${s} + ${lo} = ${s+lo}`:`Split ${y} into ${hi} + ${lo}: do ${x} + ${hi} first, then add ${lo}`;
+}
+function subH(a,b,full){
+  if(b<10){const o=a%10;if(o<b){const s=a-o;return full?`Go back to the ten: ${a} − ${o} = ${s}, then − ${b-o} more = ${s-(b-o)}`:`Go down to the ten first: ${a} − ${o} = ${s}, then take away the ${b-o} that is left`}
+    return full?`Subtract the ones: ${o} − ${b} = ${o-b}, so ${a} − ${b} = ${a-b}`:`Just subtract the ones: ${o} − ${b}`}
+  const u=b>=100?100:10,lo=b%u,hi=b-lo,s=a-hi;
+  if(!lo)return full?`${a} − ${hi} = ${s}`:`Take away ${b} in one step: ${a} − ${hi}`;
+  return full?`${a} − ${hi} = ${s}, then ${s} − ${lo} = ${s-lo}`:`Split ${b} into ${hi} + ${lo}: do ${a} − ${hi} first, then take away ${lo}`;
+}
+function seqH(a,full){
+  const d=a[1]-a[0],n=a.length-1;let h,arith=a.every((v,i)=>!i||v-a[i-1]===d),geo=a[0]!==0&&a.every((v,i)=>!i||v===a[i-1]*(a[1]/a[0])),fib=a.length>3&&a.every((v,i)=>i<2||v===a[i-1]+a[i-2]);
+  if(arith)h=`Find the gap between neighbours: ${a[1]} − ${a[0]} = ${d}. Keep adding it.`;
+  else if(geo)h=`Each number is the one before × ${a[1]/a[0]}.`;
+  else if(fib)h=`Add the two numbers before.`;
+  else h=`Look at the gaps: ${a.slice(1,n).map((v,i)=>(v-a[i]>=0?"+":"")+(v-a[i])).join(", ")}. The gaps follow a pattern.`;
+  return full?h+` Next: ${a[n]}`:h;
+}
+
+/* ---------- generators ---------- */
+const LR={add:[[1,9,1,9],[10,99,2,9],[10,99,10,99],[100,999,10,99],[100,999,100,999]],sub:[[5,18,1,9],[20,99,2,9],[20,99,10,60],[100,999,10,99],[100,999,100,899]]};
+const mulQ=(a,m)=>({g:"mul",k:"mul:"+fkey(a,m),f:[a,m],t:`${a} × ${m} = <span>?</span>`,a:a*m,nw:!fact(a,m),h:f=>hintFor(a,m,f?1:0)});
+const GN={
+ add:{r:L=>{const c=LR.add[L-1];return[R(c[0],c[1]),R(c[2],c[3])]},mk:(a,b)=>{const x=Math.max(a,b),y=Math.min(a,b);return{g:"add",k:"add:"+y+":"+x,t:`${a} + ${b} = <span>?</span>`,a:a+b,h:f=>addH(x,y,f)}},fk:p=>[+p[2],+p[1]]},
+ sub:{r:L=>{const c=LR.sub[L-1];let a=R(c[0],c[1]),b=R(c[2],c[3]);if(b>=a){const s=a;a=b;b=s}if(a===b)a++;return[a,b]},mk:(a,b)=>({g:"sub",k:"sub:"+a+":"+b,t:`${a} − ${b} = <span>?</span>`,a:a-b,h:f=>subH(a,b,f)}),fk:p=>[+p[1],+p[2]]},
+ bond:{r:L=>{const tg=[10,20,100,100,1000][L-1];let x=L===1?R(1,9):L===2?R(1,19):L===3?5*R(1,19):L===4?R(1,99):R(1,999);return[x,tg]},
+   mk:(x,tg)=>({g:"bond",k:"bond:"+x+":"+tg,t:`${x} + <span>?</span> = ${tg}`,a:tg-x,h:f=>f?`${tg} − ${x} = ${tg-x}`:(tg===100&&x<100&&x%10?`Tens make 9, ones make 10: ${x} needs ${9-Math.floor(x/10)} more tens and ${10-x%10} more ones`:`Think: ${tg} − ${x}`)}),fk:p=>[+p[1],+p[2]]},
+ pw:{r:L=>L<=3?[L===1?R(2,10):L===2?R(11,15):R(16,25),2]:[L===4?R(2,6):R(7,10),3],
+   mk:(n,p)=>({g:"pw",k:"pw:"+n+":"+p,t:`${n}${p===2?"²":"³"} = <span>?</span>`,a:Math.pow(n,p),h:f=>{
+     if(p===3)return f?`${n}² = ${n*n}, then × ${n} = ${n*n*n}`:`First work out ${n}² = ${n*n}, then multiply by ${n}`;
+     if(n<=10)return f?`${n} × ${n} = ${n*n}`:`Think ${n} × ${n}`;
+     if(n%10===0)return f?`${n/10}² = ${n*n/100}, then add two zeros = ${n*n}`:`Square ${n/10}, then add two zeros`;
+     const t=n-n%10;return f?`(${n} × ${t}) + (${n} × ${n%10}) = ${n*t} + ${n*(n%10)} = ${n*n}`:`Split: (${n} × ${t}) + (${n} × ${n%10})`}}),fk:p=>[+p[1],+p[2]]},
+ div:{r:L=>{const mb=[5,9,12,15,20][L-1],b=R(2,mb),q=R(2,L<=3?12:L===4?15:20);return[b*q,b]},
+   mk:(p,b)=>({g:"div",k:"div:"+p+":"+b,f:[b,p/b],t:`${p} ÷ ${b} = <span>?</span>`,a:p/b,h:f=>f?`${b} × ${p/b} = ${p}`:`Think: ${b} × ? = ${p}`}),fk:p=>[+p[1],+p[2]]},
+ seq:{r:L=>{const t=rnd(L<=2?2:L===3?3:5),s=R(1,L===1?20:60),d=R(2,L===1?5:12);let a=[];
+     if(t===0)for(let i=0;i<5;i++)a.push(s+d*i);
+     else if(t===1){const e=Math.min(d,s+d*4-1);for(let i=0;i<5;i++)a.push(s+d*4-e*i)}
+     else if(t===2){const r=pick([2,3]),s0=R(1,5);for(let i=0;i<5;i++)a.push(s0*Math.pow(r,i))}
+     else if(t===3){const d0=R(1,4);let v=s;for(let i=0;i<5;i++){a.push(v);v+=d0+i}}
+     else{const x=R(1,6),y=R(2,8);a=[x,y];for(let i=2;i<5;i++)a.push(a[i-1]+a[i-2])}
+     return[a]},
+   mk:a=>({g:"seq",k:"seq:"+a.join(","),t:`${a.slice(0,4).join(", ")}, <span>?</span>`,a:a[4],h:f=>seqH(a,f)}),fk:p=>[p[1].split(",").map(Number)]},
+ cmp:{r:L=>{
+     let e1,e2,v1,v2;
+     const ex=()=>{if(L===1){const a=R(2,9),b=R(2,9);return[`${a} + ${b}`,a+b]}if(L===2){const a=R(2,9),b=R(2,9);return[`${a} × ${b}`,a*b]}
+       if(L===3){return rnd(2)?(a=>[`${a[0]} × ${a[1]}`,a[0]*a[1]])([R(6,12),R(6,12)]):(a=>[`${a[0]} + ${a[1]}`,a[0]+a[1]])([R(30,99),R(30,99)])}
+       if(L===4){const a=R(11,25),b=R(6,15);return[`${a} × ${b}`,a*b]}const a=R(12,30),b=R(12,30);return[`${a} × ${b}`,a*b]};
+     if(Math.random()<.12){const f=pick([[12,[[3,4],[2,6]]],[16,[[2,8],[4,4]]],[18,[[2,9],[3,6]]],[24,[[3,8],[4,6]]],[36,[[4,9],[6,6]]],[48,[[6,8],[4,12]]]]),p=shuffle(f[1]);return[`${p[0][0]} × ${p[0][1]}`,`${p[1][0]} × ${p[1][1]}`]}
+     for(let i=0;i<20;i++){[e1,v1]=ex();[e2,v2]=ex();if(v1!==v2&&e1!==e2&&(L<5||Math.abs(v1-v2)<=Math.max(10,v1*.15)))break}
+     return[e1,e2]},
+   mk:(e1,e2)=>{const v=s=>{const m=s.match(/(\d+) ([+×]) (\d+)/);return m[2]==="+"?+m[1]+ +m[3]:m[1]*m[3]},a=v(e1),b=v(e2);
+     return{g:"cmp",k:"cmp:"+e1+"|"+e2,t:`Which is bigger?<div style="font-size:.7em;margin-top:6px">${e1} <small>or</small> ${e2}</div>`,ch:[e1,e2,"Equal"],ai:a>b?0:a<b?1:2,a:null,h:f=>f?`${e1} = ${a}, ${e2} = ${b}`:`Work out each side first, then compare`}},fk:null},
+ chain:{r:L=>{const n=[3,4,5,6,7][L-1],hi=L<=2?20:L<=3?60:99,d=L<=2?9:L<=3?30:60;let v=R(5,hi);const s=[v];for(let i=1;i<n;i++){let ch=R(1,d);if(Math.random()<.5||v-ch<0)v+=ch,s.push("+"+ch);else v-=ch,s.push("−"+ch)}return[s,v,[1500,1400,1200,1000,900][L-1]]},
+   mk:(s,v,ms)=>({g:"chain",k:"chain:"+s.join(""),seq:s,flash:ms,t:`Total = <span>?</span>`,a:v,h:f=>{let r=+s[0],o=[r];for(let i=1;i<s.length;i++){r+=s[i][0]==="+"?+s[i].slice(1):-s[i].slice(1);o.push(r)}return f?`Running total: ${o.join(" → ")}`:`Keep a running total in your head: ${s[0]} then ${s[1]}, ${s[2]}…`}}),fk:null}
+};
+/* ---------- question picker: retry → new → review → random ---------- */
+const ORQ=[],OC={_n:0};
+function oRetry(Q){if(Q.f||ORQ.some(r=>r.Q.k===Q.k))return;ORQ.push({Q,due:OC._n+2+rnd(3),at:Date.now()});while(ORQ.length>8)ORQ.shift()}
+function genQ(g,L){
+  const G=GN[g];OC[g]=(OC[g]||0)+1;OC._n++;const t=dn(),now=Date.now();
+  for(let i=ORQ.length-1;i>=0;i--)if(now-ORQ[i].at>20*60000)ORQ.splice(i,1);
+  const ri=ORQ.findIndex(r=>r.Q.g===g&&r.due<=OC._n);
+  if(ri>=0){const q=ORQ.splice(ri,1)[0].Q;q.lab="retry";q.nw=0;return q}
+  const fresh=()=>G.mk(...G.r(L));
+  if(OC[g]%4===3){for(let i=0;i<12;i++){const q=fresh();if(!X.mo[q.k]&&!(q.f&&fact(...q.f))){q.nw=1;q.lab="new";return q}}}
+  if(G.fk&&Math.random()<.5){
+    const pool=[];for(const k in X.mo){if(k.indexOf(g+":")!==0)continue;const e=X.mo[k];if(t-e[2]>=BOX_DAYS[e[0]]||(e[3]>0&&e[0]<3))pool.push([k,(6-e[0])+e[3]])}
+    if(pool.length){let r=Math.random()*pool.reduce((a,b)=>a+b[1],0),k=pool[0][0];for(const[kk,w]of pool){r-=w;if(r<=0){k=kk;break}}
+      try{const q=G.mk(...G.fk(k.split(":")));q.lab="";return q}catch(e){}}}
+  const q=fresh();q.nw=X.mo[q.k]||(q.f&&fact(...q.f))?0:1;return q;
+}
+function mixGen(){
+  const list=["mul","add","sub","bond","pw","div","seq"];
+  const w=list.map(g=>{const c=g==="mul"?P.ans:(X.gp[g]||[0])[0];return c===0?4:2/(1+Math.log10(1+c))+.8});
+  let r=Math.random()*w.reduce((a,b)=>a+b,0),g=list[0];for(let i=0;i<list.length;i++){r-=w[i];if(r<=0){g=list[i];break}}
+  X.lv=X.lv||{};
+  if(g==="mul"){const p=[];for(let a=2;a<=12;a++)for(let m=1;m<=10;m++)p.push([a,m]);const f=smartPick(p),q=mulQ(f[0],f[1]);q.lab=LAB;LAB="";return q}
+  return genQ(g,X.lv[g]||1);
+}
+const GENS={add:L=>genQ("add",L),sub:L=>genQ("sub",L),mix:L=>genQ(Math.random()<.5?"add":"sub",L),bond:L=>genQ("bond",L),pw:L=>genQ("pw",L),div:L=>genQ("div",L),seq:L=>genQ("seq",L),cmp:L=>genQ("cmp",L),chain:L=>genQ("chain",L),dmix:()=>mixGen()};
+const LABG=[["add","➕","Addition","Add in your head, from 1-digit to 3-digit"],["sub","➖","Subtraction","Take away, with step-by-step hints"],["mix","🔀","Add & subtract mix","Both together, random order"],["bond","🔟","Number bonds","Make 10, 20, 100 and 1000"],["pw","🧱","Squares & cubes","n² up to 25, n³ up to 10"],["div","➗","Division facts","Linked to your times tables"],["seq","🔢","Number patterns","Find the next number"],["cmp","⚖️","Bigger or smaller","Compare two sums fast"],["chain","🧠","Memory chain","Numbers flash. Keep the total"],["dmix","🎲","Daily mix","Every game, weighted to what you have not played"]];
+
+/* ---------- answer bookkeeping (shared by every game) ---------- */
+function recordOp(Q,ok,help){
+  const e=X.mo[Q.k]||(X.mo[Q.k]=[0,0,0,0]);e[1]++;e[2]=dn();
+  if(ok){if(!help)e[0]=Math.min(5,e[0]+1)}else{e[0]=0;e[3]++;oRetry(Q)}
+  {const g=P.gm[mode]||(P.gm[mode]=[0,0]);g[0]++;if(ok)g[1]++}
+  P.ans++;out("ans",1);{const t=dn(),d=P.dd[t]||(P.dd[t]=[0,0]);d[0]++;if(ok){d[1]++;P.ok++;out("ok",1)}}
+  const ks=Object.keys(X.mo);if(ks.length>900){ks.sort((a,b)=>X.mo[a][2]-X.mo[b][2]).slice(0,100).forEach(k=>delete X.mo[k])}
+  tel(ok,{k:Q.k,nw:Q.nw,src:Q.g});
+}
+function answerQ(Q,ok,help){
+  if(Q.f)record(Q.f[0],Q.f[1],ok,help);else recordOp(Q,ok,help);
+  if(ok)addXp(help?3:10);sfx(ok?"ok":"bad");touch();checkAch();save();hud();
+}
+/* ---------- generic quiz runner ---------- */
+let GQT=0;
+function gq(o){
+  const tok=++GQT;let i=0,right=0,miss=0,streak=0,L=o.L||1,bad=[],cur,hinted=false,t0=Date.now(),recent=[];const back=o.back||labHome;
+  const live=()=>GQT===tok;
+  const done=()=>{
+    X.best=X.best||{};const bs=X.best[o.g]||0,nb=right>bs&&right>0;if(nb)X.best[o.g]=right;if(i>=10)addXp(10);checkAch();save();hud();sfx("win");
+    const secs=Math.max(1,Math.round((Date.now()-t0)/1000));
+    $("view").innerHTML=jbox(`<div class="big" style="font-size:2.6rem;margin-bottom:0">${right} / ${i}</div><div class="big" style="margin-top:4px">${o.title}</div><div class="hint" style="text-align:center;margin:0">⏱ ${secs}s · ${(secs/Math.max(i,1)).toFixed(1)}s per question${nb?" · 🏅 New best!":" · Best "+(X.best[o.g]||0)}</div>${bad.length?`<p class="hint">Facts to watch</p><div class="rt">${bad.slice(0,10).map(q=>`<div><span>${q.t.replace(/<[^>]+>/g,"").replace(/\?/," ? ").replace(/\s+/g," ")}</span><b class="ok">${q.ch?q.ch[q.ai]:q.a}</b></div>`).join("")}</div>`:`<p class="ok" style="text-align:center;font-weight:700">No slips.</p>`}<div class="act"><button class="pri" id="ag">Play again</button><button class="sm" id="bk">Math Lab</button></div>`);
+    $("ag").onclick=()=>gq(o);$("bk").onclick=back};
+  const nx=()=>{if(!live())return;if((o.count&&i>=o.count)||(o.lives&&miss>=o.lives))return done();cur=o.gen(L);hinted=false;cur.seq?flash():show()};
+  const head=()=>`<div class="bar2"><span class="hint" style="margin:0">${o.title}${o.auto?" · Level "+L:""}</span><span class="sp"></span>${o.lives?`<span>${"❤️".repeat(Math.max(0,o.lives-miss))}${"🖤".repeat(Math.min(o.lives,miss))}</span>`:""}<button class="sm" id="jx">Quit</button></div>`;
+  const flash=()=>{let j=0;const step=()=>{if(!live()||(j>0&&!$("fq")))return;if(j>=cur.seq.length)return show();
+      $("view").innerHTML=jbox(head()+`<div class="hint" style="text-align:center">Watch the numbers (${j+1} of ${cur.seq.length})</div><div id="fq" class="big" style="font-size:3.6rem;min-height:6rem;padding-top:1rem">${cur.seq[j]}</div>`);$("jx").onclick=()=>{GQT++;back()};j++;setTimeout(step,cur.flash||1200)};step()};
+  const grade=(ok)=>{
+    i++;if(ok)right++;else{miss++;bad.push(cur)}
+    answerQ(cur,ok,hinted);streak=ok?streak+1:0;P.bs=Math.max(P.bs,streak);recent.push(ok);if(recent.length>3)recent.shift();
+    if(o.auto){X.lv=X.lv||{};if(streak>=5&&L<5){L++;streak=0;recent=[];toast("⬆️ Level "+L)}else if(!ok&&recent.filter(x=>!x).length>=2&&L>1){L--;recent=[];toast("Level "+L+". Let's rebuild")}X.lv[o.g]=L}
+  };
+  const feedback=(ok,go)=>{const fb=$("fb");fb.className="fb "+(ok?"ok":"bad");
+    if(ok){fb.textContent=hinted?"✅ Correct, with a hint":"✅ Correct!";setTimeout(nx,550)}
+    else{fb.innerHTML=`❌ It was ${cur.ch?cur.ch[cur.ai]:cur.a}<div class="hint">💡 ${cur.h(1)}</div><button class="pri" id="cont">Continue</button>`;$("cont").onclick=nx;setTimeout(()=>{const c=$("cont");if(c)c.focus()},80)}};
+  const show=()=>{
+    $("view").innerHTML=jbox(head()+(o.count?`<div class="pb"><b style="width:${i/o.count*100}%"></b></div>`:"")+`<div class="hint" style="text-align:center;margin:0">${o.count?"Question "+(i+1)+" of "+o.count:"Score "+right}${cur.lab==="retry"?" · 🔁 missed earlier, try again":cur.lab==="new"||cur.nw?" · 🆕 new":""}</div><div class="q" style="font-size:clamp(1.8rem,5vw,3rem)">${cur.t}</div>${cur.ch?`<div class="opts">${cur.ch.map((c,j)=>`<button data-o="${j}"><kbd>${j+1}</kbd>${c}</button>`).join("")}</div>`:`<input type="number" id="ans" class="ans" inputmode="numeric" placeholder="Your answer" aria-label="Your answer"><div class="act"><button class="pri" id="go">Check</button><button class="sm" id="hintb">💡 Hint</button></div><div class="hint hc" id="hintt"></div>`}<div class="fb" id="fb" role="status" aria-live="polite"></div>`);
+    $("jx").onclick=()=>{GQT++;back()};
+    if(cur.ch){document.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>{if(b.disabled)return;const ok=+b.dataset.o===cur.ai;document.querySelectorAll(".opts button").forEach(x=>{x.disabled=true;if(+x.dataset.o===cur.ai)x.style.borderColor="var(--ok)"});grade(ok);feedback(ok)})}
+    else{const ans=$("ans"),go=$("go");ans.focus();
+      $("hintb").onclick=()=>{hinted=true;$("hintt").textContent="💡 "+cur.h(0);$("hintb").disabled=true;ans.focus()};
+      go.onclick=()=>{if(ans.value==="")return;const ok=+ans.value===cur.a;ans.disabled=go.disabled=true;$("hintb").disabled=true;grade(ok);feedback(ok)};
+      ans.addEventListener("keydown",e=>{if(e.key==="Enter")go.click()})}
+  };
+  nx();
+}
+addEventListener("keydown",e=>{if(!/^[1-4]$/.test(e.key)||(document.activeElement&&/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))||mode==="choice")return;const b=document.querySelectorAll("#view .opts button")[+e.key-1];if(b&&!b.disabled)b.click()});
+/* ---------- Math Lab screen ---------- */
+function labHome(){
+  const pl=g=>(X.gp[g]||[0])[0];
+  $("view").innerHTML=`<div class="card"><h2 style="margin:0">🧮 Math Lab</h2><p class="hint">Mind-calculation games. They share one memory with your times tables: facts you miss come back soon, new ones are mixed in, and old ones return when due.</p>
+  <div class="two"><div><label for="lm">Style</label><select id="lm"><option value="q">15 questions</option><option value="s">Survival (3 lives)</option></select></div><div><label for="ll">Level</label><select id="ll"><option value="auto">Auto (adapts to you)</option>${[1,2,3,4,5].map(n=>`<option value="${n}">Level ${n}</option>`).join("")}</select></div></div>
+  <div class="jo">${LABG.map(([k,i,n,d])=>`<button data-lg="${k}"><b>${i} ${n}</b><small>${d}</small><small>${pl(k)?pl(k)+" answered · best "+((X.best||{})[k]||0):"🆕 not played yet"}</small></button>`).join("")}<button data-lg="shoot"><b>🔫 Shooter</b><small>Lock a target and shoot the right answer</small><small>${(X.gp.shoot||[0])[0]?(X.gp.shoot||[0])[0]+" answered":"🆕 not played yet"}</small></button></div></div>`;
+  $("view").querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const g=b.dataset.lg;if(g==="shoot"){mode="shoot";start();return}labStart(g,$("lm").value,$("ll").value)});
+}
+function labStart(g,style,lv){
+  const auto=lv==="auto";X.lv=X.lv||{};const L=auto?(X.lv[g]||1):+lv,row=LABG.find(r=>r[0]===g);
+  gq({g,title:row[1]+" "+row[2],count:style==="s"?0:15,lives:style==="s"?3:0,L,auto,gen:LL=>GENS[g](LL)});
+}
+
+/* =====================================================================
+   PLUS 3/4 · Shooter: the question sits at the head, answer-enemies fall,
+   tap to LOCK a target, then FIRE (or turn on auto-fire).
+   ===================================================================== */
+const SHS=[["tables","✖️ My tables (from the left panel)"],["add","➕ Addition"],["sub","➖ Subtraction"],["dmix","🎲 Daily mix (all games)"],["pw","🧱 Squares & cubes"],["div","➗ Division"],["bond","🔟 Number bonds"]];
+function shooterT(){
+  X.best=X.best||{};
+  $("view").innerHTML=jbox(`<h2 style="margin:0">🔫 Shooter</h2><p class="hint">The question shows at the top. Enemies carrying answers fall toward you. Tap the right one to <b>lock</b> it, then press <b>Fire</b>. A wrong shot or a right answer that reaches the ground costs a life. Missed facts come back later, so you learn them.</p>
+  <label for="ss">Questions from</label><select id="ss">${SHS.map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select>
+  <label class="tgl" for="sa2"><span class="sw"><input type="checkbox" id="sa2"><span></span></span>Auto-fire as soon as I lock a target</label>
+  <div class="hint">Best score: ${X.best.shoot||0}</div><div class="act"><button class="pri" id="sgo">Start</button><button class="sm" id="sbk">Math Lab</button></div>`);
+  $("sgo").onclick=()=>shootPlay($("ss").value,$("sa2").checked);$("sbk").onclick=()=>{mode="lab";start()};
+}
+function shootPlay(src,auto){
+  const tok=++GQT;X.lv=X.lv||{};
+  $("view").innerHTML=jbox(`<div class="bar2"><span id="sh" style="font-weight:800"></span><span class="sp"></span><label class="tgl" style="margin:0" for="sa"><span class="sw"><input type="checkbox" id="sa" ${auto?"checked":""}><span></span></span>Auto-fire</label><button class="sm" id="jx">Quit</button></div><div id="sq" style="font-size:clamp(1.6rem,5vw,2.6rem);font-weight:800;text-align:center;margin:6px 0"></div><canvas id="cv" style="width:100%;border-radius:14px;touch-action:none;background:var(--soft);display:block"></canvas><div class="act"><button class="pri" id="fire">🔥 Fire</button></div><div class="hint" style="text-align:center">Tap an enemy to lock it, then Fire (or Space). Keyboard: type the number to lock, then Space.</div><div class="fb" id="fb" role="status" aria-live="polite"></div>`);
+  const cv=$("cv"),W=Math.max(300,Math.min(720,cv.parentElement.clientWidth||600)),H=Math.round(W*.75),dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=W*dpr;cv.height=H*dpr;const g=cv.getContext("2d");g.scale(dpr,dpr);
+  const cs=getComputedStyle(document.documentElement),INK=cs.getPropertyValue("--ink").trim()||"#151b34",SOFT=cs.getPropertyValue("--soft").trim()||"#eceef7",BAD=cs.getPropertyValue("--bad").trim()||"#d6363c",ACC=cs.getPropertyValue("--acc").trim()||"#5b3df5";
+  const CX=W/2,CY=H-30,GROUND=H-64,S={lives:3,score:0,lv:1,streak:0,en:[],bu:[],pt:[],lock:null,Q:null,aim:-Math.PI/2,over:false,wait:0,kb:"",kbT:0,t:performance.now(),flash:0};
+  const poolT=()=>{const p=pool();if(p.length)return p;const q=[];for(let a=2;a<=12;a++)for(let m=1;m<=10;m++)q.push([a,m]);return q};
+  const genQ2=()=>{if(src==="tables"){const f=smartPick(poolT()),q=mulQ(f[0],f[1]);q.lab=LAB;LAB="";return q}
+    for(let i=0;i<6;i++){const q=src==="dmix"?mixGen():genQ(src,Math.min(5,1+Math.floor(S.score/6)));if(!q.ch&&!q.seq&&q.a!=null)return q}return genQ("add",1)};
+  const hud2=()=>{$("sh").textContent=`${"❤️".repeat(S.lives)}${"🖤".repeat(3-S.lives)}  ·  Score ${S.score}  ·  Level ${S.lv}`};
+  const wave=()=>{
+    S.Q=genQ2();S.Q.miss=false;S.lock=null;S.en=[];qMark();$("sq").innerHTML=S.Q.t;
+    const a=S.Q.a,set=new Set([a]),offs=shuffle([1,-1,2,-2,10,-10,3,-3,5,-5,a>12?Math.round(a*.1)||1:4,11,-11]);
+    const n=4+(S.lv>=4?1:0)+(S.lv>=8?1:0);for(const o of offs){if(set.size>=n)break;const v=a+o;if(v>=0)set.add(v)}let k=1;while(set.size<n)set.add(a+k++);
+    const vals=shuffle([...set]),r=Math.max(22,Math.min(30,W/(vals.length*2.6))),secs=Math.max(5.5,14-.9*(S.lv-1)),vy=(GROUND+r+40)/secs,lane=W/vals.length;
+    vals.forEach((v,i)=>S.en.push({x:lane*(i+.5)+(Math.random()-.5)*Math.min(12,lane*.15),y:-r-i*(r*1.9)*(Math.random()*.6+.7),r,v,c:v===a,vy:vy*(.9+Math.random()*.25),hue:(v*37+i*60)%360,ph:Math.random()*6}));
+    hud2();
+  };
+  const pop=(e,col)=>{for(let i=0;i<14;i++){const an=Math.random()*6.28,sp=60+Math.random()*160;S.pt.push({x:e.x,y:e.y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp,l:.6,c:col||`hsl(${e.hue} 70% 55%)`})}};
+  const say2=(ok,msg)=>{const fb=$("fb");fb.className="fb "+(ok?"ok":"bad");fb.innerHTML=msg};
+  const plain=q=>q.t.replace(/<[^>]+>/g,"").replace("?","").trim();
+  const lose=(why)=>{S.lives--;S.streak=0;S.flash=.35;sfx("bad");hud2();if(S.lives<=0)over()};
+  const recordOnce=(ok)=>{if(S.Q.rec)return;S.Q.rec=1;answerQ(S.Q,ok,false);if(!ok)oRetry(S.Q)};
+  const nextWave=()=>{S.wait=.6;S.en.forEach(e=>pop(e));S.en=[];S.bu=[];S.lock=null};
+  const fire=()=>{const e=S.lock;if(!e||!S.en.includes(e)){toast("Lock a target first: tap an enemy");return}if(S.bu.some(b=>b.e===e))return;S.bu.push({x:CX,y:CY,e});sfx("ok")};
+  const lockAt=(e)=>{S.lock=e;if($("sa").checked)fire()};
+  cv.addEventListener("pointerdown",ev=>{if(GQT!==tok||S.over)return;const r=cv.getBoundingClientRect(),px=(ev.clientX-r.left)*W/r.width,py=(ev.clientY-r.top)*H/r.height;S.aim=Math.atan2(py-CY,px-CX);
+    let best=null,bd=1e9;for(const e of S.en){const d=Math.hypot(e.x-px,e.y-py);if(d<e.r+16&&d<bd){bd=d;best=e}}if(best)lockAt(best)});
+  cv.addEventListener("pointermove",ev=>{const r=cv.getBoundingClientRect();S.aim=Math.atan2((ev.clientY-r.top)*H/r.height-CY,(ev.clientX-r.left)*W/r.width-CX)});
+  $("fire").onclick=fire;
+  const key=ev=>{if(GQT!==tok||!document.body.contains(cv)){removeEventListener("keydown",key);return}
+    if(/INPUT|SELECT|TEXTAREA/.test((document.activeElement||{}).tagName||""))return;
+    if(/^[0-9]$/.test(ev.key)){const now=performance.now();if(now-S.kbT>1400)S.kb="";S.kbT=now;S.kb+=ev.key;let e=S.en.find(x=>String(x.v)===S.kb);if(!e&&S.kb.length>1){S.kb=ev.key;e=S.en.find(x=>String(x.v)===S.kb)}if(e)lockAt(e)}
+    else if(ev.key===" "||ev.key==="Enter"){ev.preventDefault();fire()}};
+  addEventListener("keydown",key);
+  $("jx").onclick=()=>{GQT++;removeEventListener("keydown",key);mode="lab";start()};
+  const over=()=>{S.over=true;X.best=X.best||{};const nb=S.score>(X.best.shoot||0);if(nb)X.best.shoot=S.score;if(S.score>=5)addXp(10);checkAch();save();hud();sfx("win");removeEventListener("keydown",key);
+    $("view").innerHTML=jbox(`<div class="big" style="font-size:2.6rem;margin-bottom:0">🔫 ${S.score}</div><div class="big" style="margin-top:4px">Game over · level ${S.lv}</div><div class="hint" style="text-align:center">${nb?"🏅 New best!":"Best: "+(X.best.shoot||0)}</div><div class="act"><button class="pri" id="ag">Play again</button><button class="sm" id="sb2">Shooter menu</button><button class="sm" id="sb3">Math Lab</button></div>`);
+    $("ag").onclick=()=>shootPlay(src,auto);$("sb2").onclick=shooterT;$("sb3").onclick=()=>{mode="lab";start()}};
+  const frame=now=>{
+    if(GQT!==tok||!document.body.contains(cv))return;
+    let dt=Math.min(.05,(now-S.t)/1e3);S.t=now;
+    const paused=document.hidden||(!$("modal").hidden)||document.getElementById("tmup")||!$("auth").hidden;if(paused)dt=0;
+    if(!S.over){
+      if(S.wait>0){S.wait-=dt;if(S.wait<=0)wave()}
+      for(const e of S.en){e.y+=e.vy*dt;e.ph+=dt*3}
+      /* bullets home in on the locked enemy */
+      for(const b of S.bu){const e=b.e;if(!S.en.includes(e)){b.dead=1;continue}const dx=e.x-b.x,dy=e.y-b.y,d=Math.hypot(dx,dy),st=900*dt;S.aim=Math.atan2(dy,dx);
+        if(d<=st+e.r*.6){b.dead=1;S.en.splice(S.en.indexOf(e),1);pop(e,e.c?"#38c276":BAD);
+          if(e.c){const first=!S.Q.rec;recordOnce(true);S.score++;S.streak++;S.lv=1+Math.floor(S.score/5);say2(true,first?"✅ Correct!":"✅ Got it (counted as a slip earlier)");sfx("win");nextWave();hud2()}
+          else{recordOnce(false);say2(false,`❌ That was ${e.v}. ${plain(S.Q)} = <b>${S.Q.a}</b><div class="hint">💡 ${S.Q.h(1)}</div>`);lose();if(S.lock===e)S.lock=null}}
+        else{b.x+=dx/d*st;b.y+=dy/d*st}}
+      S.bu=S.bu.filter(b=>!b.dead);
+      /* the right answer reaching the ground costs a life */
+      const gone=S.en.find(e=>e.c&&e.y>=GROUND);
+      if(gone){recordOnce(false);say2(false,`⏱ Too slow. ${plain(S.Q)} = <b>${S.Q.a}</b><div class="hint">💡 ${S.Q.h(1)}</div>`);lose();if(!S.over)nextWave()}
+      S.en=S.en.filter(e=>e.y<GROUND+e.r+10||e.c);
+      if(S.en.length&&!S.en.some(e=>e.c)&&!S.over&&S.wait<=0){nextWave()}
+    }
+    for(const p of S.pt){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=260*dt;p.l-=dt}S.pt=S.pt.filter(p=>p.l>0);S.flash=Math.max(0,S.flash-dt);
+    /* ---- draw ---- */
+    g.clearRect(0,0,W,H);g.fillStyle=SOFT;g.fillRect(0,0,W,H);
+    g.strokeStyle=BAD;g.globalAlpha=.45;g.setLineDash([8,8]);g.beginPath();g.moveTo(0,GROUND);g.lineTo(W,GROUND);g.stroke();g.setLineDash([]);g.globalAlpha=1;
+    for(const e of S.en){
+      g.save();g.translate(e.x,e.y);
+      for(let i=0;i<10;i++){const a=i*Math.PI/5+e.ph*.3;g.fillStyle=`hsl(${e.hue} 60% 40%)`;g.beginPath();g.moveTo(Math.cos(a-.12)*e.r,Math.sin(a-.12)*e.r);g.lineTo(Math.cos(a)*(e.r+7),Math.sin(a)*(e.r+7));g.lineTo(Math.cos(a+.12)*e.r,Math.sin(a+.12)*e.r);g.fill()}
+      g.fillStyle=`hsl(${e.hue} 65% 52%)`;g.beginPath();g.arc(0,0,e.r,0,6.3);g.fill();
+      g.fillStyle="#fff";g.beginPath();g.arc(-e.r*.32,-e.r*.38,e.r*.17,0,6.3);g.arc(e.r*.32,-e.r*.38,e.r*.17,0,6.3);g.fill();g.fillStyle="#111";g.beginPath();g.arc(-e.r*.32,-e.r*.34,e.r*.08,0,6.3);g.arc(e.r*.32,-e.r*.34,e.r*.08,0,6.3);g.fill();
+      g.fillStyle="#fff";g.font=`800 ${Math.round(e.r*.72)}px Nunito,Segoe UI,sans-serif`;g.textAlign="center";g.textBaseline="middle";g.fillText(String(e.v),0,e.r*.22);
+      if(S.lock===e){g.strokeStyle=INK;g.lineWidth=3;const q=e.r+12+Math.sin(performance.now()/120)*3;g.beginPath();g.arc(0,0,q,0,6.3);g.stroke();for(const a of[0,1.57,3.14,4.71]){g.beginPath();g.moveTo(Math.cos(a)*(q-6),Math.sin(a)*(q-6));g.lineTo(Math.cos(a)*(q+9),Math.sin(a)*(q+9));g.stroke()}}
+      g.restore()}
+    for(const b of S.bu){g.fillStyle=ACC;g.beginPath();g.arc(b.x,b.y,6,0,6.3);g.fill()}
+    for(const p of S.pt){g.globalAlpha=Math.max(0,p.l/.6);g.fillStyle=p.c;g.fillRect(p.x-3,p.y-3,6,6)}g.globalAlpha=1;
+    /* cannon */
+    g.save();g.translate(CX,CY);g.rotate(S.aim+Math.PI/2);g.fillStyle=ACC;g.fillRect(-7,-34,14,34);g.restore();g.fillStyle=INK;g.beginPath();g.arc(CX,CY,18,0,6.3);g.fill();g.fillStyle=ACC;g.beginPath();g.arc(CX,CY,9,0,6.3);g.fill();
+    if(S.flash>0){g.fillStyle="rgba(214,54,60,"+S.flash*.6+")";g.fillRect(0,0,W,H)}
+    if(!S.over)requestAnimationFrame(frame)};
+  hud2();wave();S.t=performance.now();requestAnimationFrame(frame);
+}
+
+/* =====================================================================
+   PLUS 4/4 · Today hub, leaderboards (day / month / year / all-time),
+   fair-play status, settings extras and the developer console (#dev)
+   ===================================================================== */
+{const st0=document.createElement("style");st0.id="plus-css";st0.textContent=`
+#tmrb{font-variant-numeric:tabular-nums}
+.dvt{width:100%;border-collapse:collapse;font-size:.82rem}.dvt th,.dvt td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.dvt th{color:var(--mute);position:sticky;top:0;background:var(--card);cursor:pointer}
+.dvt tr[data-h]{cursor:pointer}.dvt tr[data-h]:hover{background:var(--soft)}.dvw{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:12px}
+.tgc{display:inline-block;border-radius:99px;padding:1px 9px;font-size:.72rem;font-weight:800;background:var(--acc2);color:var(--acc-t)}
+.tgc.Bot,.tgc.Hacker{background:var(--bad2);color:var(--bad)}.tgc.AI-assisted,.tgc.Suspicious{background:var(--warn2);color:var(--warn)}.tgc.Max,.tgc.Pro{background:var(--ok2);color:var(--ok)}
+#devv{position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto}
+.lbr{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;background:var(--bg)}.lbr.me{border-color:var(--acc);background:var(--acc2)}.lbr .rk2{width:34px;font-weight:800;text-align:center}.lbr .nm{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lbr small{color:var(--mute);font-weight:600}
+.gap{display:flex;gap:2px;align-items:flex-end;height:70px}.gap i{flex:1;min-width:3px;background:var(--ok);border-radius:2px 2px 0 0}.gap i.x{background:var(--bad)}.gap i.f{outline:2px solid var(--warn)}
+`;document.head.appendChild(st0)}
+const FLAGTXT={"superfast-answers":"answers arriving faster than a person can read them","fast-answers":"very fast answers","uniform-timing":"almost identical timing between answers","no-human-input":"answers without any keyboard or touch input","synthetic-events":"automated clicks or key presses","answers-in-hidden-tab":"answers sent while the tab was hidden","pasted-answers":"pasted answers","tab-switch-then-correct":"switching apps right before answering","rate-over-45-per-min":"more than 45 answers a minute","webdriver":"browser automation detected","perfect-on-unseen":"perfect score on brand-new questions","flawless-and-fast":"150+ flawless answers at top speed","tamper":"saved progress that does not add up"};
+const fairHTML=()=>{
+  const r=rsEff(),fl=Object.keys(X.fl||{});
+  if(XR.vd==="genuine")return`<span class="tg">Verified</span> The developer confirmed your account is genuine. Thank you for playing fair.`;
+  if(!r&&!fl.length)return`<span class="tg">Good standing</span> Your play looks natural. Keep going!`;
+  return`<span class="tg nw">${["Monitoring","XP reduced","XP strongly reduced","XP paused"][r]}</span> ${fl.length?"We noticed: "+fl.map(f=>FLAGTXT[f]||f).join(", ")+". ":""}If this is a mistake, just keep playing normally: it clears automatically, and the developer can review it.`;
+};
+const masked=n=>{const p=Array.from(String(n||"Player").trim().replace(/\s+/g," ")).join("").split(" ");return p.length>1?Array.from(p[0]).slice(0,12).join("")+" "+Array.from(p[p.length-1])[0]+".":Array.from(p[0]).slice(0,12).join("")};
+
+/* ---------- leaderboard publishing (per-day / month / year / all-time docs: your rules allow get, not list) ---------- */
+const pKeys=()=>{const d=new Date(dn()*864e5);return{d:"lbd_"+dn(),m:"lbm_"+(d.getUTCFullYear()*100+d.getUTCMonth()+1),y:"lby_"+d.getUTCFullYear(),a:"lba_0"}};
+async function lbSync(){
+  if(!U)return;
+  try{const F=await fbp(),t=dn(),d=new Date(t*864e5),Y=d.getUTCFullYear(),M=d.getUTCMonth(),hid=X.hide||rsEff()>=2||X.tag==="Bot"||X.tag==="Hacker";
+    const sum=f=>{let s=0;for(const k in X.xd)if(f(new Date(+k*864e5)))s+=X.xd[k];return s},k=pKeys(),h=U.h.slice(0,24),l=U.logins[U.h]||{};
+    const ent=x=>({n:masked(U.name),gn:Array.from(U.name).slice(0,30).join(""),u:U.uid,x:hid?0:x,l:lvOf(),y:l.t==="email"?1:2});
+    await Promise.all([[k.d,X.xd[t]||0],[k.m,sum(z=>z.getUTCFullYear()===Y&&z.getUTCMonth()===M)],[k.y,sum(z=>z.getUTCFullYear()===Y)],[k.a,P.xp]].map(([id,x])=>F.merge(id,{e:{[h]:ent(x)}}).catch(()=>{})));
+  }catch(e){}
+}
+{const _x=xsync;xsync=async function(){const b=X.ls;await _x.apply(this,arguments);if(X.ls!==b)lbSync()}}
+
+/* ---------- Today hub ---------- */
+const CAT=[["path","🧭 Journey"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["test","📝 Test"],["arcade","🎮 Arcade"],["shoot","🔫 Shooter"],...LABG.map(r=>[r[0],r[1]+" "+r[2]])];
+const playedN=k=>Math.max(X.gp[k]?X.gp[k][0]:0,P.gm[k]?P.gm[k][0]:0);
+{const _m=match;match=function(){const c=X.gp.match||(X.gp.match=[0,0]);c[0]++;c[1]=dn();return _m.apply(this,arguments)}}
+function openCat(k){if(LABG.some(r=>r[0]===k)){mode="lab";start();labStart(k,"q","auto");return}mode=k;start()}
+function todayT(){
+  const t=dn(),lim=limitMin(),used=Math.round(usedSec()/60),xp=X.xd[t]||0,due=JB.some((_,s)=>jm(s))?jdueAll().length:0,np=CAT.filter(([k])=>!playedN(k));
+  const newG=np.length?pick(np):null;
+  $("view").innerHTML=`<div class="card"><h2 style="margin:0">🎯 Today</h2><p class="hint">${lim?`Daily practice: <b>${used}</b> of <b>${lim}</b> min · `:""}<b>${xp}</b> of ${CFG.dayCap} XP today. Short daily sessions build real mental speed.</p>
+  <div class="pb"><b style="width:${lim?Math.min(100,used/lim*100):0}%"></b></div><div class="act" style="justify-content:flex-start"><button class="sm" id="tt1">⏱ Daily time</button><button class="sm" id="tt2">+15 min</button></div>
+  <p class="hint" style="margin:12px 0 0">${fairHTML()}</p></div>
+  <div class="card"><h2 style="margin:0 0 6px">Your plan</h2><div class="jo">
+   <button data-td="mix"><b>🎲 Daily mix · 20 questions</b><small>New facts, missed facts and old facts from every game</small></button>
+   ${due?`<button data-td="rv"><b>🔁 Review · ${due} due</b><small>Keep finished tables from fading</small></button>`:""}
+   ${newG?`<button data-td="new:${newG[0]}"><b>🆕 Try: ${newG[1]}</b><small>You have not played this yet</small></button>`:""}
+   <button data-td="shoot"><b>🔫 Shooter</b><small>Lock on and shoot the answer</small></button></div></div>
+  <div class="card"><h2 style="margin:0 0 4px">All games</h2><p class="hint">Everything you play feeds one shared memory. 🆕 marks games you have not tried.</p><div class="ag">${CAT.map(([k,n])=>{const c=playedN(k);return`<button class="ac ${c?"":"lock"}" data-oc="${k}" style="text-align:left;cursor:pointer"><div><b>${n}</b><span>${c?c+" answered":"🆕 not played yet"}</span></div></button>`}).join("")}</div></div>`;
+  $("tt1").onclick=openTime;$("tt2").onclick=()=>{X.ex[dn()]=(X.ex[dn()]||0)+15;delete X.dn["f"+dn()];xnow();updTmr();todayT()};
+  $("view").querySelectorAll("[data-oc]").forEach(b=>b.onclick=()=>openCat(b.dataset.oc));
+  $("view").querySelectorAll("[data-td]").forEach(b=>b.onclick=()=>{const a=b.dataset.td;
+    if(a==="mix"){mode="lab";start();gq({g:"dmix",title:"🎲 Daily mix",count:20,L:1,auto:false,gen:GENS.dmix,back:todayHome})}
+    else if(a==="rv"){mode="path";start();jReview()}else if(a==="shoot"){mode="shoot";start()}else if(a.indexOf("new:")===0)openCat(a.slice(4))});
+}
+const todayHome=()=>{mode="today";start()};
+function openTime(){
+  const lim=limitMin(),used=Math.round(usedSec()/60);
+  openModal(`<div class="mh"><h2 id="mt">Daily practice time</h2><button class="sm" id="mx">Close</button></div><p>Today: <b>${used}</b> min of <b>${lim||"no limit"}</b> · ${X.xd[dn()]||0}/${CFG.dayCap} XP</p><label for="tm1">Daily goal</label><select id="tm1">${[[0,"No timer"],[15,"15 minutes"],[30,"30 minutes"],[45,"45 minutes"],[60,"1 hour"],[90,"1.5 hours"]].map(([v,l])=>`<option value="${v}" ${PREF.dailyMin===v?"selected":""}>${l}</option>`).join("")}</select><p class="hint">When time is up you can add more or finish. XP pauses after you finish, so progress stays steady day by day.</p><div class="act"><button class="sm" id="tm2">+15 min</button><button class="sm" id="tm3">I'm done for today</button></div>`);
+  $("mx").onclick=closeModal;$("tm1").onchange=e=>{PREF.dailyMin=+e.target.value;savePref();updTmr()};
+  $("tm2").onclick=()=>{X.ex[dn()]=(X.ex[dn()]||0)+15;delete X.dn["f"+dn()];xnow();updTmr();closeModal();toast("Added 15 minutes")};
+  $("tm3").onclick=()=>{X.dn["f"+dn()]=1;xnow();updTmr();closeModal();toast("Great work today. See you tomorrow! 👋")};
+}
+$("tmrb").onclick=openTime;
+
+/* ---------- settings extras (appended, existing rows untouched) ---------- */
+function settingsPlus(){
+  const card=MD().querySelector(".card");if(!card)return;const d=document.createElement("div");
+  d.innerHTML=`<h2 style="margin:18px 0 8px">Daily time and fair play</h2>
+  <div class="sr"><div><b>Daily practice time</b><small>A popup appears when time is up.</small></div><select id="p1" aria-label="Daily practice time">${[[0,"Off"],[15,"15 min"],[30,"30 min"],[45,"45 min"],[60,"1 hour"],[90,"1.5 hours"]].map(([v,l])=>`<option value="${v}" ${PREF.dailyMin===v?"selected":""}>${l}</option>`).join("")}</select></div>
+  ${U?`<div class="sr"><div><b>Show me on leaderboards</b><small>Boards show first name and last initial only.</small></div><label class="sw" style="margin:0"><input type="checkbox" id="p2" ${X.hide?"":"checked"}><span></span></label></div>`:""}
+  <p class="hint" style="margin:12px 0 0"><b>Fair-play status</b><br>${fairHTML()}</p>`;
+  card.appendChild(d);
+  $("p1").onchange=e=>{PREF.dailyMin=+e.target.value;savePref();updTmr()};
+  if($("p2"))$("p2").onchange=e=>{X.hide=!e.target.checked;xnow();xsync(true)};
+}
+{const _o=openSettings;openSettings=function(){_o.apply(this,arguments);settingsPlus()};$("cfg").onclick=openSettings}
+
+/* ---------- Leaderboards ---------- */
+const BD={scope:"ind",per:"d",day:null,cache:{}};
+async function bdGet(id){const c=BD.cache[id];if(c&&Date.now()-c.t<60000)return c.d;let d=null;try{d=await dget(id)}catch(e){}BD.cache[id]={t:Date.now(),d};return d}
+function boardsT(){
+  const t=dn();if(BD.day===null)BD.day=t;
+  const loc=X.xd||{};
+  const hist=Array.from({length:14},(_,i)=>t-i).map(d=>[d,loc[d]||0,X.ans[d]||0,Math.round((X.td[d]||0)/60)]);
+  $("view").innerHTML=`<div class="card"><h2 style="margin:0">🏆 Leaderboards</h2><p class="hint">Ranked by XP earned in the period. ${U?"":"Sign in to appear on the boards. "}Names show first name and last initial. You can hide yourself in Settings.</p>
+  <div class="seg" id="b1">${[["ind","Individuals"],["gld","Guilds"]].map(([k,l])=>`<button data-k="${k}" class="${BD.scope===k?"on":""}">${l}</button>`).join("")}</div>
+  <div class="seg" id="b2">${[["d","Day"],["m","This month"],["y","This year"],["a","All time"]].map(([k,l])=>`<button data-k="${k}" class="${BD.per===k?"on":""}">${l}</button>`).join("")}</div>
+  ${BD.per==="d"?`<label for="bd">Day</label><select id="bd">${Array.from({length:14},(_,i)=>t-i).map(d=>`<option value="${d}" ${BD.day===d?"selected":""}>${d===t?"Today":new Date(d*864e5).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}</option>`).join("")}</select>`:""}
+  <div id="bl" style="margin-top:12px"><div class="hint">Loading…</div></div></div>
+  <div class="card"><h2 style="margin:0 0 6px">📅 My days</h2><p class="hint">Your own day-by-day record on this login.</p><div class="rt">${hist.map(([d,x,a,m])=>`<div><span>${d===t?"Today":new Date(d*864e5).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}</span><span><b>${x}</b> XP · ${a} answers · ${m} min</span></div>`).join("")}</div></div>`;
+  const re=()=>boardsT();
+  $("b1").querySelectorAll("button").forEach(b=>b.onclick=()=>{BD.scope=b.dataset.k;re()});
+  $("b2").querySelectorAll("button").forEach(b=>b.onclick=()=>{BD.per=b.dataset.k;re()});
+  if($("bd"))$("bd").onchange=e=>{BD.day=+e.target.value;re()};
+  const k=pKeys(),id=BD.per==="d"?"lbd_"+BD.day:BD.per==="m"?k.m:BD.per==="y"?k.y:k.a,tokB=++BD.tk;
+  bdGet(id).then(doc=>{
+    if(BD.tk!==tokB||!$("bl"))return;
+    const E=Object.entries((doc&&doc.e)||{}).map(([h,v])=>({h,...v})).filter(v=>v.x>0);let L;
+    if(BD.scope==="ind")L=E.map(v=>({key:v.h,name:v.n+(v.y===1?" ✉️":v.y===2?" 📱":""),x:v.x,l:v.l,me:U&&v.h===U.h.slice(0,24)}));
+    else{const m={};for(const v of E){const o=m[v.u]||(m[v.u]={key:v.u,name:v.gn||v.n,x:0,l:0,n:0,me:U&&v.u===U.uid});o.x+=v.x;o.l=Math.max(o.l,v.l);o.n++}L=Object.values(m).map(o=>({...o,name:o.name+(o.n>1?" ("+o.n+" logins)":"")}))}
+    L.sort((a,b)=>b.x-a.x);
+    $("bl").innerHTML=L.length?L.slice(0,30).map((v,i)=>`<div class="lbr ${v.me?"me":""}"><span class="rk2">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm">${esc(v.name)}${v.me?" · you":""}</span><small>Lv ${v.l}</small><b>${fmt(v.x)} XP</b></div>`).join("")+(L.length>30?`<p class="hint">Showing the top 30 of ${L.length}.</p>`:""):`<p class="hint">Nobody has scored in this period yet. Be the first!</p>`;
+  });
+}
+BD.tk=0;
+
+/* ---------- developer console: open index.html#dev ---------- */
+let DV=null;
+function devClose(){const e=document.getElementById("devv");if(e)e.remove()}
+async function devOpen(){
+  devClose();const el=document.createElement("div");el.id="devv";document.body.appendChild(el);
+  el.innerHTML=`<div class="pvb"><div class="logo"><i>✖</i>Developer console</div><span class="sp"></span><button class="sm" id="dvx">Close</button></div><div class="pvw" id="dvb"><div class="card">Loading…</div></div>`;
+  $("dvx").onclick=()=>{devClose();history.replaceState(null,"",location.pathname+location.search)};
+  const B=$("dvb");let F;
+  try{F=await fbp();const uid=F.uid();
+    let ix,vd;try{ix=await F.list("ix_",500);vd=await F.list("ixd_",500)}catch(e){B.innerHTML=`<div class="card"><h2 style="margin:0">Developer access needed</h2><p class="hint">This browser is not on the developer allowlist yet. In the Firebase console open <b>Firestore → accounts</b>, create a document with ID <code>devauth</code> and a field <code>uids</code> (array) containing this ID, then reload:</p><p><code>${esc(uid||"(signing in…)")}</code> <button class="sm" id="cpu">Copy</button></p></div>`;$("cpu").onclick=()=>copyTxt(uid||"");return}
+    const V={};vd.forEach(d=>V[d.id.slice(4)]=d);DV={rows:ix.map(d=>({...d,id:d.id.slice(3),vdoc:V[d.id.slice(3)]||null})),f:{tag:"",q:"",flag:false,max:false},sort:"ts"};devRender();
+  }catch(e){B.innerHTML=`<div class="card">Can't reach the server. Check your connection.</div>`}
+}
+const effRs=r=>{const v=r.vdoc||{};if(v.vd==="genuine")return 0;let x=r.ar||0;if(v.rs!=null)x=v.rs;if(v.vd==="bot")x=Math.max(x,2);return x};
+function devRender(){
+  const B=$("dvb"),R0=DV.rows,t=dn(),cnt={};R0.forEach(r=>cnt[r.tg]=(cnt[r.tg]||0)+1);
+  const flagged=R0.filter(r=>(r.fl||[]).length||effRs(r)>0),maxed=R0.filter(r=>r.mx);
+  const hit=R0.filter(r=>Object.values(r.ds||{}).some(v=>v>=CFG.dayCap)).length;
+  let rows=R0.filter(r=>(!DV.f.tag||r.tg===DV.f.tag)&&(!DV.f.flag||(r.fl||[]).length||effRs(r)>0)&&(!DV.f.max||r.mx)&&(!DV.f.q||(r.n+" "+r.m+" "+r.u).toLowerCase().includes(DV.f.q)));
+  const S={ts:r=>-(r.ts||0),tr:r=>r.tr,xp:r=>-(r.xp||0),lv:r=>-(r.lv||0),md:r=>r.md||1e9};rows.sort((a,b)=>S[DV.sort](a)-S[DV.sort](b));
+  const ago2=ts=>ts?ago(ts):"never",pc=(a,b)=>b?Math.round(a/b*100)+"%":"-";
+  B.innerHTML=`<div class="ph"><div><b>${R0.length}</b>players synced</div><div><b>${flagged.length}</b>flagged / restricted</div><div><b>${maxed.length}</b>reached max level</div><div><b>${hit}</b>hit the daily XP cap</div><div><b>${CFG.dayCap}</b>current daily XP cap</div></div>
+  ${maxed.length?`<div class="tip"><span>👑 <b>${maxed.length}</b> player${maxed.length>1?"s have":" has"} reached the existing maximum. Time to add new levels or content.</span><button class="sm" id="dmx">Show them</button></div>`:""}
+  <div class="card"><div class="bar2"><b>Tags</b>${Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<button class="sm" data-tg="${esc(k)}"><span class="tgc ${esc(k)}">${esc(k)}</span> ${n}</button>`).join("")}<button class="sm" data-tg="">All</button></div>
+  <div class="bar2"><input type="text" id="dq" placeholder="Search name, login or User ID" value="${esc(DV.f.q)}" style="max-width:260px"><label class="tgl" style="margin:0"><input type="checkbox" id="df" ${DV.f.flag?"checked":""}> Flagged only</label><label class="tgl" style="margin:0"><input type="checkbox" id="dm" ${DV.f.max?"checked":""}> Reached max</label><span class="sp"></span><button class="sm" id="dat">⚙ Auto-tune cap</button><button class="sm" id="dcv">⬇ CSV</button></div>
+  <div class="dvw"><table class="dvt"><thead><tr><th>Tag</th><th>Name</th><th>Login</th><th data-s="lv">Lvl</th><th data-s="xp">XP</th><th>Acc</th><th data-s="md">Median ms</th><th data-s="tr">Trust</th><th>Flags</th><th>Limit</th><th data-s="ts">Last seen</th></tr></thead><tbody>${rows.slice(0,300).map(r=>`<tr data-h="${r.id}"><td><span class="tgc ${esc(r.tg||"New")}">${esc(r.tg||"New")}</span></td><td>${esc(r.n||"")}</td><td>${esc(r.m||"")}</td><td>${r.lv||0}</td><td>${fmt(r.xp)}</td><td>${pc(r.ok,r.ans)}</td><td>${r.md||"-"}</td><td>${r.tr==null?"-":r.tr}</td><td>${(r.fl||[]).length?(r.fl||[]).map(f=>esc(f)).join(", "):"-"}</td><td>${["-","×.5","×.1","paused"][effRs(r)]}${(r.vdoc&&r.vdoc.vd)?" ("+esc(r.vdoc.vd)+")":""}</td><td>${ago2(r.ts)}</td></tr>`).join("")}</tbody></table></div><p class="hint">Showing ${Math.min(300,rows.length)} of ${rows.length}. Click a row for details and actions.</p></div><div id="dd"></div>`;
+  B.querySelectorAll("[data-tg]").forEach(b=>b.onclick=()=>{DV.f.tag=b.dataset.tg;devRender()});
+  B.querySelectorAll("th[data-s]").forEach(h=>h.onclick=()=>{DV.sort=h.dataset.s;devRender()});
+  $("dq").oninput=e=>{DV.f.q=e.target.value.toLowerCase();const p=e.target.selectionStart;devRender();const n=$("dq");n.focus();n.setSelectionRange(p,p)};
+  $("df").onchange=e=>{DV.f.flag=e.target.checked;devRender()};$("dm").onchange=e=>{DV.f.max=e.target.checked;devRender()};
+  if($("dmx"))$("dmx").onclick=()=>{DV.f.max=true;devRender()};
+  B.querySelectorAll("tr[data-h]").forEach(tr=>tr.onclick=()=>devDetail(tr.dataset.h));
+  $("dcv").onclick=()=>dl("table-trainer-players.csv","tag,name,login,user_id,level,xp,answers,correct,median_ms,trust,flags,restriction,reached_max,last_seen\n"+R0.map(r=>[r.tg,r.n,r.m,r.u,r.lv,r.xp,r.ans,r.ok,r.md,r.tr,(r.fl||[]).join("|"),effRs(r),r.mx?new Date(r.mx).toISOString():"",r.ts?new Date(r.ts).toISOString():""].map(v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"').join(",")).join("\n"),"text/csv");
+  $("dat").onclick=devTune;
+}
+async function devTune(){
+  const vals=[];DV.rows.filter(r=>!(r.fl||[]).length&&effRs(r)===0).forEach(r=>{for(const d in r.ds||{})if(r.ds[d]>0)vals.push(r.ds[d])});vals.sort((a,b)=>a-b);
+  const p95=vals.length?vals[Math.floor(vals.length*.95)]:0,sug=Math.max(600,Math.min(3000,Math.round(p95*1.5/100)*100)||CFG.dayCap),hit=DV.rows.filter(r=>Object.values(r.ds||{}).some(v=>v>=CFG.dayCap)).length;
+  openModal(`<div class="mh"><h2 id="mt">Auto-tune daily XP cap</h2><button class="sm" id="mx">Close</button></div><p>Genuine players' 95th-percentile day is <b>${p95}</b> XP over ${vals.length} active days. ${hit} player${hit===1?"":"s"} hit the current cap (${CFG.dayCap}).</p><label for="cp1">New daily XP cap</label><input type="number" id="cp1" value="${sug}" min="200" max="5000"><p class="hint">Clients pick this up within a few minutes. Flagged players are left out of the calculation.</p><div class="act"><button class="pri" id="cp2">Apply</button></div><div class="er" id="cpe"></div>`);
+  $("mx").onclick=closeModal;$("cp2").onclick=async()=>{const v=Math.max(200,Math.min(5000,+$("cp1").value||0));try{const F=await fbp();await F.merge("cfg_live",{dayCap:v,at:Date.now()});CFG.dayCap=v;closeModal();toast("Daily cap set to "+v);devRender()}catch(e){$("cpe").textContent="Couldn't save. Is this browser on the developer allowlist?"}};
+}
+function devDetail(h){
+  const r=DV.rows.find(x=>x.id===h);if(!r)return;const t=dn(),v=r.vdoc||{};
+  const days=Array.from({length:30},(_,i)=>t-29+i),mx=Math.max(1,...days.map(d=>(r.ds||{})[d]||0)),lg=r.lg||[],gm=Math.max(1000,...lg.map(l=>Math.min(l[4],8000)));
+  $("dd").innerHTML=`<div class="card" style="margin-top:16px"><div class="bar2"><h2 style="margin:0">${esc(r.n||"")} <span class="tgc ${esc(r.tg||"New")}">${esc(r.tg||"New")}</span></h2><span class="sp"></span><button class="sm" id="dcl">Close</button></div>
+  <p class="hint">${esc(r.m||"")} · ${esc(r.u||"")} · ${esc(r.dv||"unknown device")} · level ${r.lv} · ${fmt(r.xp)} XP · trust ${r.tr}</p>
+  ${r.mx?`<p>👑 Reached max on ${new Date(r.mx).toLocaleDateString()}: ${esc((r.mxi||[]).join(", "))}</p>`:""}
+  <div class="ph"><div><b>${r.md||"-"}</b>median ms / answer</div><div><b>${Math.round((r.fs||0)*100)}%</b>very fast answers</div><div><b>${Math.round((r.ni||0)*100)}%</b>without human input</div><div><b>${r.cv}</b>timing variation (human ≈ 0.4+)</div></div>
+  <p style="margin:12px 0 4px"><b>Flags</b></p><div class="weak">${(r.fl||[]).length?(r.fl||[]).map(f=>`<span>${esc(FLAGTXT[f]||f)}</span>`).join(""):`<span>none</span>`}</div>
+  <p style="margin:12px 0 4px"><b>Last ${lg.length} answers</b> <span class="hint">height = think time · red = wrong · outlined = flagged</span></p><div class="gap">${lg.map(l=>`<i class="${l[3]?"":"x"} ${(l[5]&(1|2|4|16))?"f":""}" style="height:${Math.max(3,Math.round(Math.min(l[4],8000)/gm*70))}px" title="${esc(l[1])} ${esc(l[2])} · ${l[4]} ms"></i>`).join("")}</div>
+  <p style="margin:12px 0 4px"><b>XP, last 30 days</b></p><div class="b14 b30">${days.map(d=>`<div title="${(r.ds||{})[d]||0} XP"><i style="height:${Math.max(2,Math.round(((r.ds||{})[d]||0)/mx*70))}px"></i></div>`).join("")}</div>
+  <p style="margin:12px 0 4px"><b>Games played</b></p><div class="weak">${Object.entries(r.pl||{}).map(([k,n])=>`<span>${esc(k)} · ${n}</span>`).join("")||"<span>none</span>"}</div>
+  <p style="margin:12px 0 4px"><b>Recent events</b></p><div class="rt">${(r.ev||[]).slice().reverse().map(e=>`<div><span>${esc(e[1])}</span><span>${esc(e[2])} · ${ago(e[0])}</span></div>`).join("")||"<div><span>none</span></div>"}</div>
+  <p style="margin:14px 0 4px"><b>Verdict</b> ${v.vd?`<span class="tg">${esc(v.vd)}</span>`:"(none)"} ${v.rs!=null?`<span class="tg nw">manual limit ${v.rs}</span>`:""}</p>
+  <div class="act" style="justify-content:flex-start"><button class="sm" data-a="g">✅ Genuine</button><button class="sm" data-a="b">🤖 Confirm bot</button><button class="sm" data-a="r1">Limit 1 (XP ×.5)</button><button class="sm" data-a="r2">Limit 2 (XP ×.1)</button><button class="sm" data-a="r3">Limit 3 (no XP)</button><button class="sm" data-a="c">Clear and reset flags</button></div><div class="er" id="dae"></div></div>`;
+  $("dcl").onclick=()=>{$("dd").innerHTML=""};
+  $("dd").querySelectorAll("[data-a]").forEach(b=>b.onclick=async()=>{
+    const a=b.dataset.a,at=Date.now(),P2={g:{vd:"genuine",rs:0},b:{vd:"bot",rs:2},r1:{vd:null,rs:1},r2:{vd:null,rs:2},r3:{vd:null,rs:3},c:{vd:null,rs:null,rst:at}}[a];
+    try{const F=await fbp();await F.merge("ixd_"+h,{...P2,at});r.vdoc={...(r.vdoc||{}),...P2,at};toast("Saved. The player's app applies it within minutes.");devRender();devDetail(h)}catch(e){$("dae").textContent="Couldn't save. Is this browser on the developer allowlist?"}});
+  $("dd").scrollIntoView({behavior:"smooth"});
+}
+addEventListener("hashchange",()=>{if(location.hash==="#dev")devOpen();else devClose()});
+
+/* ---------- wiring ---------- */
+function plusMode(m){if(m==="today"){todayT();return true}if(m==="lab"){labHome();return true}if(m==="shoot"){shooterT();return true}if(m==="board"){boardsT();return true}return false}
+{const _s=start;start=function(){GQT++;return _s.apply(this,arguments)}}
+if(location.hash==="#dev")setTimeout(devOpen,300);
+
 tip();update();boot();
 </script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,deleteField,runTransaction,increment} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,deleteField,runTransaction,increment,collection,query,where,documentId,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const app=initializeApp({apiKey:"AIzaSyD8LcxmPzoI5Ru8tL1oaWWUHsFJFn7MPfk",authDomain:"tabletrainer.firebaseapp.com",projectId:"tabletrainer",storageBucket:"tabletrainer.firebasestorage.app",messagingSenderId:"19695469245",appId:"1:19695469245:web:962552c71ac9448243edd4"});
 const db=getFirestore(app),auth=getAuth(app),ref=id=>doc(db,"accounts",id),cl=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v===null?deleteField():(v&&v.__inc!==undefined?increment(v.__inc):v)]));
@@ -1289,6 +1922,9 @@ window.FB={ready:signInAnonymously(auth).catch(e=>console.warn("Anonymous sign-i
   set:(id,d)=>setDoc(ref(id),d),
   upd:(id,o)=>updateDoc(ref(id),cl(o)),
   del:id=>deleteDoc(ref(id)),
+  merge:(id,d)=>setDoc(ref(id),cl(d),{merge:true}),
+  uid:()=>auth.currentUser&&auth.currentUser.uid,
+  list:async(p,n)=>{const q=query(collection(db,"accounts"),where(documentId(),">=",p),where(documentId(),"<",p+"\uf8ff"),limit(n||300));const r=await getDocs(q);return r.docs.map(x=>({id:x.id,...x.data()}))},
   txn:fn=>runTransaction(db,async t=>fn({get:async id=>{const x=await t.get(ref(id));return x.exists()?x.data():null},set:(id,d)=>t.set(ref(id),d),upd:(id,o)=>t.update(ref(id),cl(o)),del:id=>t.delete(ref(id))}))};
 </script>
 </body>

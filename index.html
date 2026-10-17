@@ -9,10 +9,26 @@
 <meta property="og:title" content="Table Trainer: learn, practice and master multiplication">
 <meta property="og:description" content="Practise multiplication tables, build streaks, earn achievements and share your progress.">
 <meta property="og:type" content="website">
+<!-- ===== LOADING SPEED =====
+     1) Fonts load WITHOUT blocking the first paint (media=print trick). The page shows instantly in the system
+        font, then switches to Nunito when it arrives. Before, a slow phone connection left a blank screen.
+     2) Firebase files are fetched in parallel as early as possible (modulepreload + preconnect). -->
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin><link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap"></noscript>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✖️</text></svg>">
 <style>
+/* =====================================================================
+   STYLES  (table of contents)
+   1. Theme colours + base          2. Header + user menu     3. Layout, cards, forms, tabs
+   4. Games and charts              5. Dialogs and sign-in    6. Profile + public page
+   7. Responsive (phones/tablets)   8. Print                  9. Journey / My Map extras
+   ===================================================================== */
+/* ---------- 1. Theme colours + base ---------- */
 :root{--bg:#f4f5fa;--card:#fff;--ink:#151b34;--mute:#5f6887;--acc:#5b3df5;--acc-t:#5b3df5;--acc-ink:#fff;--acc2:#eeeaff;--ok:#0e8f4f;--ok2:#e2f5ea;--bad:#d6363c;--bad2:#fdecec;--warn:#a85d00;--warn2:#fff1d6;--line:#e1e5f0;--soft:#eceef7;--sh:0 1px 2px rgba(21,27,52,.05),0 6px 20px rgba(21,27,52,.06);color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1020;--card:#171b2f;--ink:#eceffc;--mute:#9aa3c4;--acc:#7357ff;--acc-t:#a899ff;--acc-ink:#fff;--acc2:#272256;--ok:#38c276;--ok2:#14301f;--bad:#ff6b70;--bad2:#3a1b20;--warn:#f0a23a;--warn2:#3a2a10;--line:#2a2f4b;--soft:#1f2441;--sh:none;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#0d1020;--card:#171b2f;--ink:#eceffc;--mute:#9aa3c4;--acc:#7357ff;--acc-t:#a899ff;--acc-ink:#fff;--acc2:#272256;--ok:#38c276;--ok2:#14301f;--bad:#ff6b70;--bad2:#3a1b20;--warn:#f0a23a;--warn2:#3a2a10;--line:#2a2f4b;--soft:#1f2441;--sh:none;color-scheme:dark}
@@ -26,7 +42,10 @@ button:active:not(:disabled){transform:translateY(1px)}
 button:disabled{cursor:not-allowed}
 select{font:inherit;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 .skip{position:absolute;left:-999px;top:8px;z-index:50;background:var(--acc);color:var(--acc-ink);padding:8px 14px;border-radius:10px;font-weight:700}.skip:focus{left:8px}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--card) 90%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+/* ---------- 2. Header + user menu ---------- */
+/* Solid colour first = safe fallback for older Android browsers that don't know color-mix(). The blur was removed:
+   it repainted on every scroll and made cheap phones laggy. */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);background:color-mix(in srgb,var(--card) 94%,transparent);border-bottom:1px solid var(--line)}
 .hd{max-width:1320px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px}
 .logo{font-weight:800;font-size:1.25rem;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
 .logo i{font-style:normal;background:var(--acc);color:var(--acc-ink);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;font-size:.95rem}
@@ -35,6 +54,35 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:col
 .bar{width:110px;height:8px;border-radius:9px;background:var(--soft);overflow:hidden}.bar b{display:block;height:100%;background:var(--acc);border-radius:9px;transition:width .4s}
 .ib{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 10px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:.85rem}
 .ib:hover{background:var(--soft)}
+/* User dropdown (opens under the name button, top right) */
+.um{position:relative}
+.umenu{position:absolute;right:0;top:calc(100% + 8px);width:min(300px,88vw);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 34px rgba(21,27,52,.25);padding:8px;z-index:30}
+.umh{padding:8px 10px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.umh b{display:block;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.umh small{display:block;color:var(--mute);font-size:.78rem;overflow-wrap:anywhere}
+.umi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;padding:10px;border-radius:10px;font-weight:700;font-size:.9rem}
+.umi:hover,.umi:focus-visible{background:var(--soft)}
+.umi span{width:22px;text-align:center}
+.umi.out{color:var(--bad)}
+.umsep{height:1px;background:var(--line);margin:6px 0}
+/* removes the 300ms tap delay on older Android phones */
+button,.chip,.tab,select,label{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* Tab bar = a few main tabs + a "More" dropdown. The dropdown sits OUTSIDE the scrolling strip so it is never clipped. */
+.tabw{display:flex;gap:6px;align-items:stretch;margin-bottom:16px}
+.tabw .tabs{flex:1;min-width:0;margin-bottom:0}
+.tabw .um{display:flex;flex:none}
+.moreb{background:var(--soft);border:0;border-radius:14px;padding:0 14px;font-weight:700;color:var(--mute);white-space:nowrap;max-width:44vw;overflow:hidden;text-overflow:ellipsis}
+.moreb.on{color:var(--acc-t);background:var(--acc2)}
+.umenu.mm3{width:min(270px,88vw);max-height:70vh;overflow:auto}
+.umi.tab.on{background:var(--acc2);color:var(--acc-t)}
+/* Collapsible "Choose your tables" panel (starts closed on phones) */
+.fold{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:0;font-weight:800;font-size:1.05rem;text-align:left}
+.fold small{flex:1;min-width:0;color:var(--mute);font-weight:700;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fold i{font-style:normal;transition:transform .15s}
+#abody{margin-top:10px}aside.shut #abody{display:none}aside.shut .fold i{transform:rotate(-90deg)}
+/* "View more" buttons: long lists show 6 items on phones, the button reveals the rest */
+.fm{display:none;width:100%;margin-top:10px}
+@media(max-width:900px){.fm{display:block}.fold-m.shut>*:nth-child(n+7){display:none}}
 .app{max-width:1320px;margin:0 auto;padding:20px;display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
 aside{position:sticky;top:calc(70px + env(safe-area-inset-top,0px))}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--sh)}
@@ -88,7 +136,7 @@ input:focus,button:focus-visible,select:focus-visible{outline:2px solid var(--ac
 .log div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)}
 .chart{overflow-x:auto}
 .ch{display:grid;gap:3px;min-width:640px}
-.ch div{aspect-ratio:1;display:grid;place-items:center;font-size:.72rem;border-radius:6px;background:color-mix(in srgb,var(--acc) var(--p),var(--card));cursor:pointer;min-height:26px}
+.ch div{aspect-ratio:1;display:grid;place-items:center;font-size:.72rem;border-radius:6px;background:var(--acc2);background:color-mix(in srgb,var(--acc) var(--p),var(--card));cursor:pointer;min-height:26px}
 .ch .hd2{background:none;font-weight:800;color:var(--mute)}.ch .sel{outline:2px solid var(--acc)}
 .big{font-size:1.5rem;font-weight:800;text-align:center;margin:12px 0}
 .mt{display:grid;grid-template-columns:1fr 1fr;gap:16px}.mt>div{display:grid;gap:10px;align-content:start}
@@ -150,7 +198,7 @@ kbd{font:inherit;font-size:.75rem;font-weight:800;padding:1px 7px;border-radius:
 .ai{font-size:1.5rem;width:42px;height:42px;display:grid;place-items:center;background:var(--card);border-radius:12px;flex:none}.ac b{display:block;font-size:.9rem}.ac span{font-size:.78rem;color:var(--mute)}
 .ft{max-width:1320px;margin:0 auto;padding:8px 20px 28px;color:var(--mute);font-size:.8rem;text-align:center}
 #pubv{position:fixed;inset:0;z-index:15;background:var(--bg);overflow:auto}
-.pvb{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 20px;background:color-mix(in srgb,var(--card) 92%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.pvb{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--card);background:color-mix(in srgb,var(--card) 94%,transparent);border-bottom:1px solid var(--line)}
 .pvw{max-width:940px;margin:0 auto;padding:20px 20px 60px;display:grid;gap:16px}.pvw .tip{margin:0}
 .cover{border-radius:20px;padding:26px;color:#fff;background:linear-gradient(135deg,#5b3df5,#8f5bff 55%,#d946ef);display:flex;gap:20px;align-items:center;flex-wrap:wrap}
 .cover .pav{width:92px;height:92px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.7);display:grid;place-items:center;font-size:2.6rem;font-weight:800;flex:none}
@@ -180,7 +228,12 @@ input[type=date]{width:100%;padding:10px 12px;font:inherit;border:1.5px solid va
 @media(max-width:520px){.fi{flex-direction:column}.fi select[data-v]{width:100%}}
 .printonly{display:none}
 @media(max-width:900px){.app{grid-template-columns:1fr;padding:14px}aside{position:static}.qw{grid-template-columns:1fr}.bar{width:60px}.lg{display:none}.hd{padding:8px 14px}}
-@media(max-width:520px){.logo{font-size:1.05rem}.stat.three{grid-template-columns:1fr}.mt{gap:10px}}
+/* ---------- 7. Responsive ---------- */
+/* On narrow phones the header used to overflow sideways (logo + level + 4 buttons). Now it wraps to two rows. */
+@media(max-width:520px){.logo{font-size:1.05rem}.stat.three{grid-template-columns:1fr}.mt{gap:10px}
+.hd{flex-wrap:wrap;row-gap:6px;padding:8px 12px}.ib{max-width:46vw;padding:6px 9px}#umenu{position:fixed;right:10px;left:10px;width:auto;top:calc(56px + env(safe-area-inset-top,0px))}
+/* phone header: streak counters and the theme button hide (the streak card is on the page, theme lives in Settings) */
+#theme,#sc{display:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 @media print{
   :root{--bg:#fff;--card:#fff;--ink:#000;--line:#bbb;padding:0}
@@ -207,12 +260,12 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
 <header><div class="hd">
   <div class="logo"><i aria-hidden="true">✖</i>Table Trainer</div><div class="sp"></div>
   <div class="lvl" id="sc" style="gap:12px"></div><div class="lvl"><span id="lv">Lv 1</span><div class="bar"><b id="xpb" style="width:0"></b></div><span class="lg" id="xpt"></span></div>
-  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="tmrb" hidden aria-label="Daily practice time"></button><button class="ib" id="acct"></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
+  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="tmrb" hidden aria-label="Daily practice time"></button><span class="um" id="um"><button class="ib" id="acct" aria-haspopup="menu" aria-expanded="false" aria-controls="umenu"></button><div class="umenu" id="umenu" role="menu" aria-label="Account menu" hidden></div></span><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
 </div></header>
 
 <div class="app">
 <aside><div class="card">
-  <h2>Choose your tables</h2>
+  <button class="fold" id="afold" aria-expanded="true" aria-controls="abody"><span>Choose your tables</span><small id="asum"></small><i aria-hidden="true">▾</i></button><div id="abody">
   <label for="tables">Tables (e.g. 7 or 2,5,9 or 3-6)</label>
   <input type="text" id="tables" value="7">
   <div class="two"><div><label for="from">Multiply from</label><input type="number" id="from" value="1" min="1"></div><div><label for="to">Multiply to</label><input type="number" id="to" value="10" min="1"></div></div>
@@ -221,14 +274,14 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
   <div class="qk"><button data-q="2-5">2–5</button><button data-q="6-10">6–10</button><button data-q="11-20">11–20</button><button data-q="1-20">All</button></div>
   <div class="hint" id="sum"></div>
   <label class="tgl" for="smart"><span class="sw"><input type="checkbox" id="smart"><span></span></span>Smart review</label>
-  <div class="hint" style="margin-top:6px">Asks the facts you miss, or haven't seen lately, more often.</div>
+  <div class="hint" style="margin-top:6px">Asks the facts you miss, or haven't seen lately, more often.</div></div>
 </div></aside>
 
 <main>
   <div class="card sk" id="streak"></div>
   <div class="tip" id="tip" hidden></div>
-  <div class="tabs" id="tabs" role="tablist" aria-label="Practice modes"></div>
-  <div id="view" tabindex="-1"></div>
+  <div class="tabw"><div class="tabs" id="tabs" role="tablist" aria-label="Practice modes"></div><div class="um" id="more"><button class="moreb" id="moreb" aria-haspopup="menu" aria-expanded="false" aria-controls="moremenu">More ▾</button><div class="umenu mm3" id="moremenu" role="menu" aria-label="More modes" hidden></div></div></div>
+  <div id="view" tabindex="-1"><div class="card" style="text-align:center">Loading Table Trainer…</div></div><noscript><div class="card">Table Trainer needs JavaScript. Please enable it in your browser.</div></noscript>
 </main>
 </div>
 <footer class="ft">Table Trainer · Progress is saved on this device and syncs to your guild when you are signed in. <a href="privacy.html">Privacy</a></footer>
@@ -239,10 +292,28 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
 <div id="modal" hidden></div>
 <div id="sheet" class="printonly" aria-hidden="true"></div>
 <script>
+/* =====================================================================
+   TABLE TRAINER · APP CODE  (everything in one file so the site loads in a single request)
+   Search for the "SECTION:" tags below to jump around.
+
+   SECTION: CORE            helpers, modes list, storage (LS), preferences, spaced repetition, achievements
+   SECTION: DIALOGS         modal, settings, worksheet printing
+   SECTION: ACCOUNTS        sign-in, guilds, merging, sync with Firebase, account dashboard
+   SECTION: USER MENU       dropdown under the name button (Profile, Dashboard, link, Settings, Sign out)
+   SECTION: GAMES           learn, chart, practice, journey, my map, arcade, certificates, tests
+   SECTION: NEW GAMES       Math Lab extras: doubles/halves, percentages, find x, rounding, roots, fractions, x10/x100, true-or-false
+   SECTION: TAB BAR         main tabs + "More" dropdown, collapsible tables panel
+   SECTION: PROFILE         profile form, PUBLIC LINK (auto-created), public page, share buttons
+   SECTION: PLUS            fair play, daily timer, leaderboards, developer console
+   SECTION: GUILD HUB       coins, vault, daily auto-pay, perks, protector drops, team bounty quiz, guild power board
+   SECTION: WIRING          event hooks and start-up
+   FIREBASE                 a separate module script at the very bottom of the file
+   ===================================================================== */
+/* ---------- SECTION: CORE ---------- */
 const $=id=>document.getElementById(id);
-const MODES=[["path","🧭 Journey"],["map","🗺️ My Map"],["arcade","🎮 Arcade"],["today","🎯 Today"],["lab","🧮 Math Lab"],["shoot","🔫 Shooter"],["board","🏆 Boards"],["cert","🏅 Certificates"],["learn","📖 Learn"],["chart","🔢 Chart"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["test","📝 Test"],["dash","📈 Dashboard"],["profile","👤 Profile"],["prog","📊 Progress"]];
+const MODES=[["path","🧭 Journey"],["map","🗺️ My Map"],["arcade","🎮 Arcade"],["today","🎯 Today"],["lab","🧮 Math Lab"],["shoot","🔫 Shooter"],["board","🏆 Boards"],["guild","🏰 Guild"],["cert","🏅 Certificates"],["learn","📖 Learn"],["chart","🔢 Chart"],["type","⌨️ Practice"],["choice","🔘 Choose"],["missing","❓ Missing"],["speed","⚡ Speed 60s"],["match","🧩 Match"],["test","📝 Test"],["dash","📈 Dashboard"],["profile","👤 Profile"],["prog","📊 Progress"]];
 let mode="path",st={},weakMode=false;
-const def=()=>({xp:0,ans:0,ok:0,bs:0,speed:0,tests:0,perf:0,weak:{},dh:{},ms:{},dd:{},gm:{},jr:{start:null,stg:{}},ach:{},sk:{cur:0,best:0,last:null,prot:0,h:{}}});
+const def=()=>({xp:0,cn:0,ans:0,ok:0,bs:0,speed:0,tests:0,perf:0,weak:{},dh:{},ms:{},dd:{},gm:{},jr:{start:null,stg:{}},ach:{},sk:{cur:0,best:0,last:null,prot:0,h:{}}});
 const norm=o=>{const p=Object.assign(def(),o||{});p.sk=Object.assign(def().sk,p.sk||{});p.weak=p.weak||{};p.dh=p.dh||{};p.ms=p.ms||{};p.ach=p.ach||{};p.dd=p.dd||{};p.jr=Object.assign({start:null,stg:{}},p.jr||{});p.jr.stg=p.jr.stg||{};p.gm=p.gm||{};return p};
 const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let P=norm(LS.get("tt_v2"));
@@ -326,7 +397,7 @@ function hintFor(a,m,full){
   return full?h+" = "+p:h;
 }
 
-/* ---------- Dialogs, export, worksheet ---------- */
+/* ---------- SECTION: DIALOGS (modal, settings, export, worksheet) ---------- */
 const MD=()=>$("modal");let lastFocus=null;
 function openModal(html){lastFocus=document.activeElement;MD().innerHTML=`<div class="card" role="dialog" aria-modal="true" aria-labelledby="mt">${html}</div>`;MD().hidden=false;const f=MD().querySelector("input,select,button");if(f)f.focus()}
 function closeModal(){MD().hidden=true;MD().innerHTML="";if(lastFocus&&lastFocus.focus)lastFocus.focus()}
@@ -376,7 +447,7 @@ addEventListener("keydown",e=>{
 });
 function tip(){const t=$("tip");if(LS.get("tt_tip")||P.ans>0){t.hidden=true;return}t.hidden=false;t.innerHTML=`<span>New here? Pick your tables on the left, study them in <b>Learn</b>, then test yourself in <b>Practice</b>. Your streak grows every day you answer a question.</span><button class="sm" id="tipx">Got it</button>`;$("tipx").onclick=()=>{LS.set("tt_tip",1);t.hidden=true}}
 
-/* ---------- Accounts ----------
+/* ---------- SECTION: ACCOUNTS ----------
  One account = one unique User ID (TT-XXXXXXXXXX). Any number of emails/phones can be linked as "logins".
  Each login keeps its own stats; account totals = sum of all logins, so removing a login subtracts its score.
  Firestore: accounts/{uid} = {name,lock,created,logins:{hash:{t,m,add,last,dev,s}}}, accounts/i_{hash} = {uid} */
@@ -408,11 +479,11 @@ function tot(){if(!U)return{xp:P.xp,ans:P.ans,ok:P.ok,n:0};const b=U.base||{};le
 function persist(){if(!U){LS.set("tt_v2",P);return}clearTimeout(svT);svT=setTimeout(flush,1500)}
 /* ---- outbox: every score change is also kept as an unsent delta in localStorage until the server confirms it.
    Nothing is lost if the device is offline, the tab closes, or the guild was merged meanwhile: the delta is replayed into the final guild. ---- */
-const blank=()=>({xp:0,ans:0,ok:0,dh:{}});
+const blank=()=>({xp:0,cn:0,ans:0,ok:0,dh:{}});
 let OUTS=LS.get("tt_out")||{};
-const addTo=(t,o)=>{t.xp+=o.xp||0;t.ans+=o.ans||0;t.ok+=o.ok||0;for(const d in o.dh||{})t.dh[d]=(t.dh[d]||0)+o.dh[d]};
-function out(k,n){if(!U)return;const key=U.uid+":"+U.h,o=OUTS[key]||(OUTS[key]=blank());if(k==="dh"){const t=dn();o.dh[t]=(o.dh[t]||0)+n}else o[k]+=n;LS.set("tt_out",OUTS)}
-const hasOut=()=>{const o=U&&OUTS[U.uid+":"+U.h];return !!(o&&(o.xp||o.ans||o.ok))};
+const addTo=(t,o)=>{t.cn=(t.cn||0)+(o.cn||0);t.xp+=o.xp||0;t.ans+=o.ans||0;t.ok+=o.ok||0;for(const d in o.dh||{})t.dh[d]=(t.dh[d]||0)+o.dh[d]};
+function out(k,n){if(!U)return;const key=U.uid+":"+U.h,o=OUTS[key]||(OUTS[key]=blank());if(k==="dh"){const t=dn();o.dh[t]=(o.dh[t]||0)+n}else o[k]=(o[k]||0)+n;LS.set("tt_out",OUTS)}
+const hasOut=()=>{const o=U&&OUTS[U.uid+":"+U.h];return !!(o&&(o.xp||o.ans||o.ok||o.cn))};
 const applyOut=(uid,h)=>{const o=OUTS[uid+":"+h];if(o)addTo(P,o)};
 async function reclaim(uid,h,from){
   const mine=uid+":"+h;let moved=false;
@@ -425,13 +496,13 @@ function flush(){
   if(!U)return;clearTimeout(svT);
   const key=U.uid+":"+U.h,snap=JSON.parse(JSON.stringify(OUTS[key]||blank())),k="logins."+U.h+".",inc=n=>({__inc:n});
   const u={[k+"last"]:Date.now(),[k+"dev"]:dev(),[k+"s.sk"]:P.sk,[k+"s.weak"]:P.weak,[k+"s.bs"]:P.bs,[k+"s.speed"]:P.speed,[k+"s.ms"]:P.ms,[k+"s.ach"]:P.ach,[k+"s.tests"]:P.tests,[k+"s.perf"]:P.perf,[k+"s.dd"]:P.dd,[k+"s.jr"]:P.jr,[k+"s.gm"]:P.gm};
-  if(snap.xp)u[k+"s.xp"]=inc(snap.xp);if(snap.ans)u[k+"s.ans"]=inc(snap.ans);if(snap.ok)u[k+"s.ok"]=inc(snap.ok);
+  if(snap.cn)u[k+"s.cn"]=inc(snap.cn);if(snap.xp)u[k+"s.xp"]=inc(snap.xp);if(snap.ans)u[k+"s.ans"]=inc(snap.ans);if(snap.ok)u[k+"s.ok"]=inc(snap.ok);
   for(const d in snap.dh)u[k+"s.dh."+d]=inc(snap.dh[d]);
-  return dupd(U.uid,u).then(()=>{const c=OUTS[key];if(c){c.xp-=snap.xp;c.ans-=snap.ans;c.ok-=snap.ok;for(const d in snap.dh)c.dh[d]=(c.dh[d]||0)-snap.dh[d];if(!c.xp&&!c.ans&&!c.ok)delete OUTS[key];LS.set("tt_out",OUTS)}hud();pubSync()}).catch(()=>{})
+  return dupd(U.uid,u).then(()=>{const c=OUTS[key];if(c){c.cn=(c.cn||0)-(snap.cn||0);c.xp-=snap.xp;c.ans-=snap.ans;c.ok-=snap.ok;for(const d in snap.dh)c.dh[d]=(c.dh[d]||0)-snap.dh[d];if(!c.xp&&!c.ans&&!c.ok&&!c.cn)delete OUTS[key];LS.set("tt_out",OUTS)}hud();pubSync()}).catch(()=>{})
 }
 addEventListener("pagehide",flush);document.addEventListener("visibilitychange",()=>{if(document.hidden)flush()});
 async function poll(){if(!U||document.hidden)return;try{let a=await dget(U.uid);if(a&&!a.mergedInto&&a.pend&&a.pend<curEp()){await consolidate(a.pend);a=await dget(U.uid);if(a&&!a.mergedInto&&a.pend)dupd(U.uid,{pend:null}).catch(()=>{})}if(!a||a.mergedInto){const z=await resolve(U.uid);if(z&&z.uid!==U.uid&&z.logins&&z.logins[U.h]&&z.logins[U.h].t){login(z,U.h,0,U.uid);toast("Your guild was merged into "+z.uid);return}signOut(a?"This guild was merged. Please sign in again.":"This login was removed from the guild.",1);return}if(!a.logins||!a.logins[U.h]||!a.logins[U.h].t){signOut("This login was removed from the guild.",1);return}
-  U.name=a.name;U.profile=a.profile||{};U.lock=!!a.lock;U.base=a.base||null;U.logins=a.logins;U.roles=a.roles||allAdmin(a.logins);U.tree=a.tree||null;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp());acctBtn();hud();if(dashOn&&!A().contains(document.activeElement))renderDash()}catch(e){}}
+  U.name=a.name;U.profile=a.profile||{};U.lock=!!a.lock;U.base=a.base||null;U.logins=a.logins;U.roles=a.roles||allAdmin(a.logins);U.tree=a.tree||null;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp());gLoad(a);gAuto();acctBtn();hud();if(dashOn&&!A().contains(document.activeElement))renderDash()}catch(e){}}
 
 const phoneField=p=>`<label for="${p}c">Country (pick or type a name)</label><div class="ph2"><input type="text" id="${p}c" list="cl" value="India" autocomplete="off"><input type="text" id="${p}k" value="+91" inputmode="tel" aria-label="Country code"></div><label for="${p}n">Phone number</label><input type="text" id="${p}n" inputmode="numeric" placeholder="Phone number" autocomplete="off">`;
 const wire=(p,btn)=>{$(p+"c").oninput=()=>{const c=COUNTRIES.find(x=>x.n.toLowerCase()===$(p+"c").value.trim().toLowerCase());if(c)$(p+"k").value="+"+c.c};$(p+"n").onkeydown=e=>{if(e.key==="Enter")$(btn).click()}};
@@ -452,7 +523,8 @@ function shell(inner,w){dashOn=false;A().hidden=false;A().innerHTML=`<div class=
 const msgH=m=>`<div class="er ${m&&m[0]==="✅"?"ok":""}" id="er">${esc(m||"")}</div>`;
 const guard=(id,fn)=>async()=>{const b=$(id);b.disabled=true;try{await fn()}catch(e){const er=$("er");if(er)er.textContent="Can't reach the server. Check your connection and try again."}b.disabled=false};
 const mkLogin=(l,s)=>({t:l.t,m:l.m,add:Date.now(),last:Date.now(),dev:dev(),s:s||norm()});
-const acctBtn=()=>{$("acct").textContent=U?"👤 "+Array.from(U.name).slice(0,12).join(""):"Sign in";$("hedit").hidden=!U};
+/* The old "Edit profile" header button is replaced by the user menu (see SECTION: USER MENU), so it stays hidden. */
+const acctBtn=()=>{$("acct").textContent=U?"👤 "+Array.from(U.name).slice(0,12).join("")+" ▾":"Sign in";$("hedit").hidden=true;if(!U)UM.close()};
 $("hedit").onclick=()=>{closePV();A().hidden=true;mode="profile";start();window.scrollTo({top:0,behavior:"smooth"})};
 
 function authHome(msg=""){
@@ -502,13 +574,13 @@ function authLegacy(c){
     await dset(uid,a);await ixAdd(c.l.h,uid);if(!pi)await ixAdd(ph,uid);login(a,c.l.h,true)});
 }
 function login(a,h,isNew,from){
-  U={uid:a.uid,name:a.name,created:a.created||Date.now(),profile:a.profile||{},h,logins:a.logins,lock:!!a.lock,base:a.base||null,roles:a.roles||allAdmin(a.logins),tree:a.tree||null,noMerge:!!a.noMerge,parents:a.parents||null,recycled:!!a.recycled,ep:null};P=norm(a.logins[h].s);applyOut(a.uid,h);reclaim(a.uid,h,from);LS.set("tt_sess",{uid:a.uid,h});
+  U={uid:a.uid,name:a.name,created:a.created||Date.now(),profile:a.profile||{},h,logins:a.logins,lock:!!a.lock,base:a.base||null,roles:a.roles||allAdmin(a.logins),tree:a.tree||null,noMerge:!!a.noMerge,parents:a.parents||null,recycled:!!a.recycled,ep:null};gLoad(a);P=norm(a.logins[h].s);applyOut(a.uid,h);reclaim(a.uid,h,from);LS.set("tt_sess",{uid:a.uid,h});
   setTimeout(poll,1200);A().hidden=true;acctBtn();toast(isNew?`Account created. Your User ID: ${a.uid}`:`Welcome back, ${U.name}!`);
-  sync();update();flush();clearInterval(pollT);pollT=setInterval(poll,25000);pubT=0;setTimeout(()=>{pubSync();healUn()},4000);if(PV)showPublic(PV);
+  sync();update();flush();clearInterval(pollT);pollT=setInterval(poll,25000);pubT=0;setTimeout(autoLink,1500);setTimeout(adminProbe,3000);setTimeout(()=>{pubSync();healUn()},4000);if(PV)showPublic(PV);
 }
 function signOut(msg="",skip){if(U&&!skip)flush();clearInterval(st.timer);clearInterval(pollT);try{localStorage.removeItem("tt_sess")}catch(e){}U=null;P=norm();acctBtn();update();if(PV)showPublic(PV);authHome(msg)}
 
-/* ---------- Dashboard ---------- */
+/* ---------- Account dashboard (guild, logins, merging) · opened from the user menu ---------- */
 const isAdmin=()=>!!(U&&U.roles&&U.roles[U.h]==="admin");
 const nodeOf=a=>a.tree||{u:a.uid,n:a.name,xp:accXp(a),at:a.created,k:[]};
 const treeH=n=>`<li><b>${esc(n.n)}</b> <span class="hint">${esc(n.u)} · ${n.xp} XP${n.k.length?" · merged "+new Date(n.at).toLocaleDateString():""}</span>${n.k.length?`<ul class="tree">${n.k.map(treeH).join("")}</ul>`:""}</li>`;
@@ -533,7 +605,7 @@ function buildZ(accs,zid,edges,ep){
       s.xp=s.ans=s.ok=0;s.dh={};if(!logins[h])logins[h]={...l,s};roles[h]=roles[h]==="admin"||ro[h]==="admin"?"admin":"member"}}
   for(const h in base.by){if(logins[h]||base.by[h].left===undefined)delete base.by[h].left}
   const top=[...accs].sort((p,q)=>accXp(q)-accXp(p))[0];
-  return{uid:zid,name:top.name,created:now,lock:false,logins,roles,base,profile:top.profile||{},parents:base.from,ep,
+  return{...gMerge(accs),uid:zid,name:top.name,created:now,lock:false,logins,roles,base,profile:top.profile||{},parents:base.from,ep,
     tree:{u:zid,n:top.name,xp:base.xp,at:now,k:accs.map(nodeOf)},log:edges.map(g=>({a:g.na,b:g.nb,m:g.bm,at:g.at}))};
 }
 async function consolidate(ep){
@@ -647,14 +719,53 @@ async function rmLogin(h){
     await ixDel(h,U.uid);if(me)return signOut("You left the guild.",1);
     await refresh();renderDash("✅ Done.")}catch(e){renderDash("Couldn't complete. Check your connection.")}
 }
-$("acct").onclick=()=>U?renderDash():authHome();
+/* ---------- SECTION: USER MENU · dropdown under the name button ----------
+   Signed out  -> button says "Sign in" and opens the sign-in screen.
+   Signed in   -> button opens this menu. Every item reuses an existing screen, nothing new is stored here. */
+/* Admin console entry: shown ONLY if the server lets this browser read the developer data (Firestore rules decide, not this
+   code). Anyone else never sees it, and typing #dev still shows "Developer access needed". */
+let ADMIN_OK=false;
+async function adminProbe(){if(!U)return;try{const F=await fbp();await F.list("ix_",1);ADMIN_OK=true}catch(e){ADMIN_OK=false}}
+const UM={
+  el:()=>$("umenu"),
+  open(){moreClose();UM.render();UM.el().hidden=false;$("acct").setAttribute("aria-expanded","true");const f=UM.el().querySelector(".umi");if(f&&matchMedia("(pointer:fine)").matches)f.focus()},
+  close(){const m=UM.el();if(!m||m.hidden)return;m.hidden=true;$("acct").setAttribute("aria-expanded","false")},
+  render(){
+    const un=myUn(),link=shareURL(un).replace(/^https?:\/\//,""),shared=!!(U.profile&&U.profile.share);
+    const item=(k,i,t)=>`<button class="umi" role="menuitem" data-um="${k}"><span aria-hidden="true">${i}</span>${t}</button>`;
+    UM.el().innerHTML=`<div class="umh"><b>${esc(U.name)}</b><small>${un?"@"+esc(un):"Creating your public link…"}</small><small>${esc(link)} · ${shared?"public page on":"public page off"}</small><small>User ID <b>${esc(U.uid)}</b></small></div>`
+      +item("profile","👤","Profile")+item("dash","📈","Dashboard")+item("page","🌐","View my public page")
+      +item("copy","🔗","Copy my public link")+item("id","🆔","Copy my User ID")+(navigator.share?item("share","📤","Share my link…"):"")
+      +`<div class="umsep"></div>`+item("guildhub","🏰","Guild Hub")+item("acct","🏢","Account and guild")+item("cfg","⚙️","Settings")+(ADMIN_OK?item("dev","🛠","Admin console"):"")
+      +`<div class="umsep"></div>`+`<button class="umi out" role="menuitem" data-um="out"><span aria-hidden="true">🚪</span>Sign out</button>`;
+  },
+  go(k){
+    UM.close();
+    const tab=m=>{closePV();A().hidden=true;mode=m;start();window.scrollTo({top:0,behavior:"smooth"})};
+    if(k==="profile")tab("profile");
+    else if(k==="dash")tab("dash");
+    else if(k==="page"){const un=myUn();location.hash=un?"#/"+un:"#u="+U.uid}
+    else if(k==="copy")copyMyLink(false);
+    else if(k==="share")copyMyLink(true);
+    else if(k==="id")copyTxt(U.uid);
+    else if(k==="dev")location.hash="#dev";
+    else if(k==="guildhub")tab("guild");
+    else if(k==="acct")renderDash();
+    else if(k==="cfg")openSettings();
+    else if(k==="out")signOut();
+  }
+};
+$("acct").onclick=e=>{if(!U){authHome();return}e.stopPropagation();UM.el().hidden?UM.open():UM.close()};
+$("umenu").onclick=e=>{const b=e.target.closest("[data-um]");if(b)UM.go(b.dataset.um)};
+document.addEventListener("click",e=>{if(!$("um").contains(e.target))UM.close()});
+addEventListener("keydown",e=>{if(e.key==="Escape"&&!UM.el().hidden){UM.close();$("acct").focus()}});
 
 const dn=(d=new Date())=>Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
 const isPrime=n=>{if(n<2)return false;for(let i=2;i*i<=n;i++)if(n%i===0)return false;return true};
 const reward=n=>isPrime(n)?n:(n%2?1:0);
 const addXp=n=>{
   n=typeof xpAdj==="function"?xpAdj(n):n;if(!(n>0))return;
-  const was=Math.floor(tot().xp/100);P.xp+=n;out("xp",n);out("dh",n);const t=dn();P.dh[t]=(P.dh[t]||0)+n;for(const k in P.dh)if(+k<t-30)delete P.dh[k];
+  const was=Math.floor(tot().xp/100);P.xp+=n;out("xp",n);earnCoins(n);out("dh",n);const t=dn();P.dh[t]=(P.dh[t]||0)+n;for(const k in P.dh)if(+k<t-30)delete P.dh[k];
   const now=Math.floor(tot().xp/100);if(now>was){sfx("win");toast(`⬆️ Level ${now+1}: ${rankOf(now+1)}!`)}
   if(P.dh[t]>=PREF.goal&&PREF.goalDay!==t){PREF.goalDay=t;savePref();sfx("win");toast("🎯 Daily goal reached!")}
 };
@@ -681,7 +792,7 @@ function streakUI(){
   const r=reward(n),today=P.dh[t]||0,g=PREF.goal,pc=Math.min(100,Math.round(today/g*100));
   $("streak").innerHTML=`<div class="f">🔥 ${s.cur}</div><div><b>day streak</b><div class="n">Best ${s.best}. ${done?"Done for today.":"Answer one question to keep it."}</div></div><div class="f">🛡️ ${s.prot}</div><div><b>protectors</b><div class="n">Used automatically when you miss a day</div></div><div class="days">${d}</div><div class="goal"><div class="ring ${pc>=100?"done":""}" style="--p:${pc}"><b>${pc}%</b></div><div><b>Daily goal</b><div class="n">${today} of ${g} XP today</div></div></div><div class="n" style="flex:1;min-width:210px">${done?"Tomorrow":"Today"} (day ${n}): ${r?`+${r} protector${r>1?"s":""}`:"no bonus"}<br>Next prime bonus: day ${p} gives +${p}</div>`;
 }
-function hud(){const x=tot().xp;$("sc").innerHTML=`<span>🔥 ${P.sk.cur}</span><span>🛡️ ${P.sk.prot}</span>${hasOut()?`<span title="Waiting to sync">⏳</span>`:""}`;streakUI();const lvl=Math.floor(x/100)+1;$("lv").textContent="Lv "+lvl;$("lv").title=rankOf(lvl);$("xpb").style.width=(x%100)+"%";$("xpt").textContent=x+" XP"}
+function hud(){const x=tot().xp;$("sc").innerHTML=`<span>🔥 ${P.sk.cur}</span><span>🛡️ ${P.sk.prot}</span>${U?`<span title="Guild coins">🪙 ${P.cn||0}</span>`:""}${hasOut()?`<span title="Waiting to sync">⏳</span>`:""}`;streakUI();const lvl=Math.floor(x/100)+1;$("lv").textContent="Lv "+lvl;$("lv").title=rankOf(lvl);$("xpb").style.width=(x%100)+"%";$("xpt").textContent=x+" XP"}
 const rnd=n=>Math.floor(Math.random()*n),pick=a=>a[rnd(a.length)];
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
 const col=a=>`hsl(${(a*47+250)%360} 62% 48%)`;
@@ -694,16 +805,33 @@ function pool(){
 
 function renderChips(){const cur=new Set(cfg().tb);$("chips").innerHTML=Array.from({length:20},(_,i)=>i+1).map(n=>`<span class="chip ${cur.has(n)?"on":""}" data-n="${n}">${n}</span>`).join("");
   $("chips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{const s=new Set(cfg().tb),n=+c.dataset.n;s.has(n)?s.delete(n):s.add(n);$("tables").value=[...s].sort((a,b)=>a-b).join(",");weakMode=false;update()})}
-function update(){renderChips();const c=cfg();$("sum").textContent=c.tb.length?`${c.tb.length} table${c.tb.length>1?"s":""}, ${c.f} to ${c.t}: ${c.tb.length*(c.t-c.f+1)} questions`:"Enter at least one table number.";start()}
+function update(){renderChips();const c=cfg();$("sum").textContent=c.tb.length?`${c.tb.length} table${c.tb.length>1?"s":""}, ${c.f} to ${c.t}: ${c.tb.length*(c.t-c.f+1)} questions`:"Enter at least one table number.";asumSync();start()}
 ["tables","from","to"].forEach(i=>$(i).addEventListener("input",()=>{if(i!=="tables"){$("fromR").value=$("from").value;$("toR").value=$("to").value}weakMode=false;update()}));
 [["fromR","from"],["toR","to"]].forEach(([r,n])=>$(r).addEventListener("input",()=>{$(n).value=$(r).value;weakMode=false;update()}));
 document.querySelectorAll(".qk button").forEach(b=>b.onclick=()=>{$("tables").value=b.dataset.q;weakMode=false;update()});
-$("tabs").innerHTML=MODES.map(([k,l])=>`<button class="tab" role="tab" data-k="${k}">${l}</button>`).join("");
-$("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{mode=b.dataset.k;start()});
+/* ---------- SECTION: TAB BAR · main tabs + "More" dropdown + collapsible tables panel ----------
+   To move a mode between the bar and the More menu, just edit PRIMARY_TABS. */
+const PRIMARY_TABS=["path","map","arcade","today","lab","board"];
+$("tabs").innerHTML=MODES.filter(([k])=>PRIMARY_TABS.includes(k)).map(([k,l])=>`<button class="tab" role="tab" data-k="${k}">${l}</button>`).join("");
+$("moremenu").innerHTML=MODES.filter(([k])=>!PRIMARY_TABS.includes(k)).map(([k,l])=>`<button class="umi tab" role="menuitem" data-k="${k}">${l}</button>`).join("");
+function moreClose(){const m=$("moremenu");if(!m||m.hidden)return;m.hidden=true;$("moreb").setAttribute("aria-expanded","false")}
+function moreSync(){const on=$("moremenu").querySelector(".tab.on");$("moreb").classList.toggle("on",!!on);$("moreb").textContent=(on?on.textContent:"More")+" ▾"}
+const goTab=b=>{mode=b.dataset.k;moreClose();start()};
+document.querySelectorAll("#tabs .tab,#moremenu .tab").forEach(b=>b.onclick=()=>goTab(b));
+$("moreb").onclick=e=>{e.stopPropagation();const m=$("moremenu");if(m.hidden){UM.close();m.hidden=false;$("moreb").setAttribute("aria-expanded","true")}else moreClose()};
+document.addEventListener("click",e=>{if(!$("more").contains(e.target))moreClose()});
+addEventListener("keydown",e=>{if(e.key==="Escape")moreClose()});
+/* "Choose your tables" panel: open/closed is remembered; first visit on a phone starts closed so the game is visible. */
+function asumSync(){const c=cfg();$("asum").textContent=c.tb.length?(c.tb.length>3?c.tb.length+" tables":"×"+c.tb.join(", ×"))+" · "+c.f+"–"+c.t:"none selected"}
+{const as=document.querySelector("aside"),KEY="tt_aside",saved=LS.get(KEY);
+ const set=s=>{as.classList.toggle("shut",s);$("afold").setAttribute("aria-expanded",String(!s))};
+ set(saved===null?matchMedia("(max-width:900px)").matches:!!saved);
+ $("afold").onclick=()=>{const s=!as.classList.contains("shut");set(s);LS.set(KEY,s)}}
+
 
 function start(){
-  document.querySelectorAll(".tab").forEach(b=>{b.classList.toggle("on",b.dataset.k===mode);b.setAttribute("aria-selected",b.dataset.k===mode)});
-  clearInterval(st.timer);hud();document.body.classList.toggle("jr",["path","map","arcade","cert","today","lab","shoot","board"].includes(mode));
+  document.querySelectorAll(".tab").forEach(b=>{b.classList.toggle("on",b.dataset.k===mode);b.setAttribute("aria-selected",b.dataset.k===mode)});moreSync();
+  clearInterval(st.timer);hud();document.body.classList.toggle("jr",["path","map","arcade","cert","today","lab","shoot","board","guild"].includes(mode));
   st={score:0,tot:0,streak:0,time:60,over:false,log:[]};
   if(mode==="prog")return prog();
   if(mode==="dash")return dashT();
@@ -789,7 +917,7 @@ function endSpeed(){
   $("again").onclick=start;
 }
 
-/* ---------- Journey: adaptive level path. Bunch = preview -> practice -> exam preview -> exam. Perfect exams unlock stretch and jump-ahead. ---------- */
+/* ---------- SECTION: GAMES · Journey: adaptive level path. Bunch = preview -> practice -> exam preview -> exam. Perfect exams unlock stretch and jump-ahead. ---------- */
 const JB=[[2,3],[4,5],[6,7],[8,9],[10,11],[12,13],[14,15],[16,17],[18,19,20]],JEX=12,JPASS=10,JTO=15,JTOP=14;
 const JTIP={2:"Double the number.",3:"Add the number three times.",4:"Double it, then double again.",5:"Half of ×10, so answers end in 0 or 5.",6:"Take ×5, then add one more.",7:"Split into ×5 and ×2.",8:"Double three times.",9:"×10 minus the number. Digits add up to 9.",10:"Add a zero.",11:"Up to ×9 the digit repeats: 11 × 4 = 44.",12:"×10 plus ×2."};
 let JLB=[];
@@ -1035,7 +1163,7 @@ function prog(){
   if($("pw"))$("pw").onclick=()=>{weakMode=true;mode="type";start()};
   $("reset").onclick=()=>{if(confirm(U?"Reset the progress of this login? Its XP is removed from your account total.":"Reset all progress?")){if(U){delete OUTS[U.uid+":"+U.h];LS.set("tt_out",OUTS);P=norm();dupd(U.uid,{["logins."+U.h+".s"]:P}).catch(()=>{})}else{P=norm();save()}start()}};
 }
-/* ================= Profile, public page, analytics =================
+/* ================= SECTION: PROFILE · profile, public page, analytics =================
  Firestore (same "accounts" collection):
    accounts/{uid}.profile = {f:{field:value}, v:{field:"public"|"members"|"me"}, share:bool}   (owner's full copy)
    accounts/p_{uid}  = public snapshot  (anyone with the link)
@@ -1095,7 +1223,58 @@ let pubT=0;
 async function pubPush(){const pr=U.profile||{};await dset("p_"+U.uid,buildPub(pr));await dset("pm_"+U.uid,buildMem(pr))}
 async function pubDel(){await ddel("p_"+U.uid);await ddel("pm_"+U.uid)}
 function pubSync(force){if(!U||!(U.profile&&U.profile.share))return;if(!force&&Date.now()-pubT<60000)return;pubT=Date.now();pubPush().catch(()=>{pubT=0})}
-const shareURL=un=>profLink(un===undefined?(U&&U.profile&&U.profile.un):un);
+/* ---- PUBLIC LINK: automatic username ----
+   Every signed-in user gets a unique username created for them the first time they sign in (like LinkedIn),
+   built from the FIRST NAME only: "Rahul Kumar" -> rahul, or rahul4821 if "rahul" is taken. It can be changed
+   later in Profile. The link is also remembered on the device (tt_un:<uid>) so it shows instantly, even offline. */
+const myUn=()=>U?((U.profile&&U.profile.un)||LS.get("tt_un:"+U.uid)||""):"";
+const shareURL=un=>profLink(un===undefined?myUn():un);
+function slugUn(name){
+  let s=String(name||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().split(/\s+/)[0]||"";
+  return s.replace(/[^a-z0-9_]/g,"").replace(/^[^a-z]+/,"").slice(0,16);
+}
+function unCandidates(name){
+  const b=slugUn(name),base=b.length>=3?b:(b+"player").slice(0,10),out=[];
+  if(b.length>=3&&!UN_RESERVED.has(b))out.push(b);
+  for(let i=0;i<8;i++)out.push(base+(1000+Math.floor(Math.random()*9000)));
+  return out;
+}
+let unBusy=false;
+async function autoLink(){
+  if(!U||unBusy)return;
+  const cur=(U.profile||{}).un;
+  if(cur){LS.set("tt_un:"+U.uid,cur);return}
+  unBusy=true;
+  try{
+    for(const c of unCandidates(U.name)){
+      if(!U||(U.profile||{}).un)break;
+      try{
+        const d=await dget("un_"+c);if(d&&d.uid!==U.uid)continue;
+        await claimUn(c,"");
+        const prof=Object.assign({f:{},v:{},share:false},U.profile||{},{un:c,upd:Date.now()});
+        await dupd(U.uid,{profile:prof});U.profile=prof;LS.set("tt_un:"+U.uid,c);
+        if(!UM.el().hidden)UM.render();
+        break;
+      }catch(e){if(e.message!=="taken")break}
+    }
+  }finally{unBusy=false}
+}
+/* One tap from the menu: make sure a link exists, make sure the public page is ON (asks first), then copy or share. */
+async function copyMyLink(native){
+  if(!U){authHome();return}
+  try{
+    if(!myUn())await autoLink();
+    const pr=U.profile||{};
+    if(!pr.share){
+      if(!confirm("Your public page is off, so this link won't open yet.\n\nTurn it on? Anyone with the link will see your name, level, XP, streak and any details you marked Public."))return;
+      const prof=Object.assign({f:{},v:{},share:false},pr,{share:true,upd:Date.now()});
+      await dupd(U.uid,{profile:prof});U.profile=prof;pubT=Date.now();await pubPush();toast("🌐 Public page is on");
+    }
+    const url=shareURL();
+    if(native&&navigator.share){try{await navigator.share({title:"My Table Trainer progress",text:shareText(),url})}catch(e){}return}
+    copyTxt(url);
+  }catch(e){toast("Couldn't create your link. Check your connection and try again.")}
+}
 function shareText(){const T=tot(),lv=Math.floor(T.xp/100)+1,acc=T.ans?Math.round(T.ok/T.ans*100):0;return`I'm Level ${lv} (${rankOf(lv)}) on Table Trainer: ${fmt(T.xp)} XP, ${P.sk.cur}-day streak, ${acc}% accuracy.`}
 function shareHTML(un){
   const u=shareURL(un),t=shareText(),e=encodeURIComponent,L=[["WhatsApp","https://wa.me/?text="+e(t+" "+u)],["LinkedIn","https://www.linkedin.com/sharing/share-offsite/?url="+e(u)],["X","https://twitter.com/intent/tweet?text="+e(t)+"&url="+e(u)],["Facebook","https://www.facebook.com/sharer/sharer.php?u="+e(u)],["Telegram","https://t.me/share/url?url="+e(u)+"&text="+e(t)],["Email","mailto:?subject="+e("My Table Trainer progress")+"&body="+e(t+"\n"+u)]];
@@ -1118,7 +1297,11 @@ function cardPNG(){
 
 /* ---- public / signed-in / owner page ---- */
 let PV=null;
-const SITE="https://practice-site.mobiledoctor.org.in/",PRETTY=false; /* PRETTY=true makes links look like /username (your host must then serve index.html for unknown paths) */
+/* ---- PUBLIC LINK SETTINGS ----
+   SITE   = your live address (links are always built from this, even if the page is opened from another address).
+   PRETTY = false -> https://tables.mobiledoctor.org.in/#/username   (works everywhere, nothing else needed)
+            true  -> https://tables.mobiledoctor.org.in/username     (also upload 404.html next to index.html) */
+const SITE="https://tables.mobiledoctor.org.in/",PRETTY=false;
 const UN_RE=/^[a-z][a-z0-9_]{2,23}$/,UN_RESERVED=new Set(["admin","administrator","root","support","help","login","logout","signin","signup","index","home","api","www","about","privacy","terms","settings","profile","dashboard","table","tables","trainer","guest","anonymous","null","undefined","moderator","official"]);
 const PVID=()=>{let x=location.hash.match(/^#u=(TT-[A-HJ-NP-Z2-9]{10})$/);if(x)return x[1];x=location.hash.match(/^#\/@?([a-zA-Z][a-zA-Z0-9_]{2,23})\/?$/);if(x)return x[1].toLowerCase();x=location.pathname.match(/^\/@?([a-zA-Z][a-zA-Z0-9_]{2,23})\/?$/);return x&&!UN_RESERVED.has(x[1].toLowerCase())?x[1].toLowerCase():null};
 const profLink=un=>un?(PRETTY?SITE+un:SITE+"#/"+un):(U?SITE+"#u="+U.uid:SITE);
@@ -1136,7 +1319,7 @@ function pvHTML(p,m,who,items){
   const tag=k=>who==="owner"&&fs[k]?`<span class="tg" title="${fs[k][2]==="public"?"Public":fs[k][2]==="members"?"Signed-in only":"Only me"}">${fs[k][2]==="public"?"🌐":fs[k][2]==="members"?"🔒":"🙈"}</span>`:"";
   const init=esc(val("av")||Array.from(p.name||"?")[0]||"?");
   const chips=[];if(val("location"))chips.push("📍 "+esc(val("location")));if(val("dob"))chips.push("🎂 Age "+esc(val("dob")));chips.push("Joined "+new Date(p.created).toLocaleDateString(undefined,{month:"short",year:"numeric"}));
-  const hero=`<div class="cover"><div class="pav" aria-hidden="true">${init}</div><div style="flex:1;min-width:200px"><h1>${esc(p.name)}</h1>${p.un?`<div class="sub" style="opacity:.8">@${esc(p.un)}</div>`:""}${val("headline")?`<div class="sub">${esc(val("headline"))}</div>`:""}<div>${chips.map(c=>`<span class="chp">${c}</span>`).join("")}</div></div><div style="text-align:center"><div style="font-size:2.4rem;font-weight:800;line-height:1">Lv ${p.lvl}</div><div class="chp">${esc(p.rank)}</div></div></div>`;
+  const hero=`<div class="cover"><div class="pav" aria-hidden="true">${init}</div><div style="flex:1;min-width:200px"><h1>${esc(p.name)}</h1>${p.un?`<div class="sub" style="opacity:.8">@${esc(p.un)}</div>`:""}${p.uid?`<div class="sub" style="opacity:.85">User ID <b>${esc(p.uid)}</b> <button class="sm" data-cp="${esc(p.uid)}" style="padding:2px 8px;font-size:.75rem">Copy</button></div>`:""}${val("headline")?`<div class="sub">${esc(val("headline"))}</div>`:""}<div>${chips.map(c=>`<span class="chp">${c}</span>`).join("")}</div></div><div style="text-align:center"><div style="font-size:2.4rem;font-weight:800;line-height:1">Lv ${p.lvl}</div><div class="chp">${esc(p.rank)}</div></div></div>`;
   const kp=`<div class="kp"><div><b>${p.lvl}</b>Level<small>${esc(p.rank)}</small></div><div><b>${fmt(p.xp)}</b>Total XP<small>${100-p.xp%100} to next level</small></div><div><b>${p.acc}%</b>Accuracy</div><div><b>${p.cur}🔥</b>Day streak<small>Best ${p.best}</small></div><div><b>${p.ach}/${p.achN}</b>Achievements</div></div><div class="pb" style="margin:0" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.xp%100}"><b style="width:${p.xp%100}%"></b></div>`;
   const sec=(t,b)=>b?`<div class="card sec"><h2>${t}</h2>${b}</div>`:"";
   const pills=s=>String(s).split(/[,;\n]/).map(x=>x.trim()).filter(Boolean).slice(0,24).map(x=>`<span class="pill">${esc(x)}</span>`).join("");
@@ -1160,21 +1343,22 @@ function pvHTML(p,m,who,items){
   return hero+kp+sec("About",about)+sec("Education",edu)+sec("Work and skills",work)+sec("Hobbies and interests",hob)+sec("Social profiles",soc?`<div class="pills">${soc}</div>`:"")+sec("Gaming IDs",gm?`<div class="pills">${gm}</div>`:"")+mem
    +`<div class="card" style="text-align:center"><b>Want a profile like this?</b><p class="hint" style="margin:6px 0 12px">Practise multiplication tables, build streaks and share your progress.</p><button class="pri" id="pvc2">Start practising</button></div>`;
 }
+const pget=async id=>{try{return await dget(id)}catch(e){await new Promise(r=>setTimeout(r,900));return await dget(id)}};
 async function showPublic(key){
   PV=key;pvShell(`<div class="card" style="text-align:center">Loading profile…</div>`);
   const nf=()=>pvShell(`<div class="card" style="text-align:center"><div class="big">🔍 Profile not found</div><p class="hint">No public profile exists at this address. The username may be misspelled, or the owner has turned the public page off.</p></div>`);
   try{
     let uid=key;
-    if(!/^TT-/.test(key)){const d=await dget("un_"+key);if(!d||!d.uid){nf();return}uid=d.uid}
+    if(!/^TT-/.test(key)){const d=await pget("un_"+key);if(!d||!d.uid){nf();return}uid=d.uid}
     if(U&&(U.uid===uid||(U.profile&&U.profile.un&&U.profile.un===key))){
       const pr=U.profile||{};pvShell(`<div class="tip"><span>This is your own page. Tags show who can see each detail: 🌐 public, 🔒 signed-in, 🙈 only you. ${pr.share?"Your public page is <b>on</b>.":"Your public page is <b>off</b>, so others can't open this link yet."}</span><button class="pri" id="pe">✏️ Edit profile</button></div>`+pvHTML(buildPub(pr),buildMem(pr),"owner",allItems(pr)));$("pe").onclick=()=>{closePV();mode="profile";start();window.scrollTo({top:0,behavior:"smooth"})};hookCta();return}
-    let p=await dget("p_"+uid);
-    if(!p){const r=await dget("r_"+uid);if(r&&r.to){uid=r.to;p=await dget("p_"+uid)}}
+    let p=await pget("p_"+uid);
+    if(!p){const r=await pget("r_"+uid);if(r&&r.to){uid=r.to;p=await pget("p_"+uid)}}
     if(!p){nf();return}
     let m=null;if(U){try{m=await dget("pm_"+(p.uid||uid))}catch(e){}}
     const items=Object.entries(p.f||{}).map(([k,v])=>[k,v,"public"]).concat(m?Object.entries(m.f||{}).map(([k,v])=>[k,v,"members"]):[]);
     pvShell(pvHTML(p,m,m?"user":"anon",items));hookCta();
-  }catch(e){pvShell(`<div class="card" style="text-align:center">Can't load this profile. Check your connection and try again.</div>`)}
+  }catch(e){const dn2=e&&e.code==='permission-denied';pvShell(`<div class="card" style="text-align:center"><div class="big">⚠️ Can't load this profile</div><p class="hint">${dn2?"This browser isn't allowed to read public profiles right now. Try opening the link in Chrome or Safari.":"Check your connection and try again. If you opened this link inside another app (WhatsApp, Instagram), try your phone's browser."}${e&&(e.code||e.message)?` <small>(${esc(e.code||e.message)})</small>`:""}</p><button class="pri" id="pvr">Try again</button></div>`);const r=$("pvr");if(r)r.onclick=()=>showPublic(key)}
 }
 async function claimUn(un,old){const F=await fbp();await F.txn(async t=>{const d=un?await t.get("un_"+un):null,o=old&&old!==un?await t.get("un_"+old):null;if(d&&d.uid!==U.uid)throw new Error("taken");if(un)t.set("un_"+un,{uid:U.uid,at:Date.now()});if(o&&o.uid===U.uid)t.del("un_"+old)})}
 async function healUn(){const un=U&&U.profile&&U.profile.un;if(!un)return;try{const d=await dget("un_"+un);if(!d){await dset("un_"+un,{uid:U.uid,at:Date.now()});return}if(d.uid!==U.uid){const r=await resolve(d.uid);if(r&&r.uid===U.uid)await dset("un_"+un,{uid:U.uid,at:Date.now()})}}catch(e){}}
@@ -1199,12 +1383,12 @@ function profileT(){
   const inp=x=>{const v=esc(PD.f[x.k]||"");
     if(x.t==="area")return`<textarea id="pf_${x.k}" data-k="${x.k}" maxlength="600" rows="3" placeholder="${esc(x.ph||"")}" ${dis}>${v}</textarea>`;
     if(x.t==="av")return`<select id="pf_av" data-k="av" aria-label="Avatar" ${dis}><option value="">Use my initial</option>${AV.map(a=>`<option ${PD.f.av===a?"selected":""}>${a}</option>`).join("")}</select>`;
-    return`<input type="${x.t==="date"?"date":"text"}" id="pf_${x.k}" data-k="${x.k}" maxlength="100" ${x.t==="date"?`max="${today}"`:""} value="${v}" placeholder="${esc(x.ph||"")}" ${dis}>`};
+    return`<input type="${x.t==="date"?"date":"text"}" id="pf_${x.k}" data-k="${x.k}" maxlength="100" ${x.t==="date"?`max="${today}" autocomplete="bday"`:""} value="${v}" placeholder="${esc(x.ph||"")}" ${dis}>`};
   const row=x=>`<div class="fr"><label for="pf_${x.k}">${x.l}${x.w?` <span class="tg">+${x.w}%</span>`:""}</label><div class="fi">${inp(x)}${vsel(x.k)}</div></div>`;
   const grp=(t,d,g)=>`<div class="card"><h2 style="margin-top:0">${t}</h2>${d?`<p class="hint" style="margin:-4px 0 12px">${d}</p>`:""}${FIELDS.filter(x=>x.g===g).map(row).join("")}</div>`;
   $("view").innerHTML=`<div class="pfw"><div id="pform" class="stack">
-   <div class="card"><h2 style="margin-top:0">Name and public link</h2><div class="fi"><input type="text" id="pf_name" maxlength="30" value="${esc(U.name)}" aria-label="Display name" ${dis}></div><label for="pf_un" style="margin-top:14px">Public username</label><div class="fi"><span class="hint" style="margin:0;align-self:center;white-space:nowrap">${SITE.replace("https://","")}${PRETTY?"":"#/"}</span><input type="text" id="pf_un" maxlength="24" value="${esc(PD.un||"")}" placeholder="yourname" autocapitalize="none" autocomplete="off" spellcheck="false"></div><div class="hint" id="unmsg" style="margin:6px 0 0">Letters, numbers and _ (3 to 24). Anyone can open this link to see your public details.</div><p class="hint" style="margin:10px 0 0">Always shown on your public page. Everything else is optional, and each detail has its own visibility: 🌐 anyone with the link, 🔒 only people signed in to Table Trainer, 🙈 only you.${adm?"":" Only guild admins can edit the profile."}</p></div>
-   ${grp("About you","Date of birth is never shown. Only your age appears.","a")}${grp("Education and work","","e")}${grp("Interests","","i")}${grp("Social profiles","Add up to 3 for +5% each. You can paste a handle or the full link.","s")}${grp("Gaming IDs","Google Play Games, Steam and more. +5% for each of the first two.","g")}
+   <div class="card"><h2 style="margin-top:0">Name and public link</h2><div class="fi"><input type="text" id="pf_name" maxlength="30" value="${esc(U.name)}" aria-label="Display name" autocomplete="nickname" ${dis}></div><label for="pf_id" style="margin-top:14px">Your User ID <span class="tg">for guilds and teams</span></label><div class="fi"><input type="text" id="pf_id" readonly value="${esc(U.uid)}"><button class="sm" id="pf_idc">Copy</button></div><div class="hint" style="margin:6px 0 0">Friends type this ID under “Join an existing account” on the sign-in screen to join your guild or team.</div><label for="pf_un" style="margin-top:14px">Public username</label><div class="fi"><span class="hint" style="margin:0;align-self:center;white-space:nowrap">${SITE.replace("https://","")}${PRETTY?"":"#/"}</span><input type="text" id="pf_un" maxlength="24" value="${esc(PD.un||"")}" placeholder="yourname" autocapitalize="none" autocomplete="off" spellcheck="false"></div><div class="hint" id="unmsg" style="margin:6px 0 0">We created this link for you. You can change it any time: letters, numbers and _ (3 to 24).</div><p class="hint" style="margin:10px 0 0">Always shown on your public page. Everything else is optional, and each detail has its own visibility: 🌐 anyone with the link, 🔒 only people signed in to Table Trainer, 🙈 only you.${adm?"":" Only guild admins can edit the profile."}</p></div>
+   ${grp("About you","Date of birth is never shown. Only your age appears.","a")}${grp("Education and work","","e")}${grp("Interests","","i")}<div id="pmore" class="stack" ${SOC.concat(GAMES).some(x=>has(PD.f[x[0]]))?"":"hidden"}>${grp("Social profiles","Add up to 3 for +5% each. You can paste a handle or the full link.","s")}${grp("Gaming IDs","Google Play Games, Steam and more. +5% for each of the first two.","g")}</div><button class="sm" id="pmoreb" style="width:100%" ${SOC.concat(GAMES).some(x=>has(PD.f[x[0]]))?"hidden":""}>➕ View more: social profiles and gaming IDs</button>
    <div class="act" style="justify-content:flex-start"><button class="pri" id="psave" ${dis}>Save profile</button><span class="hint" id="pmsg" style="margin:0"></span></div></div>
    <aside id="pfside" class="pfs"></aside></div>`;
   const side=()=>{
@@ -1215,11 +1399,13 @@ function profileT(){
      <label for="plink" style="margin-top:12px">Your link</label><div class="fi"><input type="text" id="plink" readonly value="${esc(shareURL(PD.un||""))}"><button class="sm" id="pcl">Copy</button></div>
      <div class="hint" style="margin:6px 0 10px">${PD.share?"Save to publish your latest changes.":"Turn on the public page and save to make this link work."} <a href="${esc(shareURL(PD.un||""))}" target="_blank" rel="noopener">Open my page ↗</a></div>${shareHTML(PD.un||"")}
      <div class="hint" style="margin:14px 0 6px"><b>Preview as</b></div><div class="shr"><button class="sm" data-pv="anon">Public</button><button class="sm" data-pv="user">Signed-in</button><button class="sm" data-pv="owner">Me</button></div></div>`;
-    $("pfside").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{const e=$("pf_"+b.dataset.f);if(e){e.scrollIntoView({behavior:"smooth",block:"center"});e.focus()}});
+    $("pfside").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{const pm=$("pmore");if(pm&&pm.hidden){pm.hidden=false;if($("pmoreb"))$("pmoreb").hidden=true}const e=$("pf_"+b.dataset.f);if(e){e.scrollIntoView({behavior:"smooth",block:"center"});e.focus()}});
     $("psh").onchange=e=>{PD.share=e.target.checked;side()};$("pcl").onclick=()=>copyTxt(shareURL(PD.un||""));
     $("pfside").querySelectorAll("[data-pv]").forEach(b=>b.onclick=()=>previewAs(b.dataset.pv));bindShare($("pfside"),PD.un||"");
   };
   side();
+  $("pf_idc").onclick=()=>copyTxt(U.uid);
+  if($("pmoreb"))$("pmoreb").onclick=()=>{$("pmore").hidden=false;$("pmoreb").hidden=true};
   let unT;$("pf_un").addEventListener("input",()=>{const v=$("pf_un").value.trim().toLowerCase().replace(/^@/,"");PD.un=v;side();const m=$("unmsg");clearTimeout(unT);if(!v){m.className="hint";m.textContent="No username: your link will use your User ID.";return}if(!UN_RE.test(v)||UN_RESERVED.has(v)){m.className="er";m.textContent="Use 3 to 24 letters, numbers or _, starting with a letter.";return}m.className="hint";m.textContent="Checking…";unT=setTimeout(async()=>{try{const d=await dget("un_"+v);if(PD.un!==v)return;const ok=!d||d.uid===U.uid;m.className=ok?"hint ok":"er";m.textContent=ok?"✅ @"+v+" is available":"That username is taken."}catch(e){m.textContent=""}},400)});
   document.querySelectorAll("#pform [data-k]").forEach(e=>["input","change"].forEach(ev=>e.addEventListener(ev,()=>{PD.f[e.dataset.k]=e.value;side()})));
   document.querySelectorAll("#pform [data-v]").forEach(e=>e.onchange=()=>{PD.v[e.dataset.v]=e.value});
@@ -1279,7 +1465,7 @@ async function boot(){
 }
 $("smart").checked=PREF.smart;$("smart").onchange=e=>{PREF.smart=e.target.checked;savePref()};
 /* =====================================================================
-   PLUS 1/4 · Integrity core: telemetry, trust score, player tags,
+   SECTION: PLUS 1/4 · Integrity core: telemetry, trust score, player tags,
    restrictions, daily XP cap, daily play timer, developer sync.
    Everything here is additive: existing functions are wrapped, never replaced.
    ===================================================================== */
@@ -1381,6 +1567,7 @@ function rsEff(){const v=XR.vd;if(v==="genuine")return 0;let r=X.ar||0;if(XR.rs!
 function xpAdj(n){
   if(!(n>0))return n;const t=dn();let f=[1,.5,.1,0][rsEff()];
   if(timeUp())f=0;
+  if(f>0){const bm=gXpMult();if(bm>1)n=Math.round(n*bm)}
   const used=X.xd[t]||0;
   if(used>=CFG.dayCap){f=0;if(!X.dn["c"+t]){X.dn["c"+t]=1;toast("🎯 Daily XP cap reached ("+CFG.dayCap+"). Keep practising. XP is back tomorrow.")}}
   else n=Math.min(n,CFG.dayCap-used);
@@ -1567,7 +1754,7 @@ function genQ(g,L){
   const q=fresh();q.nw=X.mo[q.k]||(q.f&&fact(...q.f))?0:1;return q;
 }
 function mixGen(){
-  const list=["mul","add","sub","bond","pw","div","seq"];
+  const list=["mul","add","sub","bond","pw","div","seq","dbl","pct","eq","rou","root","frac","ten"];
   const w=list.map(g=>{const c=g==="mul"?P.ans:(X.gp[g]||[0])[0];return c===0?4:2/(1+Math.log10(1+c))+.8});
   let r=Math.random()*w.reduce((a,b)=>a+b,0),g=list[0];for(let i=0;i<list.length;i++){r-=w[i];if(r<=0){g=list[i];break}}
   X.lv=X.lv||{};
@@ -1576,6 +1763,70 @@ function mixGen(){
 }
 const GENS={add:L=>genQ("add",L),sub:L=>genQ("sub",L),mix:L=>genQ(Math.random()<.5?"add":"sub",L),bond:L=>genQ("bond",L),pw:L=>genQ("pw",L),div:L=>genQ("div",L),seq:L=>genQ("seq",L),cmp:L=>genQ("cmp",L),chain:L=>genQ("chain",L),dmix:()=>mixGen()};
 const LABG=[["add","➕","Addition","Add in your head, from 1-digit to 3-digit"],["sub","➖","Subtraction","Take away, with step-by-step hints"],["mix","🔀","Add & subtract mix","Both together, random order"],["bond","🔟","Number bonds","Make 10, 20, 100 and 1000"],["pw","🧱","Squares & cubes","n² up to 25, n³ up to 10"],["div","➗","Division facts","Linked to your times tables"],["seq","🔢","Number patterns","Find the next number"],["cmp","⚖️","Bigger or smaller","Compare two sums fast"],["chain","🧠","Memory chain","Numbers flash. Keep the total"],["dmix","🎲","Daily mix","Every game, weighted to what you have not played"]];
+
+/* =====================================================================
+   SECTION: NEW GAMES · added to the Math Lab with the SAME engine as the older games
+   (levels 1-5, hints, "missed facts come back", daily mix, shooter, XP, fair play: all automatic).
+   To add another game: copy one entry below. A generator is:
+     r(L)        -> picks random numbers for level L (1-5)
+     mk(...nums) -> { g:<id>, k:<unique key>, t:<question html>, a:<number answer>, h:f=>hint text, f? }
+                    (for multiple choice use ch:[options], ai:<index of right option>, a:null)
+     fk(parts)   -> rebuilds nums from the saved key so missed questions can come back (or null)
+   then add it to GENS and LABG at the bottom of this block.
+   ===================================================================== */
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+Object.assign(GN,{
+ /* ✌️ Doubles and halves */
+ dbl:{r:L=>{const mx=[20,50,100,500,999][L-1],half=L>=2&&rnd(2)===1;let x=R(3,mx);if(half&&x%2)x++;return[x,half?"h":"d"]},
+   mk:(x,m)=>m==="h"?{g:"dbl",k:"dbl:"+x+":h",t:`Half of ${x} = <span>?</span>`,a:x/2,h:f=>f?`${x/2} + ${x/2} = ${x}`:`Halve the tens, halve the ones, then add`}
+                    :{g:"dbl",k:"dbl:"+x+":d",t:`Double ${x} = <span>?</span>`,a:x*2,h:f=>f?`${x} + ${x} = ${x*2}`:`Double the tens, double the ones, then add`},
+   fk:p=>[+p[1],p[2]]},
+ /* ％ Percentages of a number (every answer is a whole number) */
+ pct:{r:L=>{const ps=[[50,10],[10,25,50],[10,20,25,50,75],[5,15,30,40,60,90],[12,15,35,45,65,120]][L-1],p=pick(ps),step=100/gcd(p,100),mb=[100,200,400,600,1000][L-1];return[p,step*R(1,Math.max(1,Math.floor(mb/step)))]},
+   mk:(p,b)=>({g:"pct",k:"pct:"+p+":"+b,t:`${p}% of ${b} = <span>?</span>`,a:p*b/100,
+     h:f=>f?`${p}% of ${b} = ${b} × ${p} ÷ 100 = ${p*b/100}`:(p===50?`50% is half of ${b}`:p===25?`25% is a quarter: halve ${b} twice`:p===10?`10% is ${b} ÷ 10`:`Find 1% (${b} ÷ 100), then multiply by ${p}`)}),
+   fk:p=>[+p[1],+p[2]]},
+ /* 🔎 Find x (balance the equation) */
+ eq:{r:L=>{const t=[0,rnd(2),rnd(3),rnd(4),rnd(5)][L-1],x=R(2,[9,20,12,12,15][L-1]);let a,b=0;
+     if(t===0)a=R(2,[9,30,50,99,99][L-1]);else if(t===1)a=R(1,x-1);else if(t===2)a=R(2,[5,9,9,12,12][L-1]);else if(t===3)a=R(2,9);else{a=R(2,9);b=R(1,20)}
+     return[t,a,t===3?a*R(2,12):x,b]},
+   mk:(t,a,x,b)=>{const E=[`x + ${a} = ${x+a}`,`x − ${a} = ${x-a}`,`${a} × x = ${a*x}`,`x ÷ ${a} = ${x/a}`,`${a}x + ${b} = ${a*x+b}`][t];
+     return{g:"eq",k:"eq:"+t+":"+a+":"+x+":"+b,t:`Find <span>x</span>: ${E}`,a:x,
+       h:f=>{const H=[`Take ${a} away from ${x+a}`,`Add ${a} to ${x-a}`,`Divide ${a*x} by ${a}`,`Multiply ${x/a} by ${a}`,`First take away ${b}: ${a*x}. Then divide by ${a}`][t];return f?H+` → x = ${x}`:H}}},
+   fk:p=>[+p[1],+p[2],+p[3],+p[4]]},
+ /* 🎯 Rounding */
+ rou:{r:L=>{const u=[10,10,100,100,1000][L-1],x=[R(11,99),R(101,999),R(101,999),R(1001,9999),R(1001,99999)][L-1];return[x,u]},
+   mk:(x,u)=>({g:"rou",k:"rou:"+x+":"+u,t:`Round ${x} to the nearest ${u} = <span>?</span>`,a:Math.round(x/u)*u,
+     h:f=>f?`${x} is between ${Math.floor(x/u)*u} and ${Math.floor(x/u)*u+u}, so it rounds to ${Math.round(x/u)*u}`:`Look at the digit just right of the ${u} place: 5 or more rounds up, 4 or less rounds down`}),
+   fk:p=>[+p[1],+p[2]]},
+ /* √ Square roots */
+ root:{r:L=>[R(2,[10,12,15,20,25][L-1])],
+   mk:x=>({g:"root",k:"root:"+x,t:`√${x*x} = <span>?</span>`,a:x,h:f=>f?`${x} × ${x} = ${x*x}`:`Which number times itself makes ${x*x}?`}),fk:p=>[+p[1]]},
+ /* 🍕 Fractions of an amount */
+ frac:{r:L=>{const d=pick([[2,4],[2,3,4,5],[2,3,4,5,6,8,10],[3,4,5,6,8,10,12],[3,4,5,6,7,8,9,10,12]][L-1]);return[L<=2?1:R(1,d-1),d,d*R(2,[6,10,12,15,20][L-1])]},
+   mk:(nu,d,w)=>({g:"frac",k:"frac:"+nu+":"+d+":"+w,t:`${nu}/${d} of ${w} = <span>?</span>`,a:w/d*nu,
+     h:f=>f?`${w} ÷ ${d} = ${w/d}${nu>1?`, then × ${nu} = ${w/d*nu}`:""}`:`Split ${w} into ${d} equal parts${nu>1?`, then take ${nu} of them`:""}`}),
+   fk:p=>[+p[1],+p[2],+p[3]]},
+ /* 🔟 Multiply and divide by 10, 100, 1000 */
+ ten:{r:L=>{const p=pick(L<=2?[10,100]:[10,100,1000]),m=L===1||rnd(2)===0,b=R(2,[99,99,999,999,9999][L-1]);return m?[b,p,"m"]:[b*p,p,"d"]},
+   mk:(x,p,o)=>{const z=String(p).length-1;return{g:"ten",k:"ten:"+x+":"+p+":"+o,t:o==="m"?`${x} × ${p} = <span>?</span>`:`${x} ÷ ${p} = <span>?</span>`,a:o==="m"?x*p:x/p,
+     h:f=>o==="m"?(f?`Add ${z} zero${z>1?"s":""}: ${x*p}`:`Multiplying by ${p} adds ${z} zero${z>1?"s":""} to the end`):(f?`Take off ${z} zero${z>1?"s":""}: ${x/p}`:`Dividing by ${p} takes ${z} zero${z>1?"s":""} off the end`)}},
+   fk:p=>[+p[1],+p[2],p[3]]},
+ /* ✅ True or false */
+ tf:{r:L=>{const m=[9,12,12,15,20][L-1],a=R(2,m),b=R(2,m);let s=a*b;if(rnd(2)){const d=pick(L<=2?[-10,10,-5,5]:[-1,1,-2,2,-10,10]);s=Math.max(1,a*b+d);if(s===a*b)s++}return[a,b,s]},
+   mk:(a,b,s)=>({g:"tf",k:"tf:"+a+":"+b+":"+s,t:`${a} × ${b} = ${s}`,ch:["True ✅","False ❌"],ai:s===a*b?0:1,a:null,h:f=>f?`${a} × ${b} = ${a*b}`:`Work out ${a} × ${b} yourself, then compare`}),fk:null}
+});
+Object.assign(GENS,{dbl:L=>genQ("dbl",L),pct:L=>genQ("pct",L),eq:L=>genQ("eq",L),rou:L=>genQ("rou",L),root:L=>genQ("root",L),frac:L=>genQ("frac",L),ten:L=>genQ("ten",L),tf:L=>genQ("tf",L)});
+/* new games are listed just before "Daily mix" */
+LABG.splice(LABG.length-1,0,
+ ["dbl","✌️","Doubles & halves","Double it, halve it, fast"],
+ ["pct","％","Percentages","10%, 25%, 50% and more of a number"],
+ ["eq","🔎","Find x","Balance the equation, from x + 5 = 12 to 3x + 4 = 19"],
+ ["rou","🎯","Rounding","Nearest 10, 100 and 1000"],
+ ["root","√","Square roots","The opposite of squares"],
+ ["frac","🍕","Fractions of amounts","3/4 of 40? Split, then take"],
+ ["ten","🔟","× and ÷ by 10, 100, 1000","The zero trick"],
+ ["tf","✅","True or false","Spot the wrong answer before it fools you"]);
 
 /* ---------- answer bookkeeping (shared by every game) ---------- */
 function recordOp(Q,ok,help){
@@ -1629,7 +1880,8 @@ function labHome(){
   const pl=g=>(X.gp[g]||[0])[0];
   $("view").innerHTML=`<div class="card"><h2 style="margin:0">🧮 Math Lab</h2><p class="hint">Mind-calculation games. They share one memory with your times tables: facts you miss come back soon, new ones are mixed in, and old ones return when due.</p>
   <div class="two"><div><label for="lm">Style</label><select id="lm"><option value="q">15 questions</option><option value="s">Survival (3 lives)</option></select></div><div><label for="ll">Level</label><select id="ll"><option value="auto">Auto (adapts to you)</option>${[1,2,3,4,5].map(n=>`<option value="${n}">Level ${n}</option>`).join("")}</select></div></div>
-  <div class="jo">${LABG.map(([k,i,n,d])=>`<button data-lg="${k}"><b>${i} ${n}</b><small>${d}</small><small>${pl(k)?pl(k)+" answered · best "+((X.best||{})[k]||0):"🆕 not played yet"}</small></button>`).join("")}<button data-lg="shoot"><b>🔫 Shooter</b><small>Lock a target and shoot the right answer</small><small>${(X.gp.shoot||[0])[0]?(X.gp.shoot||[0])[0]+" answered":"🆕 not played yet"}</small></button></div></div>`;
+  <div class="jo fold-m shut" id="lbl">${LABG.map(([k,i,n,d])=>`<button data-lg="${k}"><b>${i} ${n}</b><small>${d}</small><small>${pl(k)?pl(k)+" answered · best "+((X.best||{})[k]||0):"🆕 not played yet"}</small></button>`).join("")}<button data-lg="shoot"><b>🔫 Shooter</b><small>Lock a target and shoot the right answer</small><small>${(X.gp.shoot||[0])[0]?(X.gp.shoot||[0])[0]+" answered":"🆕 not played yet"}</small></button></div><button class="sm fm" id="lbm">View more games ▾</button></div>`;
+  $("lbm").onclick=()=>{const s=$("lbl").classList.toggle("shut");$("lbm").textContent=s?"View more games ▾":"View less ▴"};
   $("view").querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const g=b.dataset.lg;if(g==="shoot"){mode="shoot";start();return}labStart(g,$("lm").value,$("ll").value)});
 }
 function labStart(g,style,lv){
@@ -1641,7 +1893,7 @@ function labStart(g,style,lv){
    PLUS 3/4 · Shooter: the question sits at the head, answer-enemies fall,
    tap to LOCK a target, then FIRE (or turn on auto-fire).
    ===================================================================== */
-const SHS=[["tables","✖️ My tables (from the left panel)"],["add","➕ Addition"],["sub","➖ Subtraction"],["dmix","🎲 Daily mix (all games)"],["pw","🧱 Squares & cubes"],["div","➗ Division"],["bond","🔟 Number bonds"]];
+const SHS=[["tables","✖️ My tables (from the left panel)"],["add","➕ Addition"],["sub","➖ Subtraction"],["dmix","🎲 Daily mix (all games)"],["pw","🧱 Squares & cubes"],["div","➗ Division"],["bond","🔟 Number bonds"],["dbl","✌️ Doubles & halves"],["pct","％ Percentages"],["frac","🍕 Fractions of amounts"],["root","√ Square roots"]];
 function shooterT(){
   X.best=X.best||{};
   $("view").innerHTML=jbox(`<h2 style="margin:0">🔫 Shooter</h2><p class="hint">The question shows at the top. Enemies carrying answers fall toward you. Tap the right one to <b>lock</b> it, then press <b>Fire</b>. A wrong shot or a right answer that reaches the ground costs a life. Missed facts come back later, so you learn them.</p>
@@ -1782,7 +2034,8 @@ function todayT(){
    ${due?`<button data-td="rv"><b>🔁 Review · ${due} due</b><small>Keep finished tables from fading</small></button>`:""}
    ${newG?`<button data-td="new:${newG[0]}"><b>🆕 Try: ${newG[1]}</b><small>You have not played this yet</small></button>`:""}
    <button data-td="shoot"><b>🔫 Shooter</b><small>Lock on and shoot the answer</small></button></div></div>
-  <div class="card"><h2 style="margin:0 0 4px">All games</h2><p class="hint">Everything you play feeds one shared memory. 🆕 marks games you have not tried.</p><div class="ag">${CAT.map(([k,n])=>{const c=playedN(k);return`<button class="ac ${c?"":"lock"}" data-oc="${k}" style="text-align:left;cursor:pointer"><div><b>${n}</b><span>${c?c+" answered":"🆕 not played yet"}</span></div></button>`}).join("")}</div></div>`;
+  <div class="card"><h2 style="margin:0 0 4px">All games</h2><p class="hint">Everything you play feeds one shared memory. 🆕 marks games you have not tried.</p><div class="ag fold-m shut" id="agl">${CAT.map(([k,n])=>{const c=playedN(k);return`<button class="ac ${c?"":"lock"}" data-oc="${k}" style="text-align:left;cursor:pointer"><div><b>${n}</b><span>${c?c+" answered":"🆕 not played yet"}</span></div></button>`}).join("")}</div><button class="sm fm" id="agm">View more games (${CAT.length-6}) ▾</button></div>`;
+  $("agm").onclick=()=>{const s=$("agl").classList.toggle("shut");$("agm").textContent=s?`View more games (${CAT.length-6}) ▾`:"View less ▴"};
   $("tt1").onclick=openTime;$("tt2").onclick=()=>{X.ex[dn()]=(X.ex[dn()]||0)+15;delete X.dn["f"+dn()];xnow();updTmr();todayT()};
   $("view").querySelectorAll("[data-oc]").forEach(b=>b.onclick=()=>openCat(b.dataset.oc));
   $("view").querySelectorAll("[data-td]").forEach(b=>b.onclick=()=>{const a=b.dataset.td;
@@ -1904,8 +2157,231 @@ function devDetail(h){
 }
 addEventListener("hashchange",()=>{if(location.hash==="#dev")devOpen();else devClose()});
 
-/* ---------- wiring ---------- */
-function plusMode(m){if(m==="today"){todayT();return true}if(m==="lab"){labHome();return true}if(m==="shoot"){shooterT();return true}if(m==="board"){boardsT();return true}return false}
+/* ---------- SECTION: GUILD HUB · coins, daily dues + auto-pay, perks, protector drops, team bounty quiz, guild power board ----------
+   Coins (🪙) are a separate currency earned from XP (1 coin per 2 XP, after fair-play and the daily cap), so spending them never lowers your XP rank.
+   Each login's coin balance lives at accounts/{uid}.logins.{h}.s.cn and is synced with the same outbox as XP.
+   Guild data lives in the SAME account doc (so every transfer is one atomic transaction):
+     vault {c: coins now, t: lifetime contributed, x: XP-booster ends, k: coin-booster ends, d: {day: coins paid that day}}
+     ct {h: lifetime coins contributed}   pd {h: [day, coins paid that day]}   logins.{h}.ap {on, amt}  (auto-pay)
+     dr {id: {k, n, at}} protector drops      cl {id: {h: 1}} who claimed       ql {r, rank, prize, teams, pool} last quiz result
+   Other docs: lbp_0 (guild power board), qz_<round> (team bounty quiz round). */
+const GC={rate:.5,maxDaily:500,
+  xp:{ico:"🚀",name:"XP Booster",desc:"Every member earns 25% more XP for 24 hours.",cost:400,ms:864e5},
+  cn:{ico:"🪙",name:"Coin Booster",desc:"Every member earns double coins for 24 hours.",cost:300,ms:864e5},
+  pr:{ico:"🛡️",name:"Protector Drop",desc:"Every member gets +1 streak protector.",per:60,min:150},
+  lv:[0,200,600,1500,3500,8000],lvn:["Bronze","Silver","Gold","Platinum","Diamond","Legend"],
+  qEntry:100,qHouse:500,qMax:40,qTop:5,qSlot:30*60e3,qReg:18*60e3,qN:12,qT:13e3,qSettle:22*60e3};
+{const s=document.createElement("style");s.textContent=`.gh-t{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;margin-top:12px}.gh-t div{background:var(--soft);border-radius:12px;padding:10px 6px;text-align:center;font-size:.78rem;color:var(--mute)}.gh-t b{display:block;font-size:1.2rem;color:var(--ink)}
+.gh-perk{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;background:var(--bg)}.gh-perk .ic{font-size:1.8rem}.gh-perk .tx{flex:1;min-width:0}.gh-perk small{display:block;color:var(--mute)}
+.gh-chip{display:inline-block;padding:2px 9px;border-radius:99px;background:var(--ok2);color:var(--ok);font-size:.75rem;font-weight:800;margin:2px 6px 2px 0}
+.gh-amt{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}.gh-amt input[type=number]{font:inherit;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:112px}
+.gq-q{font-size:2.1rem;font-weight:800;text-align:center;margin:8px 0 14px}.gq-b{height:10px;border-radius:9px;background:var(--soft);overflow:hidden}.gq-b i{display:block;height:100%;background:var(--acc);transition:width .25s linear}
+.gq-r{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;background:var(--bg)}.gq-r.me{border-color:var(--acc);background:var(--acc2)}.gq-r span{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`;document.head.appendChild(s)}
+
+/* ---- coins, levels, boosts ---- */
+const gv=()=>(U&&U.vault)||{};
+const gLevel=()=>{const t=gv().t||0;let l=1;GC.lv.forEach((v,i)=>{if(t>=v)l=i+1});return l};
+const gOn=k=>(gv()[k]||0)>Date.now();
+function gXpMult(){return !U?1:1+(gLevel()-1)*.02+(gOn("x")?.25:0)}
+function earnCoins(xp){if(!U||!(xp>0))return;const g=Math.floor(xp*GC.rate*(gOn("k")?2:1));if(g>0){P.cn=(P.cn||0)+g;out("cn",g)}}
+function gLoad(a){if(!U||!a)return;U.vault=a.vault||{};U.ct=a.ct||{};U.pd=a.pd||{};U.dr=a.dr||{};U.cl=a.cl||{};U.ql=a.ql||null;setTimeout(gClaim,400)}
+function gMerge(accs){const v={c:0,t:0,x:0,k:0,d:{}},ct={},pd={},dr={},cl={};
+  for(const a of accs){const w=a.vault||{};v.c+=w.c||0;v.t+=w.t||0;v.x=Math.max(v.x,w.x||0);v.k=Math.max(v.k,w.k||0);for(const d in w.d||{})v.d[d]=(v.d[d]||0)+w.d[d];
+    for(const h in a.ct||{})ct[h]=(ct[h]||0)+a.ct[h];for(const h in a.pd||{})if(!pd[h]||pd[h][0]<=a.pd[h][0])pd[h]=a.pd[h];Object.assign(dr,a.dr||{});for(const id in a.cl||{})cl[id]=Object.assign(cl[id]||{},a.cl[id])}
+  return{vault:v,ct,pd,dr,cl}}
+const gLeft=ms=>{const m=Math.max(0,Math.ceil(ms/6e4));return m>=60?Math.floor(m/60)+" h "+(m%60)+" min":m+" min"};
+const gPaidToday=h=>{const p=(U.pd||{})[h];return p&&p[0]===dn()?p[1]:0};
+const gErr={short:"Not enough coins.",gone:"This guild changed. Reload and try again.",amt:"Enter a whole number of coins (1 or more).",admin:"Only guild admins can do this.",closed:"Registration for this round is closed.",dup:"Already done.",full:"This round is full.",late:"Too late for this round.",done:"Already paid today."};
+const gMsg=e=>gErr[e&&e.message]||"Couldn't reach the server, or the Firestore rules for guild features are missing. Try again.";
+
+/* ---- pay the guild (manual or auto): one atomic transaction moves coins from the login to the vault ---- */
+async function gPay(amt,auto){
+  amt=Math.floor(+amt);if(!(amt>=1))throw new Error("amt");if(!U)throw new Error("gone");
+  await flush();const F=await fbp(),t=dn(),h=U.h,uid=U.uid;
+  await F.txn(async tx=>{
+    const a=await tx.get(uid);if(!a||a.mergedInto||!a.logins||!a.logins[h]||!a.logins[h].t)throw new Error("gone");
+    const l=a.logins[h],have=(l.s||{}).cn||0;if(have<amt)throw new Error("short");
+    const pd=(a.pd||{})[h],today=pd&&pd[0]===t?pd[1]:0;
+    if(auto){const ap=l.ap||{};if(!ap.on||(ap.amt||0)-today<amt)throw new Error("done")}
+    const u={["logins."+h+".s.cn"]:{__inc:-amt},"vault.c":{__inc:amt},"vault.t":{__inc:amt},["vault.d."+t]:{__inc:amt},["ct."+h]:{__inc:amt},["pd."+h]:[t,today+amt]};
+    for(const d in (a.vault||{}).d||{})if(+d<t-9)u["vault.d."+d]=null;
+    tx.upd(uid,u)});
+  const a=await dget(uid);if(a&&a.logins&&a.logins[h]){const o=OUTS[uid+":"+h];P.cn=((a.logins[h].s||{}).cn||0)+((o&&o.cn)||0);U.logins=a.logins;gLoad(a)}
+  hud();gBoardPush();return amt}
+let gBusy=false;
+async function gAuto(){
+  if(!U||gBusy)return;const ap=(U.logins[U.h]||{}).ap;if(!ap||!ap.on||!(ap.amt>=1))return;
+  const need=ap.amt-gPaidToday(U.h);if(need<1||(P.cn||0)<need)return;
+  gBusy=true;try{await gPay(need,true);toast(`🏰 Auto-pay: ${need} 🪙 sent to ${U.name}`);if(mode==="guild")guildHub()}catch(e){}gBusy=false}
+async function gSetAuto(on,amt){amt=Math.max(1,Math.min(GC.maxDaily,Math.floor(+amt)||0));if(!amt)throw new Error("amt");
+  const v={on:on?1:0,amt,at:Date.now()};await dupd(U.uid,{["logins."+U.h+".ap"]:v});U.logins[U.h].ap=v;return v}
+
+/* ---- perks the vault can buy (admins) ---- */
+async function gBuy(k){
+  if(!isAdmin())throw new Error("admin");const F=await fbp(),now=Date.now();let cost=0;
+  await F.txn(async tx=>{const a=await tx.get(U.uid);if(!a||a.mergedInto)throw new Error("gone");
+    const v=a.vault||{},n=Object.values(a.logins||{}).filter(l=>l.t).length;
+    cost=k==="pr"?Math.max(GC.pr.min,GC.pr.per*n):GC[k].cost;if((v.c||0)<cost)throw new Error("short");
+    const u={"vault.c":{__inc:-cost}};
+    if(k==="xp")u["vault.x"]=Math.min(now+7*864e5,Math.max(now,v.x||0)+GC.xp.ms);
+    else if(k==="cn")u["vault.k"]=Math.min(now+7*864e5,Math.max(now,v.k||0)+GC.cn.ms);
+    else{u["dr."+rid(6)]={k:"pr",n:1,at:now};for(const o in a.dr||{})if((a.dr[o].at||0)<now-12*864e5){u["dr."+o]=null;u["cl."+o]=null}}
+    tx.upd(U.uid,u)});
+  const a=await dget(U.uid);gLoad(a);return cost}
+/* each member claims a drop once (checked inside a transaction so two devices can't both claim) */
+async function gClaim(){
+  if(!U||gBusy)return;const h=U.h,add=(U.logins[h]||{}).add||0;
+  const ids=Object.keys(U.dr||{}).filter(id=>!((U.cl||{})[id]||{})[h]&&(U.dr[id].at||0)>=add-6e4);if(!ids.length)return;
+  gBusy=true;
+  try{const F=await fbp();
+    for(const id of ids){let got=0;
+      await F.txn(async tx=>{const a=await tx.get(U.uid);if(!a||!a.dr||!a.dr[id]||((a.cl||{})[id]||{})[h])return;tx.upd(U.uid,{["cl."+id+"."+h]:1});got=a.dr[id].n||1});
+      (U.cl[id]=U.cl[id]||{})[h]=1;
+      if(got){P.sk.prot+=got;save();hud();toast(`🏰 Guild gift: +${got} 🛡️ protector${got>1?"s":""}!`)}}}catch(e){}
+  gBusy=false}
+
+/* ---- guild power board: coins the guild contributed in the last 7 days (stops growing the day you stop paying) ---- */
+function gPow(e,t){let s=0;String(e&&e.d||"").split(",").forEach(p=>{const q=p.split(":");if(+q[0]>t-7)s+=+q[1]||0});return s}
+async function gBoardPush(){
+  if(!U)return;try{const F=await fbp(),t=dn(),d=(gv().d)||{};let s="";for(const k in d)if(+k>t-9)s+=(s?",":"")+k+":"+d[k];
+    await F.merge("lbp_0",{e:{[U.uid]:{gn:Array.from(U.name).slice(0,30).join(""),d:s,l:gLevel(),n:Object.values(U.logins).filter(l=>l.t).length}}});delete BD.cache.lbp_0}catch(e){}}
+async function gBoardShow(){
+  const el=$("gbd");if(!el)return;const doc=await bdGet("lbp_0"),t=dn();if(!$("gbd"))return;
+  const L=Object.entries((doc&&doc.e)||{}).map(([u,e])=>({u,e,p:gPow(e,t)})).filter(x=>x.p>0).sort((a,b)=>b.p-a.p);
+  $("gbd").innerHTML=L.length?L.slice(0,20).map((x,i)=>`<div class="lbr ${x.u===U.uid?"me":""}"><span class="rk2">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm">${esc(x.e.gn||"Guild")}${x.u===U.uid?" · you":""}</span><small>${GC.lvn[Math.max(0,Math.min(5,(x.e.l||1)-1))]}</small><b>${fmt(x.p)} 🪙</b></div>`).join(""):`<p class="hint">No guild has paid in the last 7 days. Be the first!</p>`}
+
+/* ---- Team Bounty Quiz: one round every 30 minutes, same questions for everyone, driven by the clock ---- */
+const qSlot=(t=Date.now())=>{const r=Math.floor(t/GC.qSlot),s=r*GC.qSlot;return{r,s,L:s+GC.qReg,E:s+GC.qReg+GC.qN*GC.qT,S:s+GC.qSettle,N:s+GC.qSlot}};
+const qPhase=(q,t=Date.now())=>t<q.L?"reg":t<q.E?"live":"after";
+function qRng(s){let a=(s>>>0)||1;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
+function qQs(r){const R=qRng(r*2654435761+977),I=n=>Math.floor(R()*n),out=[];
+  for(let i=0;i<GC.qN;i++){const a=2+I(11),b=2+I(11),k=i<3?0:I(6);let q,v;
+    if(k===0){q=`${a} × ${b}`;v=a*b}else if(k===1){q=`${a*b} ÷ ${a}`;v=b}else if(k===2){q=`? × ${a} = ${a*b}`;v=b}
+    else if(k===3){const c=1+I(9);q=`${a} × ${b} + ${c}`;v=a*b+c}else if(k===4){const c=1+I(Math.min(9,a*b-1));q=`${a} × ${b} − ${c}`;v=a*b-c}else{q=`${a+2}²`;v=(a+2)*(a+2)}
+    const s=new Set([v]),cand=[v+1,v-1,v+2,v-2,v+10,v-10,v+a,v-a,v+b,v-b];
+    for(let n=0;s.size<4;n++){const c=n<24?cand[I(cand.length)]:v+n;if(c>0)s.add(c)}
+    const o=[...s];for(let j=o.length-1;j>0;j--){const m=I(j+1);[o[j],o[m]]=[o[m],o[j]]}
+    out.push({q,o,a:o.indexOf(v)})}
+  return out}
+const QG={t:null,r:null,doc:undefined,dt:0,key:"",S:null,qs:null,loading:false,settling:0};
+const qMine=()=>!!(U&&QG.doc&&QG.doc.teams&&QG.doc.teams[U.uid]);
+async function qRegister(){
+  const q=qSlot();if(Date.now()>=q.L)throw new Error("closed");if(!isAdmin())throw new Error("admin");
+  const F=await fbp(),id="qz_"+q.r;
+  await F.txn(async tx=>{const a=await tx.get(U.uid),z=await tx.get(id);
+    if(!a||a.mergedInto)throw new Error("gone");if(((a.vault||{}).c||0)<GC.qEntry)throw new Error("short");
+    if(z&&z.teams&&z.teams[U.uid])throw new Error("dup");if(z&&Object.keys(z.teams||{}).length>=GC.qMax)throw new Error("full");
+    const tm={n:Array.from(U.name).slice(0,30).join(""),at:Date.now()};
+    if(z)tx.upd(id,{["teams."+U.uid]:tm});else tx.set(id,{r:q.r,teams:{[U.uid]:tm},p:{},done:false});
+    tx.upd(U.uid,{"vault.c":{__inc:-GC.qEntry}})});
+  const a=await dget(U.uid);gLoad(a);QG.doc=await dget(id);QG.dt=Date.now();QG.key=""}
+async function qSubmit(){
+  const S=QG.S;if(!S||S.sub||!U)return;S.sub=1;
+  const sc=Math.max(0,Math.min(GC.qN*15,Math.round(S.score)));
+  try{const F=await fbp(),id="qz_"+S.r,q=qSlot(S.r*GC.qSlot);
+    await F.txn(async tx=>{const z=await tx.get(id);if(!z||!z.teams||!z.teams[S.u]||(z.p&&z.p[U.h]))return;if(Date.now()>q.E+6e4)throw new Error("late");
+      tx.upd(id,{["p."+U.h]:{u:S.u,s:sc,c:S.ok||0,n:masked(U.name)}})});
+    LS.set("tt_qz",S);addXp((S.ok||0)*2);save();hud();QG.dt=0}catch(e){if(!(e&&e.message==="late"))setTimeout(()=>{S.sub=0},10000)}}
+/* settlement: the first player's browser to open the hub after the round settles it. It is one transaction, so it can only happen once. */
+async function qSettle(r){
+  const F=await fbp(),id="qz_"+r;let res=null;
+  await F.txn(async tx=>{
+    const z=await tx.get(id);if(!z||z.done)return;
+    const ids=Object.keys(z.teams||{}),sc={};for(const h in z.p||{}){const e=z.p[h];(sc[e.u]=sc[e.u]||[]).push(e.s)}
+    const rows=ids.map(u=>({u,n:z.teams[u].n,at:z.teams[u].at,s:(sc[u]||[]).sort((a,b)=>b-a).slice(0,GC.qTop).reduce((x,y)=>x+y,0)})).sort((a,b)=>b.s-a.s||a.at-b.at);
+    const pool=GC.qHouse+GC.qEntry*ids.length,scored=rows.filter(x=>x.s>0),pay={},refund=ids.length<2||!scored.length;
+    if(refund)ids.forEach(u=>pay[u]=GC.qEntry);
+    else{const sh=scored.length>=3?[.5,.3,.2]:scored.length===2?[.65,.35]:[1];scored.slice(0,3).forEach((x,i)=>pay[x.u]=Math.round(pool*sh[i]))}
+    /* all reads first: follow a merged guild to its successor */
+    const dest={},rank={};
+    for(const u of Object.keys(pay)){let a=await tx.get(u),w=u;
+      if(!a||a.mergedInto){const rd=a&&a.mergedInto?{to:a.mergedInto}:await tx.get("r_"+u);if(!rd||!rd.to)continue;w=rd.to;a=await tx.get(w);if(!a||a.mergedInto)continue}
+      dest[w]=(dest[w]||0)+pay[u];rank[w]=rows.findIndex(x=>x.u===u)+1}
+    for(const w in dest)tx.upd(w,{"vault.c":{__inc:dest[w]},ql:{r,rank:refund?0:rank[w],prize:dest[w],teams:ids.length,pool,at:Date.now()}});
+    res={pool:refund?0:pool,refund,teams:ids.length,top:rows.slice(0,5).map((x,i)=>({u:x.u,n:x.n,s:x.s,pz:pay[x.u]||0}))};
+    tx.upd(id,{done:true,res})});
+  return res}
+
+function arenaHTML(q,ph,now){
+  const d=QG.doc,teams=d&&d.teams?Object.keys(d.teams).length:0,mine=qMine(),pool=GC.qHouse+GC.qEntry*teams,adm=isAdmin();
+  const last=U.ql&&U.ql.at>now-36e5?`<div class="tip" style="margin:0 0 10px"><span>${!U.ql.rank?"↩️ Last round was refunded (fewer than 2 teams, or nobody scored): your entry fee is back in the vault.":`🏆 Last round your guild placed <b>#${U.ql.rank}</b> and won <b>${fmt(U.ql.prize)} 🪙</b> for the vault!`}</span></div>`:"";
+  if(ph==="reg")return`${last}<p class="hint" style="margin:0 0 8px">Round starts in <b id="gcd">${gLeft(q.L-now)}</b>. Prize pool now <b>${fmt(pool)} 🪙</b> (${fmt(GC.qHouse)} bounty + ${GC.qEntry} 🪙 per team) with <b>${teams}</b> team${teams===1?"":"s"} entered. 1st gets 50%, 2nd 30%, 3rd 20%.</p>
+    ${mine?`<span class="gh-chip">✅ Your guild is entered</span><p class="hint">Be here when the round starts. ${GC.qN} questions, ${GC.qT/1e3} seconds each. Your guild's best ${GC.qTop} scores are added together.</p>`
+    :`<div class="act" style="justify-content:flex-start;margin-top:4px"><button class="pri" id="gqr" ${adm&&((gv().c||0)>=GC.qEntry)?"":"disabled"}>Enter our guild · ${GC.qEntry} 🪙 from vault</button></div><p class="hint">${adm?((gv().c||0)>=GC.qEntry?"The entry fee is paid by the vault.":"The vault needs "+GC.qEntry+" 🪙. Contribute above."):"Only guild admins can enter the guild."}</p><div class="er" id="gqe"></div>`}`;
+  if(ph==="live"){
+    if(!mine)return`${last}<p class="hint">🔴 A round is live now, but your guild did not enter. Next round starts in <b id="gcd">${gLeft(q.N-now)}</b>.</p>`;
+    if(d&&d.p&&d.p[U.h])return`<p class="hint">✅ Your score is in. Results appear when the round ends (in <b id="gcd">${gLeft(q.S-now)}</b>).</p>`;
+    if(rsEff()>=2)return`<p class="hint">Quiz play is paused while your fair-play status is under review.</p>`;
+    const i=Math.floor((now-q.L)/GC.qT),Q=(QG.qs||[])[i],S=QG.S;if(!Q||!S)return`<p class="hint">Get ready…</p>`;
+    const a=S.a[i],rem=Math.max(0,q.L+(i+1)*GC.qT-now);
+    return`<div class="two" style="grid-template-columns:1fr auto"><b>Question ${i+1} of ${GC.qN}</b><b>Your score ${S.score}</b></div><div class="gq-b"><i id="gqb" style="width:${rem/GC.qT*100}%"></i></div>
+      <div class="gq-q">${Q.q}</div><div class="opts" id="gqo">${Q.o.map((v,j)=>`<button data-o="${j}" ${a?"disabled":""} ${a&&j===Q.a?`style="border-color:var(--ok)"`:a&&j===a.o?`style="border-color:var(--bad)"`:""}>${v}</button>`).join("")}</div>
+      <p class="hint" style="text-align:center;margin:10px 0 0">${a?(a.ok?`✅ +${a.p}. Wait for the next question…`:"❌ Wait for the next question…"):"Faster answers score more. Everyone sees the same question at the same time."}</p>`}
+  const rs=d&&d.done&&d.res;
+  if(rs)return`${last}<p class="hint" style="margin:0 0 8px">Round finished. Pool <b>${fmt(rs.pool)} 🪙</b> · ${rs.teams} team${rs.teams===1?"":"s"}. Next round starts in <b id="gcd">${gLeft(q.N-now)}</b>.</p>${rs.top.map((x,i)=>`<div class="gq-r ${x.u===U.uid?"me":""}"><b style="width:30px;text-align:center">${["🥇","🥈","🥉"][i]||i+1}</b><span>${esc(x.n||"Guild")}${x.u===U.uid?" · you":""}</span><small>${x.s} pts</small><b>${x.pz?"+"+fmt(x.pz)+" 🪙":""}</b></div>`).join("")}`;
+  if(!teams)return`<p class="hint">Nobody entered this round. Next round starts in <b id="gcd">${gLeft(q.N-now)}</b>.</p>`;
+  return`<p class="hint">Round over. Counting scores… <span id="gcd"></span></p>`}
+async function arenaTick(){
+  const el=$("gar");if(!el||!U)return;const now=Date.now(),q=qSlot(now),ph=qPhase(q,now);
+  if(QG.r!==q.r){QG.r=q.r;QG.doc=undefined;QG.dt=0;QG.key="";QG.qs=null;QG.settling=0;const s=LS.get("tt_qz");QG.S=s&&s.r===q.r&&s.u===U.uid?s:{r:q.r,u:U.uid,score:0,ok:0,a:{},sub:0}}
+  if(!QG.loading&&now-QG.dt>(ph==="reg"?8e3:ph==="live"?15e3:5e3)){QG.loading=true;try{QG.doc=await dget("qz_"+q.r)}catch(e){QG.doc=QG.doc||null}QG.dt=Date.now();QG.loading=false;QG.key=""}
+  if(QG.doc===undefined)return;
+  if(ph==="live"&&!QG.qs)QG.qs=qQs(q.r);
+  if(ph==="after"&&QG.S&&qMine()&&!QG.S.sub&&Object.keys(QG.S.a).length)qSubmit();
+  if(ph==="after"&&now>=q.S&&QG.doc&&!QG.doc.done&&QG.doc.teams&&!QG.settling){QG.settling=1;qSettle(q.r).then(()=>dget("qz_"+q.r)).then(z=>{QG.doc=z;QG.dt=Date.now();QG.key=""}).catch(()=>{setTimeout(()=>{QG.settling=0},15000)})}
+  const i=ph==="live"?Math.floor((now-q.L)/GC.qT):-1,key=[ph,QG.doc?Object.keys(QG.doc.teams||{}).length:"n",qMine(),QG.doc&&QG.doc.done,QG.doc&&QG.doc.p&&QG.doc.p[U.h]?1:0,i,QG.S&&QG.S.a[i]?1:0,U.ql&&U.ql.at,gv().c].join("|");
+  if(key!==QG.key){QG.key=key;el.innerHTML=arenaHTML(q,ph,now);arenaWire(q,ph)}
+  const cd=$("gcd");if(cd)cd.textContent=gLeft((ph==="reg"?q.L:ph==="live"?q.S:q.N)-now);
+  const b=$("gqb");if(b&&i>=0)b.style.width=Math.max(0,(q.L+(i+1)*GC.qT-now)/GC.qT*100)+"%"}
+function arenaWire(q,ph){
+  const r=$("gqr");if(r)r.onclick=async()=>{r.disabled=true;try{await qRegister();toast("🏆 Your guild is entered!");guildHub()}catch(e){const m=$("gqe");if(m)m.textContent=gMsg(e);r.disabled=false}};
+  const o=$("gqo");if(o)o.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    const now=Date.now(),i=Math.floor((now-q.L)/GC.qT),Q=QG.qs[i],S=QG.S;if(!Q||S.a[i]||qPhase(q,now)!=="live")return;
+    const j=+b.dataset.o,ok=j===Q.a,rem=Math.max(0,q.L+(i+1)*GC.qT-now),p=ok?10+Math.round(5*rem/GC.qT):0;
+    S.a[i]={o:j,ok,p};S.score+=p;if(ok)S.ok++;LS.set("tt_qz",S);sfx(ok?"ok":"bad");QG.key=""})}
+function arenaMount(){clearInterval(QG.t);QG.key="";QG.r=null;QG.t=setInterval(()=>{if(mode!=="guild"||!$("gar")){clearInterval(QG.t);QG.t=null;return}arenaTick()},250);arenaTick()}
+
+/* ---- the Guild Hub screen ---- */
+let gRef=null;
+function guildHub(){
+  clearInterval(gRef);
+  if(!U){$("view").innerHTML=`<div class="card"><h2 style="margin:0">🏰 Guild Hub</h2><p class="hint">Sign in to support your guild with coins, unlock boosters and protectors for every member, and enter the Team Bounty Quiz.</p><div class="act"><button class="pri" id="gsi">Sign in</button></div></div>`;$("gsi").onclick=()=>authHome();return}
+  const t=dn(),v=gv(),lv=gLevel(),tt=v.t||0,nx=GC.lv[lv]||null,adm=isAdmin(),me=U.logins[U.h]||{},ap=me.ap||{},paid=gPaidToday(U.h),bal=P.cn||0;
+  const mem=Object.entries(U.logins).filter(([,l])=>l.t),paidN=mem.filter(([h])=>gPaidToday(h)>0).length;
+  let p7=0;for(const d in v.d||{})if(+d>t-7)p7+=v.d[d];
+  const act=[gOn("x")?`<span class="gh-chip">🚀 XP +25% · ${gLeft(v.x-Date.now())} left</span>`:"",gOn("k")?`<span class="gh-chip">🪙 Coins ×2 · ${gLeft(v.k-Date.now())} left</span>`:"",lv>1?`<span class="gh-chip">⭐ Guild level bonus +${(lv-1)*2}% XP</span>`:""].join("");
+  const perk=(k)=>{const c=GC[k],cost=k==="pr"?Math.max(c.min,c.per*mem.length):c.cost,can=adm&&(v.c||0)>=cost;
+    return`<div class="gh-perk"><span class="ic">${c.ico}</span><div class="tx"><b>${c.name}</b><small>${c.desc}</small></div><button class="sm" data-buy="${k}" ${can?"":"disabled"}>${fmt(cost)} 🪙</button></div>`};
+  $("view").innerHTML=`<div class="card"><div class="two" style="grid-template-columns:1fr auto"><h2 style="margin:0">🏰 ${esc(U.name)}</h2><span class="tg">${GC.lvn[lv-1]} · Lv ${lv}</span></div>
+    <p class="hint" style="margin:4px 0 0">Members pay coins into the guild vault. The vault buys boosters and gifts for everyone, enters the Team Bounty Quiz, and pushes your guild up the Guild Power board.</p>
+    <div class="gh-t"><div><b>${fmt(v.c||0)} 🪙</b>in the vault</div><div><b>${fmt(p7)}</b>power (7 days)</div><div><b>${paidN}/${mem.length}</b>paid today</div><div><b>${fmt(bal)} 🪙</b>your coins</div></div>
+    ${nx?`<div class="pb" style="margin:12px 0 4px"><b style="width:${Math.min(100,(tt-GC.lv[lv-1])/(nx-GC.lv[lv-1])*100)}%"></b></div><div class="hint" style="margin:0">${fmt(nx-tt)} 🪙 more contributed to reach level ${lv+1}. Each level adds +2% XP for every member.</div>`:`<div class="hint" style="margin-top:10px">Top level reached.</div>`}
+    <div style="margin-top:8px">${act}</div></div>
+
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">💸 Support your guild</h2><p class="hint" style="margin:0">You have <b>${fmt(bal)} 🪙</b>. You earn 1 coin for every 2 XP. Paying coins never lowers your XP or level. Paid today: <b>${paid}</b> 🪙.</p>
+    <div class="gh-amt"><input type="number" id="gam" min="1" step="1" value="${Math.min(bal,25)||""}" placeholder="Coins" aria-label="Coins to pay"><button class="sm" data-q="10">10</button><button class="sm" data-q="25">25</button><button class="sm" data-q="50">50</button><button class="sm" data-q="all">All</button><button class="pri" id="gpay">Pay guild</button></div><div class="er" id="gpe"></div>
+    <h3 style="margin:16px 0 4px;font-size:1rem">🔁 Daily auto-pay</h3><p class="hint" style="margin:0">Pay the guild automatically every day to help keep it near the top. It runs while you have the app open and as soon as you have earned enough coins to cover today's amount. Change it or stop any time.</p>
+    <label class="tgl"><input type="checkbox" id="gap1" ${ap.on?"checked":""}> Auto-pay every day</label>
+    <div class="gh-amt"><input type="number" id="gap2" min="1" max="${GC.maxDaily}" step="1" value="${ap.amt||20}" aria-label="Coins per day"><span class="hint" style="margin:0">coins per day (up to ${GC.maxDaily})</span><button class="sm" id="gap3">Save</button></div><div class="er" id="gae"></div></div>
+
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">🎁 Guild perks</h2><p class="hint" style="margin:0 0 10px">${adm?"You are an admin, so you can spend the vault. Everyone in the guild gets the benefit.":"Only guild admins can spend the vault. Everyone in the guild gets the benefit."}</p>${perk("xp")}${perk("cn")}${perk("pr")}<div class="er" id="gbe"></div></div>
+
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">🏆 Team Bounty Quiz</h2><div id="gar"><p class="hint">Loading…</p></div>
+    <p class="hint" style="margin:10px 0 0">A new round every 30 minutes, on the clock. In the first 18 minutes an admin enters the guild (${GC.qEntry} 🪙 from the vault). Then ${GC.qN} questions go live for everyone at once. Scores are calculated in the browser and checked by fair-play rules, and coins have no cash value.</p></div>
+
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">📊 Guild Power · last 7 days</h2><p class="hint" style="margin:0 0 8px">Ranked by coins each guild paid in during the last 7 days. Guilds that stop paying slide down.</p><div id="gbd"><div class="hint">Loading…</div></div></div>
+
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 6px">👥 Who paid</h2>${mem.sort((a,b)=>((U.ct||{})[b[0]]||0)-((U.ct||{})[a[0]]||0)).map(([h,l])=>`<div class="lg2"><span>${l.t==="email"?"✉️":"📱"} ${esc(l.m)}${h===U.h?" · you":""} ${gPaidToday(h)?`<span class="tg">✓ paid today</span>`:""}${l.ap&&l.ap.on?`<span class="tg nw">auto ${l.ap.amt}/day</span>`:""}</span><b>${fmt((U.ct||{})[h]||0)} 🪙</b></div>`).join("")}</div>`;
+  const amt=()=>Math.floor(+$("gam").value);
+  $("view").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{$("gam").value=b.dataset.q==="all"?bal:Math.min(+b.dataset.q,bal)});
+  $("gpay").onclick=async()=>{const b=$("gpay"),e=$("gpe");b.disabled=true;e.textContent="";try{const n=await gPay(amt());toast(`🏰 ${n} 🪙 paid to ${U.name}`);guildHub()}catch(x){e.textContent=gMsg(x);b.disabled=false}};
+  $("gap3").onclick=async()=>{const e=$("gae");e.textContent="";try{await gSetAuto($("gap1").checked,$("gap2").value);toast($("gap1").checked?"🔁 Auto-pay is on":"Auto-pay is off");gAuto();guildHub()}catch(x){e.textContent=x.message==="amt"?gErr.amt:gMsg(x)}};
+  $("view").querySelectorAll("[data-buy]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{const c=await gBuy(b.dataset.buy);toast(`${GC[b.dataset.buy].ico} ${GC[b.dataset.buy].name} bought for ${fmt(c)} 🪙`);guildHub()}catch(x){$("gbe").textContent=gMsg(x);b.disabled=false}});
+  arenaMount();gBoardShow();
+  gRef=setInterval(async()=>{if(mode!=="guild"||!$("gpay")){clearInterval(gRef);return}if(document.hidden)return;const ae=document.activeElement;if(ae&&ae.tagName==="INPUT")return;try{const a=await dget(U.uid);if(a&&a.logins){U.logins=a.logins;gLoad(a)}guildHub()}catch(e){}},30000)}
+
+/* ---------- SECTION: WIRING (start-up) ---------- */
+function plusMode(m){if(m==="today"){todayT();return true}if(m==="lab"){labHome();return true}if(m==="shoot"){shooterT();return true}if(m==="board"){boardsT();return true}if(m==="guild"){guildHub();return true}return false}
 {const _s=start;start=function(){GQT++;return _s.apply(this,arguments)}}
 if(location.hash==="#dev")setTimeout(devOpen,300);
 
@@ -1913,10 +2389,11 @@ tip();update();boot();
 </script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,deleteField,runTransaction,increment,collection,query,where,documentId,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,initializeFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,deleteField,runTransaction,increment,collection,query,where,documentId,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const app=initializeApp({apiKey:"AIzaSyD8LcxmPzoI5Ru8tL1oaWWUHsFJFn7MPfk",authDomain:"tabletrainer.firebaseapp.com",projectId:"tabletrainer",storageBucket:"tabletrainer.firebasestorage.app",messagingSenderId:"19695469245",appId:"1:19695469245:web:962552c71ac9448243edd4"});
-const db=getFirestore(app),auth=getAuth(app),ref=id=>doc(db,"accounts",id),cl=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v===null?deleteField():(v&&v.__inc!==undefined?increment(v.__inc):v)]));
+let db;try{db=initializeFirestore(app,{experimentalAutoDetectLongPolling:true})}catch(e){db=getFirestore(app)}
+const auth=getAuth(app),ref=id=>doc(db,"accounts",id),cl=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v===null?deleteField():(v&&v.__inc!==undefined?increment(v.__inc):v)]));
 window.FB={ready:signInAnonymously(auth).catch(e=>console.warn("Anonymous sign-in failed",e)),
   get:async id=>{const x=await getDoc(ref(id));return x.exists()?x.data():null},
   set:(id,d)=>setDoc(ref(id),d),

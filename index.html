@@ -52,6 +52,8 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var
 .sp{flex:1}
 .lvl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem}
 .bar{width:110px;height:8px;border-radius:9px;background:var(--soft);overflow:hidden}.bar b{display:block;height:100%;background:var(--acc);border-radius:9px;transition:width .4s}
+@media(max-width:560px){#lgo .lgt{display:none}}
+#lgo{color:var(--bad,#c0392b)}
 .ib{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 10px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:.85rem}
 .ib:hover{background:var(--soft)}
 /* User dropdown (opens under the name button, top right) */
@@ -260,7 +262,7 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
 <header><div class="hd">
   <div class="logo"><i aria-hidden="true">✖</i>Table Trainer</div><div class="sp"></div>
   <div class="lvl" id="sc" style="gap:12px"></div><div class="lvl"><span id="lv">Lv 1</span><div class="bar"><b id="xpb" style="width:0"></b></div><span class="lg" id="xpt"></span></div>
-  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="tmrb" hidden aria-label="Daily practice time"></button><span class="um" id="um"><button class="ib" id="acct" aria-haspopup="menu" aria-expanded="false" aria-controls="umenu"></button><div class="umenu" id="umenu" role="menu" aria-label="Account menu" hidden></div></span><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
+  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="tmrb" hidden aria-label="Daily practice time"></button><span class="um" id="um"><button class="ib" id="acct" aria-haspopup="menu" aria-expanded="false" aria-controls="umenu"></button><div class="umenu" id="umenu" role="menu" aria-label="Account menu" hidden></div></span><button class="ib" id="lgo" hidden aria-label="Sign out" title="Sign out">🚪<span class="lgt"> Sign out</span></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
 </div></header>
 
 <div class="app">
@@ -528,7 +530,7 @@ const msgH=m=>`<div class="er ${m&&m[0]==="✅"?"ok":""}" id="er">${esc(m||"")}<
 const guard=(id,fn)=>async()=>{const b=$(id);b.disabled=true;try{await fn()}catch(e){const er=$("er");if(er)er.textContent="Can't reach the server. Check your connection and try again."}b.disabled=false};
 const mkLogin=(l,s)=>({t:l.t,m:l.m,add:Date.now(),last:Date.now(),dev:dev(),s:s||norm()});
 /* The old "Edit profile" header button is replaced by the user menu (see SECTION: USER MENU), so it stays hidden. */
-const acctBtn=()=>{$("acct").textContent=U?"👤 "+Array.from(U.name).slice(0,12).join("")+" ▾":"Sign in";$("hedit").hidden=true;if(!U)UM.close()};
+const acctBtn=()=>{$("acct").textContent=U?"👤 "+Array.from(U.name).slice(0,12).join("")+" ▾":"Sign in";$("hedit").hidden=true;if($("lgo"))$("lgo").hidden=!U;if(!U)UM.close()};
 $("hedit").onclick=()=>{closePV();A().hidden=true;mode="profile";start();window.scrollTo({top:0,behavior:"smooth"})};
 
 function authHome(msg=""){
@@ -685,7 +687,7 @@ function renderDash(msg=""){
   const led={};for(const h in by)led[h]={m:by[h].m,t:by[h].t,x:by[h].xp};
   for(const r of L){const e=led[r.h]||(led[r.h]={m:r.l.m,t:r.l.t,x:0});e.x+=r.s.xp;e.cur=true}
   const unattr=Math.max(0,(b?b.xp:0)-Object.values(by).reduce((a,e)=>a+e.xp,0));
-  const ledH=Object.entries(led).sort((a,c)=>c[1].x-a[1].x).map(([h,e])=>`<div class="lg2"><span>${e.t==="email"?"✉️":"📱"} ${esc(e.m)} <span class="tg">${e.cur?(U.roles[h]==="admin"?"Admin":"Member"):"Former"}</span></span><b>${e.x} XP · ${T.xp?Math.round(e.x/T.xp*100):0}%</b></div>`).join("")+(unattr?`<div class="lg2"><span>Earlier history (not attributed)</span><b>${unattr} XP</b></div>`:"");
+  const ledH=Object.entries(led).sort((a,c)=>c[1].x-a[1].x).map(([h,e])=>`<div class="lg2"><span>${e.t==="email"?"✉️":"📱"} ${esc(e.m)} <span class="tg">${e.cur?(U.roles[h]==="admin"?"Admin":"Member"):"Former"}</span>${!e.cur&&adm?` <button class="sm" data-back="${esc(h)}">↩️ Add back</button>`:""}</span><b>${e.x} XP · ${T.xp?Math.round(e.x/T.xp*100):0}%</b></div>`).join("")+(unattr?`<div class="lg2"><span>Earlier history (not attributed)</span><b>${unattr} XP</b></div>`:"");
   const ep=U.ep,cmp=ep&&ep.status!=="done"?components(ep.edges).find(c=>c.includes(U.uid)):null;let mgH="";
   if(cmp)mgH=`<div class="lr me"><b>Temporary group ${tmpId(cmp)}</b> <span class="tg nw">${cmp.length} guilds</span><div class="hint" style="margin:4px 0 8px">Merges made this hour are collected under a temporary ID. In <b id="cd">…</b> everything is consolidated into one final guild with a new User ID, and every login moves there automatically.</div>${ep.edges.filter(g=>cmp.includes(g.a)||cmp.includes(g.b)).map(g=>`<div class="lg2" ${g.x?`style="text-decoration:line-through;opacity:.6"`:""}><span>${esc(g.na)} + ${esc(g.nb)}<div class="hint" style="margin:0">${esc(g.bm)} · ${ago(g.at)}</div></span>${!g.x&&adm&&(g.a===U.uid||g.b===U.uid)?`<button class="sm dg" data-ce="${g.id}">Cancel</button>`:""}</div>`).join("")}</div>`;
   mgH+=`<p class="hint" style="margin:0 0 4px">Anyone in a guild can merge it with another guild at any time. Merges are collected for the hour, then every connected guild is combined into one new guild: all emails and phones, all scores and the full history. The new guild takes a User ID from the pool of IDs released by earlier merges (or a fresh one), and the old IDs are deleted and returned to the pool. Admins of either guild can cancel until the hour ends. After that it can't be undone.</p><label for="my">Invite code of the other guild</label><input type="text" id="my" placeholder="GD-XXXXXXXX" autocomplete="off" autocapitalize="characters"><div class="er" id="er2"></div><button class="sm" id="mg">Merge</button><div class="hint" id="poolinfo" style="margin-top:10px"></div>`;
@@ -1190,7 +1192,8 @@ function prog(){
  Each field has its own visibility, so a field marked "Only me" is never copied into p_ or pm_. */
 const has=v=>v!==undefined&&v!==null&&String(v).trim()!=="";
 const AV=["🙂","😎","🦊","🐼","🦁","🐯","🚀","🧠","⭐","🎯","🐙","🦉"];
-const SOC=[["linkedin","LinkedIn","https://www.linkedin.com/in/","your-handle or full URL"],["github","GitHub","https://github.com/","username"],["x","X (Twitter)","https://x.com/","@handle"],["instagram","Instagram","https://instagram.com/","@handle"],["youtube","YouTube","https://youtube.com/@","@channel"],["facebook","Facebook","https://facebook.com/","username or full URL"],["website","Website","","https://your-site.com"]];
+const SOC=[["linkedin","LinkedIn","https://www.linkedin.com/in/","your-handle or full URL"],["github","GitHub","https://github.com/","username"],["x","X (Twitter)","https://x.com/","@handle"],["instagram","Instagram","https://instagram.com/","@handle"],["youtube","YouTube","https://youtube.com/@","@channel"],["facebook","Facebook","https://facebook.com/","username or full URL"],["website","Website","","https://your-site.com"],["cl1","My own link 1","","Name | https://any-site.com/me"],["cl2","My own link 2","","Name | https://any-site.com/me"],["cl3","My own link 3","","Name | https://any-site.com/me"]];
+const isCl=k=>/^cl\d$/.test(k),clLabel=v=>{const p=String(v||"").split("|");return p.length>1?p[0].trim().slice(0,24)||"My link":"My link"};
 const GAMES=[["gplay","Google Play Games ID","Player name or ID"],["steam","Steam ID","Friend code or name"],["xbox","Xbox Gamertag",""],["psn","PlayStation ID",""],["epic","Epic Games ID",""],["discord","Discord username",""],["chess","Chess.com / Lichess",""],["othergame","Other game IDs","e.g. Free Fire: 12345, BGMI: Name"]];
 const FIELDS=[
  {k:"av",l:"Avatar",g:"a",w:5,t:"av",dv:"public"},
@@ -1219,7 +1222,7 @@ function pscore(f){
 const plabel=s=>s>=100?"All-star":s>=75?"Pro":s>=50?"Strong":s>=25?"Growing":"Starter";
 function ageOf(d){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||""));if(!m)return null;const n=new Date(),b=new Date(+m[1],+m[2]-1,+m[3]);if(isNaN(b))return null;let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a>=3&&a<=110?a:null}
 function linkOf(k,v){
-  v=String(v||"").trim();if(!v)return null;const s=SOC.find(x=>x[0]===k);
+  v=String(v||"").trim();if(!v)return null;if(isCl(k)){const p=v.split("|");v=p[p.length-1].trim();if(!/^https?:\/\//i.test(v))v="https://"+v}const s=SOC.find(x=>x[0]===k);
   try{let u;if(/^https?:\/\//i.test(v))u=new URL(v);else if(k==="website")u=new URL("https://"+v);else if(s&&s[2])u=new URL(s[2]+encodeURIComponent(v.replace(/^@/,"")));else return null;return/^https?:$/.test(u.protocol)?u.href:null}catch(e){return null}
 }
 const fmt=n=>Number(n||0).toLocaleString();
@@ -1231,7 +1234,7 @@ function vf(pr,tier){const f=pr.f||{},o={};for(const x of FIELDS){const val=Stri
 function allItems(pr){const f=pr.f||{},o=[];for(const x of FIELDS){const val=String(f[x.k]||"").trim();if(!val)continue;if(x.k==="dob"){const a=ageOf(val);if(a!==null)o.push(["dob",String(a),tierOf(pr,x)])}else o.push([x.k,val,tierOf(pr,x)])}return o}
 function buildPub(pr){
   const T=tot(),lv=Math.floor(T.xp/100)+1,fm=vf(pr,"members");
-  return{uid:U.fid||"",un:pr.un||"",name:U.name,created:U.created||Date.now(),upd:Date.now(),lvl:lv,rank:rankOf(lv),xp:T.xp,acc:T.ans?Math.round(T.ok/T.ans*100):0,cur:P.sk.cur,best:P.sk.best,ach:Object.keys(P.ach).length,achN:ACH.length,nm:Object.keys(fm).length,f:vf(pr,"public")};
+  return{uid:U.fid||"",un:pr.un||"",name:U.name,created:U.created||Date.now(),upd:Date.now(),lvl:lv,rank:rankOf(lv),xp:T.xp,acc:T.ans?Math.round(T.ok/T.ans*100):0,cur:P.sk.cur,best:P.sk.best,ach:Object.keys(P.ach).length,achN:ACH.length,bd:Object.keys(P.ach).slice(0,80),ce:(()=>{try{return certs().slice(0,40).map(c=>({t:c.t,s:c.sub,d:c.d.ts||0}))}catch(e){return[]}})(),nm:Object.keys(fm).length,f:vf(pr,"public")};
 }
 function buildMem(pr){
   const T=tot(),t=dn();let mast="";
@@ -1346,7 +1349,7 @@ function pvHTML(p,m,who,items){
   const edu=val("edu")?`<p class="pre">${esc(val("edu"))}${tag("edu")}</p>`:"";
   const work=(val("work")?`<p class="pre">${esc(val("work"))}${tag("work")}</p>`:"")+(val("skills")?`<div class="pills"><b class="hint" style="margin-right:4px">Skills</b>${pills(val("skills"))}${tag("skills")}</div>`:"");
   const hob=val("hobbies")?`<div class="pills">${pills(val("hobbies"))}${tag("hobbies")}</div>`:"";
-  const soc=SOC.map(([k,l])=>{const u=linkOf(k,val(k));return u?`<a class="lnk" href="${esc(u)}" target="_blank" rel="noopener noreferrer nofollow">${l}${tag(k)}</a>`:""}).join("");
+  const soc=SOC.map(([k,l])=>{const u=linkOf(k,val(k));return u?`<a class="lnk" href="${esc(u)}" target="_blank" rel="noopener noreferrer nofollow">${isCl(k)?esc(clLabel(val(k))):l}${tag(k)}</a>`:""}).join("");
   const gm=GAMES.map(([k,l])=>val(k)?`<button class="lnk" data-cp="${esc(val(k))}" title="Tap to copy"><small>${l}</small>&nbsp;${esc(val(k))}${tag(k)}</button>`:"").join("");
   let mem="";
   if(m){
@@ -2035,7 +2038,7 @@ async function lbSync(){
   if(!U)return;
   try{const F=await fbp(),t=dn(),d=new Date(t*864e5),Y=d.getUTCFullYear(),M=d.getUTCMonth(),hid=X.hide||rsEff()>=2||X.tag==="Bot"||X.tag==="Hacker";
     const sum=f=>{let s=0;for(const k in X.xd)if(f(new Date(+k*864e5)))s+=X.xd[k];return s},k=pKeys(),h=U.h.slice(0,24),l=U.logins[U.h]||{};
-    const ent=x=>({n:masked(U.name),gn:Array.from(U.name).slice(0,30).join(""),u:U.fid||("h"+U.h.slice(0,10)),x:hid?0:x,l:lvOf(),y:l.t==="email"?1:2});
+    const ent=x=>({n:masked(U.name),gn:Array.from(U.name).slice(0,30).join(""),u:U.fid||("h"+U.h.slice(0,10)),x:hid?0:x,l:lvOf(),y:l.t==="email"?1:2,p:hid?0:1});
     await Promise.all([[k.d,X.xd[t]||0],[k.m,sum(z=>z.getUTCFullYear()===Y&&z.getUTCMonth()===M)],[k.y,sum(z=>z.getUTCFullYear()===Y)],[k.a,P.xp]].map(([id,x])=>F.merge(id,{e:{[h]:ent(x)}}).catch(()=>{})));
   }catch(e){}
 }
@@ -2099,7 +2102,7 @@ function boardsT(){
   <div class="seg" id="b1">${[["ind","Individuals"],["gld","Guilds"]].map(([k,l])=>`<button data-k="${k}" class="${BD.scope===k?"on":""}">${l}</button>`).join("")}</div>
   <div class="seg" id="b2">${[["d","Day"],["m","This month"],["y","This year"],["a","All time"]].map(([k,l])=>`<button data-k="${k}" class="${BD.per===k?"on":""}">${l}</button>`).join("")}</div>
   ${BD.per==="d"?`<label for="bd">Day</label><select id="bd">${Array.from({length:14},(_,i)=>t-i).map(d=>`<option value="${d}" ${BD.day===d?"selected":""}>${d===t?"Today":new Date(d*864e5).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}</option>`).join("")}</select>`:""}
-  <div id="bl" style="margin-top:12px"><div class="hint">Loading…</div></div></div>
+  <div class="two" style="margin-top:12px"><select id="blim" aria-label="How many to show">${[[10,"Top 10"],[50,"Top 50"],[100,"Top 100"],[0,"Everyone"]].map(([n,l])=>`<option value="${n}" ${BD.lim===n?"selected":""}>${l}</option>`).join("")}</select><input type="search" id="bq" placeholder="🔍 Find a player or guild" value="${esc(BD.q||"")}" aria-label="Search players" autocomplete="off"></div><div id="bl" style="margin-top:12px"><div class="hint">Loading…</div></div></div>
   <div class="card"><h2 style="margin:0 0 6px">📅 My days</h2><p class="hint">Your own day-by-day record on this login.</p><div class="rt">${hist.map(([d,x,a,m])=>`<div><span>${d===t?"Today":new Date(d*864e5).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}</span><span><b>${x}</b> XP · ${a} answers · ${m} min</span></div>`).join("")}</div></div>`;
   const re=()=>boardsT();
   $("b1").querySelectorAll("button").forEach(b=>b.onclick=()=>{BD.scope=b.dataset.k;re()});
@@ -2108,14 +2111,26 @@ function boardsT(){
   const k=pKeys(),id=BD.per==="d"?"lbd_"+BD.day:BD.per==="m"?k.m:BD.per==="y"?k.y:k.a,tokB=++BD.tk;
   bdGet(id).then(doc=>{
     if(BD.tk!==tokB||!$("bl"))return;
-    const E=Object.entries((doc&&doc.e)||{}).map(([h,v])=>({h,...v})).filter(v=>v.x>0);let L;
+    const E=Object.entries((doc&&doc.e)||{}).map(([h,v])=>({h,...v})).filter(v=>v.x>0||v.p);let L;
     if(BD.scope==="ind")L=E.map(v=>({key:v.h,name:v.n+(v.y===1?" ✉️":v.y===2?" 📱":""),x:v.x,l:v.l,me:U&&v.h===U.h.slice(0,24)}));
     else{const m={};for(const v of E){const o=m[v.u]||(m[v.u]={key:v.u,name:v.gn||v.n,x:0,l:0,n:0,me:U&&v.u===(U.fid||("h"+U.h.slice(0,10)))});o.x+=v.x;o.l=Math.max(o.l,v.l);o.n++}L=Object.values(m).map(o=>({...o,name:o.name+(o.n>1?" ("+o.n+" logins)":"")}))}
     L.sort((a,b)=>b.x-a.x);
-    $("bl").innerHTML=L.length?L.slice(0,30).map((v,i)=>`<div class="lbr ${v.me?"me":""}"><span class="rk2">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm">${esc(v.name)}${v.me?" · you":""}</span><small>Lv ${v.l}</small><b>${fmt(v.x)} XP</b></div>`).join("")+(L.length>30?`<p class="hint">Showing the top 30 of ${L.length}.</p>`:""):`<p class="hint">Nobody has scored in this period yet. Be the first!</p>`;
+    BD.L=L;bdPaint();
   });
 }
-BD.tk=0;
+BD.tk=0;BD.lim=50;BD.q="";BD.more=0;
+function bdPaint(){
+  const box=$("bl");if(!box)return;const L=BD.L||[];
+  if(!L.length){box.innerHTML='<p class="hint">Nobody has played in this period yet. Be the first!</p>';return}
+  const q=(BD.q||"").trim().toLowerCase(),all=L.map((v,i)=>({...v,rk:i+1})),hit=q?all.filter(v=>v.name.toLowerCase().includes(q)):all,
+  cap=BD.lim?BD.lim+BD.more:hit.length,shown=q?hit.slice(0,100):hit.slice(0,cap);
+  box.innerHTML=`<p class="hint" style="margin:0 0 6px">${L.length} player${L.length===1?"":"s"} this period${q?" · "+hit.length+" match"+(hit.length===1?"":"es"):""}. Say hello to someone new: tap View to add them as a friend or follow them.</p>`
+   +(shown.length?shown.map(v=>`<div class="lbr ${v.me?"me":""}"><span class="rk2">${["🥇","🥈","🥉"][v.rk-1]||v.rk}</span><span class="nm">${esc(v.name)}${v.me?" · you":""}</span><small>Lv ${v.l}</small><b>${fmt(v.x)} XP</b>${/^FR-/.test(v.key)&&!v.me?`<button class="sm" data-lv="${esc(v.key)}" aria-label="View ${esc(v.name)}">View</button>`:""}</div>`).join(""):'<p class="hint">No one found with that name.</p>')
+   +(!q&&shown.length<hit.length?`<button class="sm" id="blm" style="width:100%;margin-top:8px">Show ${Math.min(50,hit.length-shown.length)} more (${hit.length-shown.length} left)</button>`:"");
+  box.querySelectorAll("[data-lv]").forEach(b=>b.onclick=()=>{location.hash="#u="+b.dataset.lv});
+  if($("blm"))$("blm").onclick=()=>{BD.more+=50;bdPaint()}}
+document.addEventListener("input",e=>{if(e.target.id==="bq"){BD.q=e.target.value;bdPaint()}});
+document.addEventListener("change",e=>{if(e.target.id==="blim"){BD.lim=+e.target.value;BD.more=0;bdPaint()}});
 
 /* ---------- developer console: open index.html#dev ---------- */
 let DV=null;
@@ -2207,7 +2222,7 @@ const gLevel=()=>{const t=gv().t||0;let l=1;GC.lv.forEach((v,i)=>{if(t>=v)l=i+1}
 const gOn=k=>(gv()[k]||0)>Date.now();
 function gXpMult(){return !U?1:1+(gLevel()-1)*.02+(gOn("x")?.25:0)}
 function earnCoins(xp){if(!U||!(xp>0))return;const g=Math.floor(xp*GC.rate*(gOn("k")?2:1));if(g>0){P.cn=(P.cn||0)+g;out("cn",g)}}
-function gLoad(a){if(!U||!a)return;U.vault=a.vault||{};U.ct=a.ct||{};U.pd=a.pd||{};U.dr=a.dr||{};U.cl=a.cl||{};U.ql=a.ql||null;U.vl=a.vl||{};U.fid=a.fid||U.fid||null;U.jc=a.jc||null;U.fa=a.fa||{};U.ar=a.ar||{};setTimeout(gClaim,400)}
+function gLoad(a){if(!U||!a)return;U.vault=a.vault||{};U.ct=a.ct||{};U.pd=a.pd||{};U.dr=a.dr||{};U.cl=a.cl||{};U.ql=a.ql||null;U.vl=a.vl||{};U.fid=a.fid||U.fid||null;U.jc=a.jc||null;U.fa=a.fa||{};U.ar=a.ar||{};U.aka=a.aka||[];setTimeout(gClaim,400)}
 function gMerge(accs){const v={c:0,t:0,x:0,k:0,d:{}},ct={},pd={},dr={},cl={};
   for(const a of accs){const w=a.vault||{};v.c+=w.c||0;v.t+=w.t||0;v.x=Math.max(v.x,w.x||0);v.k=Math.max(v.k,w.k||0);for(const d in w.d||{})v.d[d]=(v.d[d]||0)+w.d[d];
     for(const h in a.ct||{})ct[h]=(ct[h]||0)+a.ct[h];for(const h in a.pd||{})if(!pd[h]||pd[h][0]<=a.pd[h][0])pd[h]=a.pd[h];Object.assign(dr,a.dr||{});for(const id in a.cl||{})cl[id]=Object.assign(cl[id]||{},a.cl[id])}
@@ -2656,6 +2671,158 @@ function plusMode(m){if(m==="today"){todayT();return true}if(m==="lab"){labHome(
 if(location.hash==="#dev")setTimeout(devOpen,300);
 
 tip();update();boot();
+/* ---------- Notification inbox: one place for friend requests, new followers, and sign out ---------- */
+(function(){
+const SEEN=()=>{try{return+localStorage.getItem("tt_nseen:"+(U&&U.fid))||0}catch(e){return 0}};
+const MARK=()=>{try{localStorage.setItem("tt_nseen:"+U.fid,Date.now())}catch(e){}};
+let bell=document.createElement("button");bell.className="ib";bell.id="bell";bell.hidden=true;bell.setAttribute("aria-label","Notifications");bell.style.position="relative";
+bell.innerHTML='🔔<span id="bellN" style="position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:#e5484d;color:#fff;font-size:11px;line-height:17px;text-align:center;padding:0 4px" hidden></span>';
+$("um").parentNode.insertBefore(bell,$("um"));
+async function load(){
+  if(!U||!U.fid)return null;const d=await scDoc(U.fid);if(!d)return null;
+  const seen=SEEN(),rq=Object.entries(d.rq||{}).map(([f,v])=>({f,n:v.n,at:v.at})).sort((a,b)=>b.at-a.at),
+  fl=Object.entries(d.fl||{}).map(([f,v])=>({f,n:v.n,at:v.at})).filter(x=>x.at>seen).sort((a,b)=>b.at-a.at);
+  let ev=[];try{const g=await dget(U.uid);ev=Object.entries((g&&g.ev)||{}).map(([k,v])=>({k,...v})).filter(v=>v.at>seen&&v.h!==U.h.slice(0,24)).sort((a,b)=>b.at-a.at).slice(0,20)}catch(e){}
+  return{rq,fl,ev}}
+async function refresh(){
+  bell.hidden=!U;if(!U)return;
+  try{await ensureIds();const x=await load();if(!x)return;const n=x.rq.length+x.fl.length+x.ev.length,b=$("bellN");b.textContent=n>99?"99+":n;b.hidden=!n;U.nrq=x.rq.length}catch(e){}}
+async function openInbox(){
+  if(!U){authHome();return}
+  openModal('<div class="mh"><h2 id="mt">🔔 Notifications</h2><button class="sm" id="mx">Close</button></div><div id="nbx"><p class="hint">Loading…</p></div>');
+  $("mx").onclick=closeModal;
+  const draw=async()=>{
+    const x=await load(),box=$("nbx");if(!box)return;
+    if(!x){box.innerHTML='<p class="hint">Could not load. Check your connection.</p>';return}
+    const row=(i,t,btns)=>`<div class="lg2"><span>${i} ${t}</span><span>${btns}</span></div>`;
+    let due=0;try{due=JB.some((_,i)=>jm(i))?jdueAll().length:0}catch(e){}
+    const todo=(due?row("🧭",`<b>${due}</b> Journey review${due>1?"s are":" is"} due`,'<button class="sm" data-go="path">Go</button>'):"")+((X&&X.xd&&!X.xd[dn()])?row("🎯","You haven't practised today",'<button class="sm" data-go="today">Start</button>'):""),
+    ev=x.ev.map(r=>row("🏅",`<b>${esc(r.n)}</b> in your guild unlocked ${esc(r.t)} <small class="hint">${ago(r.at)}</small>`,"")).join(""),rq=x.rq.map(r=>row("👋",`<b>${esc(r.n||"Player")}</b> sent a friend request <small class="hint">${ago(r.at)}</small>`,
+      `<button class="sm" data-a="${esc(r.f)}|${esc(r.n||"")}">Accept</button> <button class="sm dg" data-d="${esc(r.f)}">Decline</button> <button class="sm" data-v="${esc(r.f)}">View</button>`)).join("");
+    const fl=x.fl.map(r=>row("⭐",`<b>${esc(r.n||"Player")}</b> started following you <small class="hint">${ago(r.at)}</small>`,`<button class="sm" data-v="${esc(r.f)}">View</button>`)).join("");
+    box.innerHTML=(rq||fl||ev||todo?`<h3 style="margin:8px 0 4px">Needs your attention</h3>${rq}${fl}${ev}${todo}`:'<p class="hint" style="text-align:center;padding:18px 0">🎉 You are all caught up.</p>')
+     +'<div class="umsep" style="margin:14px 0"></div><div class="two"><button class="sm" id="nsoc">👥 Friends and followers</button><button class="sm" id="nacc">🏢 Account and guild</button></div>'
+     +'<button class="sm dg" id="nout" style="width:100%;margin-top:10px">🚪 Sign out</button>';
+    box.querySelectorAll("[data-a]").forEach(b=>b.onclick=async()=>{b.disabled=true;const[f,n]=b.dataset.a.split("|");try{await SC.accept(f,n);toast("✅ You are now friends");draw();refresh()}catch(e){b.disabled=false;toast("Couldn't save. Try again.")}});
+    box.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await SC.decline(b.dataset.d);draw();refresh()}catch(e){b.disabled=false}});
+    box.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{closeModal();mode=b.dataset.go;start();window.scrollTo({top:0,behavior:"smooth"})});
+    box.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{closeModal();location.hash="#u="+b.dataset.v});
+    $("nsoc").onclick=()=>{closeModal();socOpen()};$("nacc").onclick=()=>{closeModal();renderDash()};$("nout").onclick=()=>{closeModal();signOut()};
+    MARK();$("bellN").hidden=true;if(x.rq.length){$("bellN").textContent=x.rq.length;$("bellN").hidden=false}};
+  draw()}
+window.openInbox=openInbox;bell.onclick=openInbox;
+const _r=UM.render;UM.render=function(){_r.apply(this,arguments);const h=UM.el().querySelector(".umh");if(h)h.insertAdjacentHTML("afterend",'<button class="umi" role="menuitem" data-um="inbox"><span aria-hidden="true">🔔</span>Notifications'+(U.nrq?" ("+U.nrq+")":"")+'</button>')};
+const _g=UM.go;UM.go=function(k){if(k==="inbox"){UM.close();openInbox()}else _g.apply(this,arguments)};
+setInterval(refresh,45000);setTimeout(refresh,2500);document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
+})();
+
+/* ---------- Add back a former guild member (uses the ledger kept in base.by; contribution history is left untouched) ---------- */
+{const _rd=renderDash;renderDash=function(){_rd.apply(this,arguments);
+  document.querySelectorAll("[data-back]").forEach(b=>b.onclick=async()=>{
+    const h=b.dataset.back,e=U.base&&U.base.by&&U.base.by[h];if(!e||U.logins[h]||!isAdmin())return;
+    if(!confirm(`Add ${e.m} back to this guild as a member?\n\nTheir earlier contribution stays in the history. New XP counts from now.`))return;
+    b.disabled=true;
+    try{if((await ixGet(h)).includes(U.uid))throw new Error("dup");
+      const lg=mkLogin({t:e.t,m:e.m}),ro={...U.roles,[h]:"member"};
+      await dupd(U.uid,{["logins."+h]:lg,roles:ro,["base.by."+h+".back"]:Date.now()});await ixAdd(h,U.uid);
+      U.logins[h]=lg;U.roles=ro;e.back=Date.now();renderDash("✅ "+e.m+" is back as a member.")}
+    catch(x){b.disabled=false;toast(x.message==="dup"?"That login is already on this guild.":"Couldn't add back. Check your connection.")}})}}
+
+/* ---------- Mastery map: zoom, pan, progress summary and suggested next steps ---------- */
+{const _p=prog;prog=function(){_p.apply(this,arguments);try{mmUp()}catch(e){}}}
+let MMZ=1;
+function mmUp(){
+  const mm=document.querySelector(".chart .mm");if(!mm||document.getElementById("mmw"))return;
+  const N=20,tb=[];for(let i=1;i<=N;i++){let m=0,l=0;for(let j=1;j<=N;j++){const v=mlev(fact(i,j));if(v===3)m++;else if(v>0)l++}tb.push({i,m,l})}
+  const done=tb.filter(t=>t.m===N),cur=tb.filter(t=>t.m<N&&(t.m+t.l)>0).sort((a,b)=>b.m-a.m),nxt=tb.filter(t=>!t.m&&!t.l).slice(0,3);
+  const w=document.createElement("div");w.id="mmw";w.style.cssText="overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px;padding:6px;touch-action:pan-x pan-y pinch-zoom";
+  mm.parentNode.insertBefore(w,mm);w.appendChild(mm);mm.style.minWidth="0";
+  const apply=()=>{mm.style.width=Math.round((N+1)*32*MMZ)+"px";mm.style.fontSize=(.62*MMZ)+"rem"};apply();
+  const bar=document.createElement("div");bar.className="bar2";bar.style.margin="0 0 8px";
+  bar.innerHTML='<button class="sm" id="mz-">➖</button><button class="sm" id="mz+">➕</button><button class="sm" id="mz0">Fit</button><span class="hint" style="margin:0">Zoom, scroll or pinch. Ctrl + wheel also zooms.</span>';
+  w.parentNode.insertBefore(bar,w);
+  const z=d=>{MMZ=Math.min(3,Math.max(.4,+(MMZ+d).toFixed(2)));apply()};
+  bar.querySelector("#mz-").onclick=()=>z(-.2);bar.querySelector("#mz\\+").onclick=()=>z(.2);bar.querySelector("#mz0").onclick=()=>{MMZ=w.clientWidth/((N+1)*32+12);apply()};
+  w.addEventListener("wheel",e=>{if(e.ctrlKey){e.preventDefault();z(e.deltaY<0?.1:-.1)}},{passive:false});
+  const pr=document.createElement("div");pr.className="card";pr.style.cssText="margin:10px 0 0;padding:12px";
+  const chip=(t,x)=>`<span class="tg">×${t.i} · ${t.m}/${N}</span>`;
+  pr.innerHTML=`<b>Your path</b><div class="hint" style="margin:4px 0 6px">✅ <b>Done:</b> ${done.length?done.map(t=>"×"+t.i).join(", "):"none yet"}</div><div class="hint" style="margin:0 0 6px">🔥 <b>Working on:</b> ${cur.length?cur.slice(0,6).map(chip).join(" "):"nothing started"}</div><div class="hint" style="margin:0">➡️ <b>Try next:</b> ${nxt.length?nxt.map(t=>"×"+t.i).join(", "):(cur.length?"finish the tables above":"all tables done 🎉")}</div>`;
+  w.parentNode.insertBefore(pr,w.nextSibling)}
+
+/* ---------- Certificates v2: titles upgrade automatically from progress, milestone certificates, shown on public pages ---------- */
+{const _c=certs;certs=function(){
+  const L=_c.apply(this,arguments).map(c=>{if(c.k[0]==="b"&&c.d&&c.d.st===3)c.t="Bunch mastered with distinction";if(c.k==="all"&&JB.every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].st===3))c.t="Path complete with distinction";return c});
+  let M={};try{M=LS.get("tt_cts")||{}}catch(e){}
+  const xp=tot().xp,sk=P.sk.best,fm=Object.values(P.ms).filter(e=>mlev(e)===3).length,add=(k,ok,t,sub)=>{if(!ok)return;if(!M[k])M[k]=Date.now();L.push({k,t,sub,d:{ts:M[k]}})};
+  [[500,"Rising Star"],[2000,"Table Champion"],[10000,"Maths Legend"]].forEach(([n,t])=>add("xp"+n,xp>=n,t,"Earned "+fmt(n)+" XP"));
+  [[7,"Weekly Streak"],[30,"Monthly Streak"],[100,"Unstoppable"]].forEach(([n,t])=>add("sk"+n,sk>=n,t,n+" days in a row"));
+  [[50,"Memory Builder"],[200,"Memory Master"],[400,"Table Grandmaster"]].forEach(([n,t])=>add("fm"+n,fm>=n,t,n+" multiplication facts mastered"));
+  try{LS.set("tt_cts",M)}catch(e){}
+  return L}}
+{const _pv=pvHTML;pvHTML=function(p){
+  let h=_pv.apply(this,arguments);const ce=Array.isArray(p.ce)?p.ce:[],bd=Array.isArray(p.bd)?p.bd:[],got=ACH.filter(a=>bd.includes(a[0]));
+  if(!ce.length&&!got.length)return h;
+  return h+`<div class="card sec"><h2>🏅 Certificates and badges</h2>${ce.length?`<div class="weak">${ce.map(c=>`<span title="${esc(c.s||"")}">🎓 ${esc(c.t)} · ${esc(c.s||"")}</span>`).join("")}</div>`:""}${got.length?`<div class="ag" style="margin-top:10px">${got.map(([,ic,ti,ds])=>`<div class="ac"><div class="ai">${ic}</div><div><b>${ti}</b><span>${ds}</span></div></div>`).join("")}</div>`:""}</div>`}}
+
+/* ---------- Guild names: a merged guild keeps every earlier guild name as "Formerly" so people can still recognise it ---------- */
+{const _bz=buildZ;buildZ=function(accs){const Z=_bz.apply(this,arguments);
+  Z.aka=[...new Set(accs.flatMap(a=>[a.name,...(a.aka||[])]).filter(n=>n&&n!==Z.name))].slice(0,12);return Z}}
+{const _rd2=renderDash;renderDash=function(){_rd2.apply(this,arguments);
+  const h=document.querySelector(".dh");if(!h||!U.aka||!U.aka.length)return;
+  const n=Object.values(U.logins||{}).filter(l=>l.t).length,pop=n>=5?' <span class="tg">⭐ Popular guild</span>':"";
+  h.insertAdjacentHTML("afterend",`<p class="hint" style="margin:6px 0">🏛️ Formerly: ${U.aka.map(esc).join(", ")}${pop}</p>`)}}
+
+/* ---------- Guild achievement alerts: members write a small event on the guild document; everyone else sees it in the inbox ---------- */
+{const _ca=checkAch;checkAch=function(){const b=new Set(Object.keys(P.ach));_ca.apply(this,arguments);
+  try{if(!U)return;const g=ACH.filter(a=>P.ach[a[0]]&&!b.has(a[0])).map(a=>a[1]+" "+a[2]);if(!g.length)return;
+    const u={["ev."+rid(6)]:{n:myNm(),h:U.h.slice(0,24),t:g.join(", ").slice(0,80),at:Date.now()}};
+    const old=Object.entries(U.ev||{}).sort((x,y)=>y[1].at-x[1].at).slice(25);old.forEach(([k])=>u["ev."+k]=null);
+    dupd(U.uid,u).catch(()=>{})}catch(e){}}}
+{const _g=gLoad;gLoad=function(a){_g.apply(this,arguments);if(U&&a)U.ev=a.ev||{}}}
+
+/* ---------- Find a guild by name (public guild card, read by exact name; the invite code is still needed to join) ---------- */
+const gdGet=async()=>{const d=await dget("gdir");return(d&&d.g)||{}};
+const gdPut=async(slug,card,drop)=>{const F=await fbp(),u={["g."+slug]:card};(drop||[]).forEach(k=>u["g."+k]=null);
+  try{await F.upd("gdir",u)}catch(e){await F.set("gdir",{g:{[slug]:card}})}};
+const gSlug=n=>String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40);
+{const _rd3=renderDash;renderDash=function(){_rd3.apply(this,arguments);
+  if(!isAdmin()||!U.fid)return;const h=document.querySelector(".dh");if(!h)return;
+  const d=document.createElement("div");d.style.margin="6px 0";d.innerHTML='<button class="sm" id="gpub">🔎 Make my guild findable by name</button> <span class="hint" id="gpm" style="margin:0"></span>';
+  h.insertAdjacentElement("afterend",d);
+  $("gpub").onclick=async()=>{const sl=gSlug(U.name),m=$("gpm");if(!sl){m.textContent="Give the guild a name first.";return}
+    try{const G=await gdGet(),o=G[sl];if(o&&o.o!==U.fid){m.textContent="That name is already used by another guild. Rename yours first.";return}
+      const n=Object.values(U.logins).filter(l=>l.t).length,fo=Object.keys((U.base&&U.base.by)||{}).filter(k=>!U.logins[k]).length;
+      await gdPut(sl,{n:U.name,o:U.fid,m:n,fo,p:n>=5?1:0,aka:(U.aka||[]).slice(0,8),at:Date.now()},Object.keys(G).filter(k=>k!==sl&&G[k].o===U.fid));m.textContent="✅ People can now find "+U.name+" by name."}
+    catch(e){m.textContent="Couldn't save. Check your connection."}}}}
+{const _aj=authJoin;authJoin=function(){_aj.apply(this,arguments);
+  const l=document.querySelector('label[for="jid"]');if(!l)return;
+  l.insertAdjacentHTML("beforebegin",'<label for="gfn">Not sure which guild? Find it by name</label><div class="two"><input type="text" id="gfn" placeholder="Guild name" autocomplete="off"><button class="sm" id="gfb">Find</button></div><div id="gfr" class="hint" style="margin:6px 0 12px"></div>');
+  $("gfb").onclick=async()=>{const r=$("gfr"),sl=gSlug($("gfn").value);if(!sl){r.textContent="Type a guild name.";return}
+    r.textContent="Searching…";
+    try{const d=(await gdGet())[sl];if(!d){r.textContent="No guild with that exact name is listed. Ask an admin for the invite code.";return}
+      r.innerHTML=`<b>${esc(d.n)}</b> ${d.p?'<span class="tg">⭐ Popular</span>':""}<br>${d.m} member${d.m===1?"":"s"}${d.fo?` · ${d.fo} former member${d.fo===1?"":"s"}`:""}${d.aka&&d.aka.length?`<br>Formerly: ${d.aka.map(esc).join(", ")}`:""}<br>To join, ask a guild admin for the invite code (GD-…) and enter it below.`}
+    catch(e){r.textContent="Couldn't look that up right now."}}}}
+
+/* ---------- Browse all guilds (lists the public guild cards) + automatic card refresh for admins ---------- */
+{const _aj2=authJoin;authJoin=function(){_aj2.apply(this,arguments);
+  const r=$("gfr");if(!r)return;
+  r.insertAdjacentHTML("afterend",'<button class="sm" id="gall" style="margin:0 0 12px">📚 Browse all guilds</button><div id="gls"></div>');
+  $("gall").onclick=async()=>{const box=$("gls");box.innerHTML='<p class="hint">Loading guilds…</p>';
+    try{const rows=Object.values(await gdGet()).filter(d=>d&&d.n);
+      if(!rows.length){box.innerHTML='<p class="hint">No guilds are listed yet. Admins can list theirs from Account and guild.</p>';return}
+      rows.sort((a,b)=>(b.m||0)-(a.m||0));
+      box.innerHTML='<input type="search" id="gq" placeholder="🔍 Filter guilds" aria-label="Filter guilds" autocomplete="off" style="margin-bottom:8px"><div id="gl"></div>';
+      const paint=()=>{const q=$("gq").value.trim().toLowerCase(),L=rows.filter(d=>!q||d.n.toLowerCase().includes(q)||(d.aka||[]).some(a=>a.toLowerCase().includes(q)));
+        $("gl").innerHTML=L.length?L.slice(0,100).map(d=>`<div class="lg2"><span><b>${esc(d.n)}</b> ${d.p?'<span class="tg">⭐ Popular</span>':""}${d.fo?`<span class="tg">${d.fo} former</span>`:""}<br><small class="hint">${d.m||0} member${d.m===1?"":"s"}${d.aka&&d.aka.length?" · Formerly: "+d.aka.map(esc).join(", "):""}</small></span></div>`).join("")+(L.length>100?`<p class="hint">Showing 100 of ${L.length}. Type to narrow it down.</p>`:"")+'<p class="hint">Found yours? Ask a guild admin for the invite code (GD-…) and enter it below.</p>':'<p class="hint">No guild matches.</p>'};
+      $("gq").oninput=paint;paint()}
+    catch(e){box.innerHTML='<p class="hint">Couldn\'t load the list right now.</p>'}}}}
+{const _rd4=renderDash;renderDash=function(){_rd4.apply(this,arguments);
+  if(!isAdmin()||!U.fid)return;const sl=gSlug(U.name);if(!sl)return;
+  gdGet().then(G=>{const o=G[sl];if(!o||o.o!==U.fid)return;const n=Object.values(U.logins).filter(l=>l.t).length,fo=Object.keys((U.base&&U.base.by)||{}).filter(k=>!U.logins[k]).length;
+    if(o.m!==n||o.fo!==fo)return gdPut(sl,{...o,m:n,fo,p:n>=5?1:0,aka:(U.aka||[]).slice(0,8),at:Date.now()})}).catch(()=>{})}}
+
+/* ---------- Visible Sign out button in the header, next to the account button (shown whenever someone is signed in) ---------- */
+$("lgo").onclick=()=>{UM.close();signOut()};acctBtn();
 </script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -2673,6 +2840,7 @@ window.FB={ready:signInAnonymously(auth).catch(e=>console.warn("Anonymous sign-i
   uid:()=>auth.currentUser&&auth.currentUser.uid,
   list:async(p,n)=>{const q=query(collection(db,"accounts"),where(documentId(),">=",p),where(documentId(),"<",p+"\uf8ff"),limit(n||300));const r=await getDocs(q);return r.docs.map(x=>({id:x.id,...x.data()}))},
   txn:fn=>runTransaction(db,async t=>fn({get:async id=>{const x=await t.get(ref(id));return x.exists()?x.data():null},set:(id,d)=>t.set(ref(id),d),upd:(id,o)=>t.update(ref(id),cl(o)),del:id=>t.delete(ref(id))}))};
+
 </script>
 </body>
 </html>

@@ -795,7 +795,7 @@ const UM={
     else if(k==="copy")copyMyLink(false);
     else if(k==="share")copyMyLink(true);
     else if(k==="id")copyTxt(U.fid||"");else if(k==="soc")socOpen();else if(k==="jc")copyTxt(U.jc||"");
-    else if(k==="dev")location.hash="#dev";
+    else if(k==="dev")location.href="dev.html";
     else if(k==="guildhub")tab("guild");
     else if(k==="acct")renderDash();
     else if(k==="cfg")openSettings();
@@ -1655,7 +1655,7 @@ async function xpull(){
   try{const h=U.h.slice(0,24),[d,v]=await Promise.all([dget("ix_"+h),dget("ixd_"+h)]);
     if(d){for(const k in d.ds||{})X.xd[k]=Math.max(X.xd[k]||0,d.ds[k]);for(const k in d.tm||{})X.td[k]=Math.max(X.td[k]||0,d.tm[k]);if(!X.hide&&d.hide)X.hide=true}
     /* developer verdicts live in ixd_<login>, writable only by the developer allowlist */
-    XR={vd:(v&&v.vd)||null,rs:v&&v.rs!=null?v.rs:null};
+    XR={vd:(v&&v.vd)||null,rs:v&&v.rs!=null?v.rs:null,bn:(v&&v.bn)||null,wn:(v&&v.wn)||[]};
     if(v&&v.rst&&v.rst>(X.rst||0)){X.rst=v.rst;X.win=[];X.ar=0;X.okc=0;X.tr=100;X.fl={};X.run=0;X.tag="New";evt("reset","Developer reset")}
     xnow();updTmr();
   }catch(e){}
@@ -2173,90 +2173,7 @@ function bdPaint(){
 document.addEventListener("input",e=>{if(e.target.id==="bq"){BD.q=e.target.value;bdPaint()}});
 document.addEventListener("change",e=>{if(e.target.id==="blim"){BD.lim=+e.target.value;BD.more=0;bdPaint()}if(e.target.id==="bgrp"){BD.grp=e.target.checked;boardsT()}});
 
-/* ---------- developer console: open index.html#dev ---------- */
-let DV=null;
-function devClose(){const e=document.getElementById("devv");if(e)e.remove()}
-async function devOpen(){
-  devClose();const el=document.createElement("div");el.id="devv";document.body.appendChild(el);
-  el.innerHTML=`<div class="pvb"><div class="logo"><i>✖</i>Developer console</div><span class="sp"></span><button class="sm" id="dvx">Close</button></div><div class="pvw" id="dvb"><div class="card">Loading…</div></div>`;
-  $("dvx").onclick=()=>{devClose();history.replaceState(null,"",location.pathname+location.search)};
-  const B=$("dvb");let F;
-  try{F=await fbp();const uid=F.uid();
-    let ix,vd;try{ix=await F.list("ix_",3000);vd=await F.list("ixd_",3000)}catch(e){B.innerHTML=`<div class="card"><h2 style="margin:0">Developer access needed</h2><p class="hint">This browser is not on the developer allowlist yet. In the Firebase console open <b>Firestore → accounts</b>, create a document with ID <code>devauth</code> and a field <code>uids</code> (array) containing this ID, then reload:</p><p><code>${esc(uid||"(signing in…)")}</code> <button class="sm" id="cpu">Copy</button></p></div>`;$("cpu").onclick=()=>copyTxt(uid||"");return}
-    const V={};vd.forEach(d=>V[d.id.slice(4)]=d);DV={rows:ix.map(d=>({...d,id:d.id.slice(3),vdoc:V[d.id.slice(3)]||null})),f:{tag:"",q:"",flag:false,max:false},sort:"ts"};devRender();
-  }catch(e){B.innerHTML=`<div class="card">Can't reach the server. Check your connection.</div>`}
-}
-const effRs=r=>{const v=r.vdoc||{};if(v.vd==="genuine")return 0;let x=r.ar||0;if(v.rs!=null)x=v.rs;if(v.vd==="bot")x=Math.max(x,2);return x};
-function devRender(){
-  const B=$("dvb"),R0=DV.rows,t=dn(),cnt={};R0.forEach(r=>cnt[r.tg]=(cnt[r.tg]||0)+1);
-  const flagged=R0.filter(r=>(r.fl||[]).length||effRs(r)>0),maxed=R0.filter(r=>r.mx);
-  const hit=R0.filter(r=>Object.values(r.ds||{}).some(v=>v>=CFG.dayCap)).length;
-  let rows=R0.filter(r=>(!DV.f.tag||r.tg===DV.f.tag)&&(!DV.f.flag||(r.fl||[]).length||effRs(r)>0)&&(!DV.f.max||r.mx)&&(!DV.f.q||(r.n+" "+r.m+" "+r.u).toLowerCase().includes(DV.f.q)));
-  const S={ts:r=>-(r.ts||0),tr:r=>r.tr,xp:r=>-(r.xp||0),lv:r=>-(r.lv||0),md:r=>r.md||1e9};rows.sort((a,b)=>S[DV.sort](a)-S[DV.sort](b));
-  const ago2=ts=>ts?ago(ts):"never",pc=(a,b)=>b?Math.round(a/b*100)+"%":"-";
-  B.innerHTML=`<div class="ph"><div><b>${R0.length}</b>players synced</div><div><b>${flagged.length}</b>flagged / restricted</div><div><b>${maxed.length}</b>reached max level</div><div><b>${hit}</b>hit the daily XP cap</div><div><b>${CFG.dayCap}</b>current daily XP cap</div></div>
-  ${maxed.length?`<div class="tip"><span>👑 <b>${maxed.length}</b> player${maxed.length>1?"s have":" has"} reached the existing maximum. Time to add new levels or content.</span><button class="sm" id="dmx">Show them</button></div>`:""}
-  <div class="card"><div class="bar2"><b>Tags</b>${Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<button class="sm" data-tg="${esc(k)}"><span class="tgc ${esc(k)}">${esc(k)}</span> ${n}</button>`).join("")}<button class="sm" data-tg="">All</button></div>
-  <div class="bar2"><input type="text" id="dq" placeholder="Search name, login or User ID" value="${esc(DV.f.q)}" style="max-width:260px"><label class="tgl" style="margin:0"><input type="checkbox" id="df" ${DV.f.flag?"checked":""}> Flagged only</label><label class="tgl" style="margin:0"><input type="checkbox" id="dm" ${DV.f.max?"checked":""}> Reached max</label><span class="sp"></span><button class="sm" id="dsh">🕵️ Shared accounts</button><button class="sm" id="dat">⚙ Auto-tune cap</button><button class="sm" id="dcv">⬇ CSV</button></div>
-  <div class="dvw"><table class="dvt"><thead><tr><th>Tag</th><th>Name</th><th>Login</th><th data-s="lv">Lvl</th><th data-s="xp">XP</th><th>Acc</th><th data-s="md">Median ms</th><th data-s="tr">Trust</th><th>Flags</th><th>Limit</th><th data-s="ts">Last seen</th></tr></thead><tbody>${rows.slice(0,300).map(r=>`<tr data-h="${r.id}"><td><span class="tgc ${esc(r.tg||"New")}">${esc(r.tg||"New")}</span></td><td>${esc(r.n||"")}</td><td>${esc(r.m||"")}</td><td>${r.lv||0}</td><td>${fmt(r.xp)}</td><td>${pc(r.ok,r.ans)}</td><td>${r.md||"-"}</td><td>${r.tr==null?"-":r.tr}</td><td>${(r.fl||[]).length?(r.fl||[]).map(f=>esc(f)).join(", "):"-"}</td><td>${["-","×.5","×.1","paused"][effRs(r)]}${(r.vdoc&&r.vdoc.vd)?" ("+esc(r.vdoc.vd)+")":""}</td><td>${ago2(r.ts)}</td></tr>`).join("")}</tbody></table></div><p class="hint">Showing ${Math.min(300,rows.length)} of ${rows.length}. Click a row for details and actions.</p></div><div id="dd"></div>`;
-  B.querySelectorAll("[data-tg]").forEach(b=>b.onclick=()=>{DV.f.tag=b.dataset.tg;devRender()});if($("dsh"))$("dsh").onclick=devShared;
-  B.querySelectorAll("th[data-s]").forEach(h=>h.onclick=()=>{DV.sort=h.dataset.s;devRender()});
-  $("dq").oninput=e=>{DV.f.q=e.target.value.toLowerCase();const p=e.target.selectionStart;devRender();const n=$("dq");n.focus();n.setSelectionRange(p,p)};
-  $("df").onchange=e=>{DV.f.flag=e.target.checked;devRender()};$("dm").onchange=e=>{DV.f.max=e.target.checked;devRender()};
-  if($("dmx"))$("dmx").onclick=()=>{DV.f.max=true;devRender()};
-  B.querySelectorAll("tr[data-h]").forEach(tr=>tr.onclick=()=>devDetail(tr.dataset.h));
-  $("dcv").onclick=()=>dl("table-trainer-players.csv","tag,name,login,user_id,level,xp,answers,correct,median_ms,trust,flags,restriction,reached_max,last_seen\n"+R0.map(r=>[r.tg,r.n,r.m,r.u,r.lv,r.xp,r.ans,r.ok,r.md,r.tr,(r.fl||[]).join("|"),effRs(r),r.mx?new Date(r.mx).toISOString():"",r.ts?new Date(r.ts).toISOString():""].map(v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"').join(",")).join("\n"),"text/csv");
-  $("dat").onclick=devTune;
-}
-async function devTune(){
-  const vals=[];DV.rows.filter(r=>!(r.fl||[]).length&&effRs(r)===0).forEach(r=>{for(const d in r.ds||{})if(r.ds[d]>0)vals.push(r.ds[d])});vals.sort((a,b)=>a-b);
-  const p95=vals.length?vals[Math.floor(vals.length*.95)]:0,sug=Math.max(600,Math.min(3000,Math.round(p95*1.5/100)*100)||CFG.dayCap),hit=DV.rows.filter(r=>Object.values(r.ds||{}).some(v=>v>=CFG.dayCap)).length;
-  openModal(`<div class="mh"><h2 id="mt">Auto-tune daily XP cap</h2><button class="sm" id="mx">Close</button></div><p>Genuine players' 95th-percentile day is <b>${p95}</b> XP over ${vals.length} active days. ${hit} player${hit===1?"":"s"} hit the current cap (${CFG.dayCap}).</p><label for="cp1">New daily XP cap</label><input type="number" id="cp1" value="${sug}" min="200" max="5000"><p class="hint">Clients pick this up within a few minutes. Flagged players are left out of the calculation.</p><div class="act"><button class="pri" id="cp2">Apply</button></div><div class="er" id="cpe"></div>`);
-  $("mx").onclick=closeModal;$("cp2").onclick=async()=>{const v=Math.max(200,Math.min(5000,+$("cp1").value||0));try{const F=await fbp();await F.merge("cfg_live",{dayCap:v,at:Date.now()});CFG.dayCap=v;closeModal();toast("Daily cap set to "+v);devRender()}catch(e){$("cpe").textContent="Couldn't save. Is this browser on the developer allowlist?"}};
-}
-function devDetail(h){
-  const r=DV.rows.find(x=>x.id===h);if(!r)return;const t=dn(),v=r.vdoc||{};
-  const days=Array.from({length:30},(_,i)=>t-29+i),mx=Math.max(1,...days.map(d=>(r.ds||{})[d]||0)),lg=r.lg||[],gm=Math.max(1000,...lg.map(l=>Math.min(l[4],8000)));
-  $("dd").innerHTML=`<div class="card" style="margin-top:16px"><div class="bar2"><h2 style="margin:0">${esc(r.n||"")} <span class="tgc ${esc(r.tg||"New")}">${esc(r.tg||"New")}</span></h2><span class="sp"></span><button class="sm" id="dcl">Close</button></div>
-  <p class="hint">${esc(r.m||"")} · ${esc(r.u||"")} · ${esc(r.dv||"unknown device")} · level ${r.lv} · ${fmt(r.xp)} XP · trust ${r.tr}</p>
-  ${r.mx?`<p>👑 Reached max on ${new Date(r.mx).toLocaleDateString()}: ${esc((r.mxi||[]).join(", "))}</p>`:""}
-  <div class="ph"><div><b>${r.md||"-"}</b>median ms / answer</div><div><b>${Math.round((r.fs||0)*100)}%</b>very fast answers</div><div><b>${Math.round((r.ni||0)*100)}%</b>without human input</div><div><b>${r.cv}</b>timing variation (human ≈ 0.4+)</div></div>
-  <p style="margin:12px 0 4px"><b>Flags</b></p><div class="weak">${(r.fl||[]).length?(r.fl||[]).map(f=>`<span>${esc(FLAGTXT[f]||f)}</span>`).join(""):`<span>none</span>`}</div>
-  <p style="margin:12px 0 4px"><b>Last ${lg.length} answers</b> <span class="hint">height = think time · red = wrong · outlined = flagged</span></p><div class="gap">${lg.map(l=>`<i class="${l[3]?"":"x"} ${(l[5]&(1|2|4|16))?"f":""}" style="height:${Math.max(3,Math.round(Math.min(l[4],8000)/gm*70))}px" title="${esc(l[1])} ${esc(l[2])} · ${l[4]} ms"></i>`).join("")}</div>
-  <p style="margin:12px 0 4px"><b>XP, last 30 days</b></p><div class="b14 b30">${days.map(d=>`<div title="${(r.ds||{})[d]||0} XP"><i style="height:${Math.max(2,Math.round(((r.ds||{})[d]||0)/mx*70))}px"></i></div>`).join("")}</div>
-  <p style="margin:12px 0 4px"><b>Games played</b></p><div class="weak">${Object.entries(r.pl||{}).map(([k,n])=>`<span>${esc(k)} · ${n}</span>`).join("")||"<span>none</span>"}</div>
-  <p style="margin:12px 0 4px"><b>Recent events</b></p><div class="rt">${(r.ev||[]).slice().reverse().map(e=>`<div><span>${esc(e[1])}</span><span>${esc(e[2])} · ${ago(e[0])}</span></div>`).join("")||"<div><span>none</span></div>"}</div>
-  <p style="margin:14px 0 4px"><b>Verdict</b> ${v.vd?`<span class="tg">${esc(v.vd)}</span>`:"(none)"} ${v.rs!=null?`<span class="tg nw">manual limit ${v.rs}</span>`:""}</p>
-  <div class="act" style="justify-content:flex-start"><button class="sm" data-a="g">✅ Genuine</button><button class="sm" data-a="b">🤖 Confirm bot</button><button class="sm" data-a="r1">Limit 1 (XP ×.5)</button><button class="sm" data-a="r2">Limit 2 (XP ×.1)</button><button class="sm" data-a="r3">Limit 3 (no XP)</button><button class="sm" data-a="c">Clear and reset flags</button></div><div class="er" id="dae"></div></div>`;
-  $("dcl").onclick=()=>{$("dd").innerHTML=""};
-  $("dd").querySelectorAll("[data-a]").forEach(b=>b.onclick=async()=>{
-    const a=b.dataset.a,at=Date.now(),P2={g:{vd:"genuine",rs:0},b:{vd:"bot",rs:2},r1:{vd:null,rs:1},r2:{vd:null,rs:2},r3:{vd:null,rs:3},c:{vd:null,rs:null,rst:at}}[a];
-    try{const F=await fbp();await F.merge("ixd_"+h,{...P2,at});r.vdoc={...(r.vdoc||{}),...P2,at};toast("Saved. The player's app applies it within minutes.");devRender();devDetail(h)}catch(e){$("dae").textContent="Couldn't save. Is this browser on the developer allowlist?"}});
-  $("dd").scrollIntoView({behavior:"smooth"});
-}
-
-/* ---------- Shared-account watch: one account (many logins) that may be played by several people at once ---------- */
-function devShared(sel){
-  const R0=DV.rows,t=dn(),G={};
-  R0.forEach(r=>{const k=r.u||("h"+r.id);(G[k]||(G[k]={u:k,rows:[]})).rows.push(r)});
-  const A=Object.values(G).map(g=>{const rs=g.rows,n=rs.length,dvs=new Set(rs.map(r=>r.dv||"?")).size;
-    let both=0,peak=0,mins=0;
-    for(let d=t-29;d<=t;d++){const act=rs.filter(r=>((r.ds||{})[d]||0)>0).length;if(act>=2)both++;
-      peak=Math.max(peak,rs.reduce((a,r)=>a+((r.ds||{})[d]||0),0));mins=Math.max(mins,Math.round(rs.reduce((a,r)=>a+((r.tm||{})[d]||0),0)/60))}
-    const sig=[];if(n>=3)sig.push(n+" logins");if(dvs>=2&&both>=3)sig.push(dvs+" devices active on "+both+" same days");
-    if(peak>CFG.dayCap)sig.push("combined "+peak+" XP/day is over the "+CFG.dayCap+" cap");if(mins>480)sig.push(mins+" min in one day");
-    return{...g,n,dvs,both,peak,mins,sig,xp:rs.reduce((a,r)=>a+(r.xp||0),0),name:(rs[0]&&rs[0].n)||""}})
-    .filter(a=>a.n>=2).sort((a,b)=>b.sig.length-a.sig.length||b.n-a.n);
-  const box=$("dd");
-  box.innerHTML=`<div class="card" style="margin-top:16px"><div class="bar2"><h2 style="margin:0">🕵️ Shared accounts</h2><span class="sp"></span><button class="sm" id="dsx">Close</button></div>
-  <p class="hint">Accounts with 2+ logins. Several people may play one account at the same time and push its XP up faster than one child could. Counts only here; tap a row to see the masked logins. A shared account is not proof of cheating (families and schools share on purpose).</p>
-  <div class="dvw"><table class="dvt"><thead><tr><th>Account</th><th>Name</th><th>Logins</th><th>Devices</th><th>Peak XP/day</th><th>Total XP</th><th>Signals</th></tr></thead><tbody>${A.map(a=>`<tr data-sa="${esc(a.u)}"><td>${esc(a.u)}</td><td>${esc(a.name)}</td><td>${a.n}</td><td>${a.dvs}</td><td>${fmt(a.peak)}</td><td>${fmt(a.xp)}</td><td>${a.sig.length?a.sig.map(esc).join(" · "):"-"}</td></tr>`).join("")||'<tr><td colspan="7">No account has more than one login yet.</td></tr>'}</tbody></table></div><div id="dsd"></div></div>`;
-  $("dsx").onclick=()=>{box.innerHTML=""};
-  box.querySelectorAll("[data-sa]").forEach(tr=>tr.onclick=()=>{const a=A.find(x=>x.u===tr.dataset.sa);if(!a)return;
-    $("dsd").innerHTML=`<p style="margin:12px 0 4px"><b>${esc(a.u)}</b> · ${a.n} logins</p><div class="rt">${a.rows.sort((x,y)=>(y.ts||0)-(x.ts||0)).map(r=>`<div><span>${r.ty==="email"?"✉️":"📱"} ${esc(r.m||"")} · ${esc(r.dv||"unknown device")}</span><span>${fmt(r.xp)} XP · ${r.ts?ago(r.ts):"never"}</span></div>`).join("")}</div>`});
-  box.scrollIntoView({behavior:"smooth"});
-}
-addEventListener("hashchange",()=>{if(location.hash==="#dev")devOpen();else devClose()});
+/* The developer console now lives in its own page: dev.html (email and password sign-in). */
 
 /* ---------- SECTION: GUILD HUB · coins, daily dues + auto-pay, perks, protector drops, team bounty quiz, guild power board ----------
    Coins (🪙) are a separate currency earned from XP (1 coin per 2 XP, after fair-play and the daily cap), so spending them never lowers your XP rank.
@@ -2762,7 +2679,7 @@ function renderPrev(){
 /* ---------- SECTION: WIRING (start-up) ---------- */
 function plusMode(m){if(m==="today"){todayT();return true}if(m==="lab"){labHome();return true}if(m==="shoot"){shooterT();return true}if(m==="board"){boardsT();return true}if(m==="guild"){guildHub();return true}return false}
 {const _s=start;start=function(){GQT++;return _s.apply(this,arguments)}}
-if(location.hash==="#dev")setTimeout(devOpen,300);
+
 
 tip();update();boot();
 /* ---------- Notification inbox: one place for friend requests, new followers, and sign out ---------- */
@@ -3300,6 +3217,45 @@ MODES.push(["shop","🛒 Shop"],["arena","⚔️ Arena"],["admin","🛡️ Admin
 xSync();
 })();
 </script>
+<script>
+/* =====================================================================
+   SECTION: DEVELOPER ACTIONS, PLAYER SIDE
+   The developer console (dev.html) writes ixd_<login> and dgd_<guild> records. This block only READS them:
+   a ban shows a blocking screen, a warning shows once, a guild lock stops vault payments or hides the public page.
+   Players cannot write these records (see firestore.rules). Enforcement here is in the browser, so it stops normal use,
+   not someone who edits the site's code; real server-side enforcement needs verified sign-in.
+   ===================================================================== */
+(function(){
+"use strict";
+const CONTACT="[your support email]";   /* shown to suspended players: edit this */
+const css=document.createElement("style");css.textContent=`
+#dxban{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+#dxban .card{max-width:460px;text-align:center}`;
+document.head.appendChild(css);
+/* ---------- player side: bans, warnings and guild locks ---------- */
+let DXG={};const locked=k=>(DXG.lk||[]).includes(k);
+function banScreen(b,sc){let o=document.getElementById("dxban");if(!o){o=document.createElement("div");o.id="dxban";document.body.appendChild(o)}
+  o.innerHTML=`<div class="card"><h2 style="margin:0">🚫 Account suspended</h2><p>${sc==="guild"?"This guild":"This login"} has been suspended by the developer.</p><p><b>Reason:</b> ${esc(b.why||"Not specified")}</p><p class="hint">If you think this is a mistake, contact ${esc(CONTACT)} and include your Guild ID.</p><div class="act"><button class="pri" id="dxso">Sign out</button></div></div>`;
+  $("dxso").onclick=()=>{o.remove();signOut()};try{X.hide=true}catch(e){}}
+function warnModal(list){const last=Math.max(...list.map(w=>w.at||0));
+  openModal(`<div class="mh"><h2 id="mt">⚠️ Message from the developer</h2></div>${list.map(w=>`<p>${esc(w.m)}</p>`).join("")}<p class="hint">Repeated problems can lead to restrictions or removal of the account.</p><div class="act"><button class="pri" id="dxok">OK, I understand</button></div>`);
+  $("dxok").onclick=()=>{LS.set("tt_dxw",last);closeModal()}}
+async function dxEnforce(){
+  if(!U){const o=document.getElementById("dxban");if(o)o.remove();return}
+  const g=await dget("dgd_"+U.uid).catch(()=>null);DXG=g||{};
+  const bn=(XR&&XR.bn)||DXG.bn||null;
+  if(bn){banScreen(bn,(XR&&XR.bn)?"login":"guild");return}
+  const o=document.getElementById("dxban");if(o)o.remove();
+  const seen=LS.get("tt_dxw")||0,wn=[...((XR&&XR.wn)||[]),...(DXG.wn||[])].filter(w=>(w.at||0)>seen);
+  if(wn.length&&!document.getElementById("modal-open"))warnModal(wn)}
+{const _p=xpull;xpull=async function(){await _p.apply(this,arguments);try{await dxEnforce()}catch(e){}}}
+if(typeof gErr!=="undefined")gErr.locked="🔒 The developer has locked this guild's vault.";
+for(const n of["gPay","gBuy"]){const f=window[n];if(typeof f==="function")window[n]=function(){if(locked("vault"))return Promise.reject(new Error("locked"));return f.apply(this,arguments)}}
+{const f=window.pubSync;if(typeof f==="function")window.pubSync=function(){if(locked("public"))return;return f.apply(this,arguments)}}
+})();
+</script>
+
+
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getFirestore,initializeFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,deleteField,runTransaction,increment,collection,query,where,documentId,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";

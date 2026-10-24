@@ -247,6 +247,10 @@ input[type=date]{width:100%;padding:10px 12px;font:inherit;border:1.5px solid va
   #sheet h1{font-size:20pt;margin:0 0 4pt}#sheet .sq{columns:2;column-gap:40pt;padding-left:22pt;line-height:2.4}#sheet .sq li{break-inside:avoid}
   #sheet h2{break-before:page;font-size:14pt}#sheet .key{font-size:11pt;line-height:1.8}
 }
+#donv{position:fixed;inset:0;z-index:35;background:var(--bg);display:flex;flex-direction:column}
+#donv .dnb{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);padding-top:calc(10px + env(safe-area-inset-top,0px))}
+#donf{flex:1;width:100%;border:0;background:var(--bg)}
+@media print{#donv{display:none!important}}
 body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
 .jp{margin-top:4px}.js{position:relative;padding-left:56px;margin-bottom:12px}.js:before{content:"";position:absolute;left:19px;top:44px;bottom:-14px;width:3px;background:var(--line)}.js:last-child:before{display:none}.js.m:before{background:var(--acc)}
 .jn{position:absolute;left:0;top:10px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--card);border:3px solid var(--line)}.js.m .jn{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}.js.nx .jn{border-color:var(--warn);box-shadow:0 0 0 5px var(--warn2)}
@@ -262,7 +266,7 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
 <header><div class="hd">
   <div class="logo"><i aria-hidden="true">✖</i>Table Trainer</div><div class="sp"></div>
   <div class="lvl" id="sc" style="gap:12px"></div><div class="lvl"><span id="lv">Lv 1</span><div class="bar"><b id="xpb" style="width:0"></b></div><span class="lg" id="xpt"></span></div>
-  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="tmrb" hidden aria-label="Daily practice time"></button><span class="um" id="um"><button class="ib" id="acct" aria-haspopup="menu" aria-expanded="false" aria-controls="umenu"></button><div class="umenu" id="umenu" role="menu" aria-label="Account menu" hidden></div></span><button class="ib" id="lgo" hidden aria-label="Sign out" title="Sign out">🚪<span class="lgt"> Sign out</span></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
+  <button class="ib" id="hedit" hidden>✏️ Edit profile</button><button class="ib" id="tmrb" hidden aria-label="Daily practice time"></button><span class="um" id="um"><button class="ib" id="acct" aria-haspopup="menu" aria-expanded="false" aria-controls="umenu"></button><div class="umenu" id="umenu" role="menu" aria-label="Account menu" hidden></div></span><button class="ib" id="lgo" hidden aria-label="Sign out" title="Sign out">🚪<span class="lgt"> Sign out</span></button><button class="ib" id="dnb" aria-label="Donate" title="Support Table Trainer">💝<span class="lgt"> Donate</span></button><button class="ib" id="theme" aria-label="Toggle theme">🌓</button><button class="ib" id="cfg" aria-label="Settings">⚙️</button>
 </div></header>
 
 <div class="app">
@@ -286,12 +290,13 @@ body.jr aside{display:none}body.jr .app{grid-template-columns:1fr}
   <div id="view" tabindex="-1"><div class="card" style="text-align:center">Loading Table Trainer…</div></div><noscript><div class="card">Table Trainer needs JavaScript. Please enable it in your browser.</div></noscript>
 </main>
 </div>
-<footer class="ft">Table Trainer · Progress is saved on this device and syncs to your guild when you are signed in. <a href="privacy.html">Privacy</a></footer>
+<footer class="ft">Table Trainer · Progress is saved on this device and syncs to your guild when you are signed in. <a href="privacy.html">Privacy</a> · <a href="donate.html" id="dnf">💝 Donate</a></footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div id="auth" hidden></div>
 <div id="pubv" hidden></div>
 <div id="modal" hidden></div>
+<div id="donv" hidden role="dialog" aria-modal="true" aria-label="Donate"><div class="dnb"><b>💝 Donate</b><span class="sp"></span><a class="sm" href="donate.html" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">Open in new tab ↗</a><button class="sm" id="donx">Close</button></div><iframe id="donf" title="Donate" loading="lazy"></iframe></div>
 <div id="sheet" class="printonly" aria-hidden="true"></div>
 <script>
 /* =====================================================================
@@ -475,6 +480,12 @@ const ixFa=async(h,u,on)=>{const d=await ixDoc(h),f=(d.fa||[]).filter(x=>x!==u);
 async function resolve(u){for(let i=0;i<8&&u;i++){const a=await dget(u);if(a&&!a.mergedInto)return a;if(a){u=a.mergedInto;continue}const r=await dget("r_"+u);if(!r||!r.to)return null;u=r.to}return null}
 const accXp=a=>Object.values(a.logins||{}).reduce((x,l)=>x+(l.t&&l.s?l.s.xp||0:0),0)+((a.base||{}).xp||0);
 const allAdmin=L=>Object.fromEntries(Object.keys(L).filter(k=>L[k].t).map(k=>[k,"admin"]));
+/* Roles: super > admin > member. A guild must always have a Super admin: if it has none, every active login becomes Super (legacy authority). */
+const RANK={member:0,admin:1,super:2},rk=r=>RANK[r]||0,ROLES=["super","admin","member"];
+const roleLab=r=>r==="super"?"👑 Super admin":r==="admin"?"🛡️ Admin":"Member";
+function normRoles(ro,L){L=L||{};const o={...(ro||allAdmin(L))},act=Object.keys(L).filter(k=>L[k]&&L[k].t);
+  if(!act.length||act.some(k=>o[k]==="super"))return o;act.forEach(k=>o[k]="super");return o}
+const rolesFix=a=>normRoles(a.roles,a.logins);
 const EPOCH_MS=60*60*1000; /* merge window: all merges inside one window are consolidated together when it ends (use 5*60*1000 while testing) */
 const curEp=()=>Math.floor(Date.now()/EPOCH_MS);
 /* ID recycling: when guilds merge, their old User IDs are deleted and placed in the pool "idpool". An ID rests for RECYCLE_AFTER_MS
@@ -508,7 +519,7 @@ function flush(){
 }
 addEventListener("pagehide",flush);document.addEventListener("visibilitychange",()=>{if(document.hidden)flush()});
 async function poll(){if(!U||document.hidden)return;try{let a=await dget(U.uid);if(a&&!a.mergedInto&&a.pend&&a.pend<curEp()){await consolidate(a.pend);a=await dget(U.uid);if(a&&!a.mergedInto&&a.pend)dupd(U.uid,{pend:null}).catch(()=>{})}if(!a||a.mergedInto){const z=await resolve(U.uid);if(z&&z.uid!==U.uid&&z.logins&&z.logins[U.h]&&z.logins[U.h].t){login(z,U.h,0,U.uid);toast("Your guild was merged into "+z.uid);return}signOut(a?"This guild was merged. Please sign in again.":"This login was removed from the guild.",1);return}if(!a.logins||!a.logins[U.h]||!a.logins[U.h].t){signOut("This login was removed from the guild.",1);return}
-  U.name=a.name;U.profile=a.profile||{};U.lock=!!a.lock;U.base=a.base||null;U.logins=a.logins;U.roles=a.roles||allAdmin(a.logins);U.tree=a.tree||null;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp());gLoad(a);gAuto();adminFallback();if(++POLLN%4===0)socInit();acctBtn();hud();if(dashOn&&!A().contains(document.activeElement))renderDash()}catch(e){}}
+  U.name=a.name;U.profile=a.profile||{};U.lock=!!a.lock;U.base=a.base||null;U.logins=a.logins;U.roles=rolesFix(a);U.jr=a.jr||null;U.pc=a.pc||{};U.tree=a.tree||null;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp());gLoad(a);gAuto();adminFallback();if(++POLLN%4===0)socInit();acctBtn();hud();if(dashOn&&!A().contains(document.activeElement))renderDash()}catch(e){}}
 
 const phoneField=p=>`<label for="${p}c">Country (pick or type a name)</label><div class="ph2"><input type="text" id="${p}c" list="cl" value="India" autocomplete="off"><input type="text" id="${p}k" value="+91" inputmode="tel" aria-label="Country code"></div><label for="${p}n">Phone number</label><input type="text" id="${p}n" inputmode="numeric" placeholder="Phone number" autocomplete="off">`;
 const wire=(p,btn)=>{$(p+"c").oninput=()=>{const c=COUNTRIES.find(x=>x.n.toLowerCase()===$(p+"c").value.trim().toLowerCase());if(c)$(p+"k").value="+"+c.c};$(p+"n").onkeydown=e=>{if(e.key==="Enter")$(btn).click()}};
@@ -554,7 +565,7 @@ function authSignup(l){
   shell(`<h2>Create your account</h2><p class="hint" style="margin:0">${esc(l.m)} isn't linked to an account yet. Pick a display name. Your unique User ID is created automatically, and you can link more emails and phones later.</p><label for="nm">Display name (up to 30 characters, anything)</label><input type="text" id="nm" maxlength="30" autocomplete="nickname">${msgH("")}<button class="pri" id="go2">Create account</button><button class="sm" id="bk" style="margin-top:10px">Back</button>`);
   $("bk").onclick=()=>authHome();$("nm").focus();$("nm").onkeydown=e=>{if(e.key==="Enter")$("go2").click()};
   $("go2").onclick=guard("go2",async()=>{const nm=cleanName($("nm").value);if(!nm){$("er").textContent="Enter a display name.";return}
-    const uid=await newUid(),a={uid,name:nm,created:Date.now(),lock:false,logins:{[l.h]:mkLogin(l,P)},roles:{[l.h]:"admin"}};
+    const uid=await newUid(),a={uid,name:nm,created:Date.now(),lock:false,logins:{[l.h]:mkLogin(l,P)},roles:{[l.h]:"super"}};
     await dset(uid,a);await ixAdd(l.h,uid);login(a,l.h,true)});
 }
 function authJoin(){
@@ -569,14 +580,15 @@ function authJoin(){
     const id=a.uid;
     if((await ixGet(l.h)).includes(id)){$("er").textContent="That email or phone is already in this guild. Go back and sign in.";return}
     if(a.lock){$("er").textContent="This guild is closed to new members right now.";return}
-    const lg=mkLogin(l),ro0=a.roles||allAdmin(a.logins),ro={...ro0,[l.h]:"member"},up={["logins."+l.h]:lg},fa=a.fa||{};
-    const headless=!hasAdmin(ro0,a.logins);let note="";
-    if(headless){
-      if(!Object.keys(fa).length){ro[l.h]="admin";note="You are the first member of a guild with no admin history, so you are its admin."}
-      else if(fa[l.h]){ro[l.h]="admin";up["fa."+l.h]=null;note="Welcome back. You were an admin here before, so your authority is restored."}
-      else{up["ar."+l.h]={m:l.m,at:Date.now()};a.ar={...(a.ar||{}),[l.h]:{m:l.m,at:Date.now()}};note="This guild has no admin. Your request was sent to the previous admins; they will be asked the next time they sign in."}
+    const lg=mkLogin(l),ro0=rolesFix(a),jr=ROLES.includes(a.jr)?a.jr:"member",ro={...ro0,[l.h]:jr},up={["logins."+l.h]:lg},fa=a.fa||{};
+    const act=Object.keys(a.logins||{}).filter(k=>a.logins[k]&&a.logins[k].t);let note="";
+    if(jr==="super")note="You joined as a Super admin.";else if(jr==="admin")note="You joined as an admin.";
+    if(!act.length){
+      if(!Object.keys(fa).length){ro[l.h]="super";note="You are the first member of a guild with no admin history, so you are its Super admin."}
+      else if(fa[l.h]){ro[l.h]="super";up["fa."+l.h]=null;note="Welcome back. You were an admin here before, so your authority is restored."}
+      else{ro[l.h]="member";up["ar."+l.h]={m:l.m,at:Date.now()};a.ar={...(a.ar||{}),[l.h]:{m:l.m,at:Date.now()}};note="This guild has no admin. Your request was sent to the previous admins; they will be asked the next time they sign in."}
     }
-    up.roles=ro;await dupd(id,up);await ixAdd(l.h,id);if(fa[l.h]&&ro[l.h]==="admin")ixFa(l.h,id,false).catch(()=>{});
+    up.roles=ro;await dupd(id,up);await ixAdd(l.h,id);if(fa[l.h]&&rk(ro[l.h])>=1)ixFa(l.h,id,false).catch(()=>{});
     a.logins[l.h]=lg;a.roles=ro;login(a,l.h);if(note)setTimeout(()=>toast(note),1800)});
 }
 function authLegacy(c){
@@ -586,23 +598,32 @@ function authLegacy(c){
     const p=readPhone("v");if(p.err){$("er").textContent=p.err;return}
     const lh=await H(c.l.v+"|"+p.full);
     if(!(c.d.phones||[]).some(x=>x.h===lh)){if(++fails>=5){lockUntil=Date.now()+3e4;fails=0}$("er").textContent="That number isn't linked to this email.";return}
-    fails=0;const ph=await H("l:"+p.full),uid=await newUid(),a={uid,name:cleanName(c.d.name||"")||"Player",created:Date.now(),lock:false,logins:{[c.l.h]:mkLogin(c.l,norm(c.d.prog))},roles:{[c.l.h]:"admin"}},pi=(await ixGet(ph)).length;
-    if(!pi){a.logins[ph]=mkLogin({t:"phone",m:p.disp});a.roles[ph]="admin"}
+    fails=0;const ph=await H("l:"+p.full),uid=await newUid(),a={uid,name:cleanName(c.d.name||"")||"Player",created:Date.now(),lock:false,logins:{[c.l.h]:mkLogin(c.l,norm(c.d.prog))},roles:{[c.l.h]:"super"}},pi=(await ixGet(ph)).length;
+    if(!pi){a.logins[ph]=mkLogin({t:"phone",m:p.disp});a.roles[ph]="super"}
     await dset(uid,a);await ixAdd(c.l.h,uid);if(!pi)await ixAdd(ph,uid);login(a,c.l.h,true)});
 }
 function login(a,h,isNew,from){
-  U={uid:a.uid,name:a.name,created:a.created||Date.now(),profile:a.profile||{},h,logins:a.logins,lock:!!a.lock,base:a.base||null,roles:a.roles||allAdmin(a.logins),tree:a.tree||null,noMerge:!!a.noMerge,parents:a.parents||null,recycled:!!a.recycled,ep:null};gLoad(a);P=norm(a.logins[h].s);applyOut(a.uid,h);reclaim(a.uid,h,from);LS.set("tt_sess",{uid:a.uid,h});
+  U={uid:a.uid,name:a.name,created:a.created||Date.now(),profile:a.profile||{},h,logins:a.logins,lock:!!a.lock,base:a.base||null,roles:rolesFix(a),jr:a.jr||null,pc:a.pc||{},tree:a.tree||null,noMerge:!!a.noMerge,parents:a.parents||null,recycled:!!a.recycled,ep:null};gLoad(a);P=norm(a.logins[h].s);applyOut(a.uid,h);reclaim(a.uid,h,from);LS.set("tt_sess",{uid:a.uid,h});
   setTimeout(poll,1200);A().hidden=true;acctBtn();toast(isNew?`Account created. Your User ID: ${a.uid}`:`Welcome back, ${U.name}!`);
-  sync();update();flush();clearInterval(pollT);pollT=setInterval(poll,25000);pubT=0;setTimeout(async()=>{await ensureIds();autoLink();setTimeout(()=>{pubSync();healUn()},2500);socInit();adminInbox()},800);setTimeout(adminProbe,3000);if(PV)showPublic(PV);
+  sync();update();flush();clearInterval(pollT);pollT=setInterval(poll,25000);pubT=0;setTimeout(async()=>{await ensureIds();autoLink();setTimeout(()=>{pubSync();healUn()},2500);socInit();adminInbox()},800);setTimeout(adminProbe,3000);setTimeout(superHeal,1500);if(PV)showPublic(PV);
 }
 function signOut(msg="",skip){if(U&&!skip)flush();clearInterval(st.timer);clearInterval(pollT);try{localStorage.removeItem("tt_sess")}catch(e){}U=null;P=norm();acctBtn();update();if(PV)showPublic(PV);authHome(msg)}
 
 /* ---------- Account dashboard (guild, logins, merging) · opened from the user menu ---------- */
-const isAdmin=()=>!!(U&&U.roles&&U.roles[U.h]==="admin");
+const isAdmin=()=>!!(U&&U.roles&&rk(U.roles[U.h])>=1);
+const isSuper=()=>!!(U&&U.roles&&U.roles[U.h]==="super");
+const jrOf=()=>ROLES.includes(U&&U.jr)?U.jr:"member";
 const nodeOf=a=>a.tree||{u:a.uid,n:a.name,xp:accXp(a),at:a.created,k:[]};
 const treeH=n=>`<li><b>${esc(n.n)}</b> <span class="hint">${esc(n.u)} · ${n.xp} XP${n.k.length?" · merged "+new Date(n.at).toLocaleDateString():""}</span>${n.k.length?`<ul class="tree">${n.k.map(treeH).join("")}</ul>`:""}</li>`;
 const rid=n=>[...crypto.getRandomValues(new Uint8Array(n))].map(x=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[x%32]).join("");
-async function refresh(){const a=await dget(U.uid);if(!a||a.mergedInto)return poll();U.profile=a.profile||{};U.logins=a.logins;U.base=a.base||null;U.roles=a.roles||allAdmin(a.logins);U.tree=a.tree||null;U.name=a.name;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp())}
+/* if a guild has no Super admin, every active login becomes Super (saved once, atomically) */
+async function superHeal(){
+  if(!U)return;try{const F=await fbp();let ch=null;
+    await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)return;const r=normRoles(a.roles,a.logins);
+      if(a.roles&&JSON.stringify(Object.entries(r).sort())===JSON.stringify(Object.entries(a.roles).sort()))return;
+      const up={roles:r};if(!a.jr)up.jr="super";t.upd(U.uid,up);ch=r});
+    if(ch){U.roles=ch;if(!U.jr)U.jr="super";toast("👑 This guild had no Super admin, so every member is now a Super admin. Supers can change roles in the Dashboard.")}}catch(e){}}
+async function refresh(){const a=await dget(U.uid);if(!a||a.mergedInto)return poll();U.profile=a.profile||{};U.logins=a.logins;U.base=a.base||null;U.roles=rolesFix(a);U.jr=a.jr||null;U.pc=a.pc||{};U.tree=a.tree||null;U.name=a.name;U.noMerge=!!a.noMerge;U.parents=a.parents||null;U.recycled=!!a.recycled;U.ep=await dget("e_"+curEp())}
 
 /* ---- merge windows: merges queue as edges inside an hourly epoch doc (e_<hour>). When the hour ends, every connected
    group of guilds is consolidated into ONE new guild by an atomic transaction. Nothing is locked while the hour is open. ---- */
@@ -619,10 +640,10 @@ function buildZ(accs,zid,edges,ep){
       for(const h in b.by||{}){const e=base.by[h]||(base.by[h]={m:b.by[h].m,t:b.by[h].t,xp:0,ans:0,ok:0,left:b.by[h].left});e.xp+=b.by[h].xp||0;e.ans+=b.by[h].ans||0;e.ok+=b.by[h].ok||0}}
     for(const[h,l]of Object.entries(a.logins)){if(!l.t)continue;const s=norm(l.s);base.xp+=s.xp;base.ans+=s.ans;base.ok+=s.ok;add(s.dh,base.dh);
       const e=base.by[h]||(base.by[h]={m:l.m,t:l.t,xp:0,ans:0,ok:0});e.xp+=s.xp;e.ans+=s.ans;e.ok+=s.ok;
-      s.xp=s.ans=s.ok=0;s.dh={};if(!logins[h])logins[h]={...l,s};roles[h]=roles[h]==="admin"||ro[h]==="admin"?"admin":"member"}}
+      s.xp=s.ans=s.ok=0;s.dh={};if(!logins[h])logins[h]={...l,s};roles[h]=rk(roles[h])>=rk(ro[h])?(roles[h]||"member"):ro[h]}}
   for(const h in base.by){if(logins[h]||base.by[h].left===undefined)delete base.by[h].left}
   const top=[...accs].sort((p,q)=>accXp(q)-accXp(p))[0];
-  return{...gMerge(accs),...(top.fid?{fid:top.fid}:{}),...(top.jc?{jc:top.jc}:{}),fa:faMerge(accs,Object.keys(logins)),uid:zid,name:top.name,created:now,lock:false,logins,roles,base,profile:top.profile||{},parents:base.from,ep,
+  return{...gMerge(accs),...(top.fid?{fid:top.fid}:{}),...(top.jc?{jc:top.jc}:{}),...(top.pc?{pc:top.pc}:{}),gi:Object.assign({},...accs.map(a=>a.gi||{})),...(top.jr?{jr:top.jr}:{}),fa:faMerge(accs,Object.keys(logins)),uid:zid,name:top.name,created:now,lock:false,logins,roles:normRoles(roles,logins),base,profile:top.profile||{},parents:base.from,ep,
     tree:{u:zid,n:top.name,xp:base.xp,at:now,k:accs.map(nodeOf)},log:edges.map(g=>({a:g.na,b:g.nb,m:g.bm,at:g.at}))};
 }
 async function consolidate(ep){
@@ -679,21 +700,23 @@ async function cancelEdge(eid,id){
 function renderDash(msg=""){
   const t=dn(),T=tot(),acc=T.ans?Math.round(T.ok/T.ans*100):0,adm=isAdmin(),b=U.base,by=(b&&b.by)||{};
   const L=Object.entries(U.logins).filter(([,l])=>l.t).map(([h,l])=>({h,l,s:h===U.h?P:norm(l.s)})).sort((a,c)=>(c.h===U.h)-(a.h===U.h)||(c.l.last||0)-(a.l.last||0));
-  const nAdm=L.filter(x=>U.roles[x.h]==="admin").length;
+  const sup=isSuper(),nSup=L.filter(x=>U.roles[x.h]==="super").length,vr=rk(U.roles[U.h]);
   const rows=L.map(({h,l,s})=>{const me=h===U.h,role=U.roles[h]||"member",fresh=!me&&Date.now()-l.add<864e5,share=T.xp?Math.round(s.xp/T.xp*100):0,ac=s.ans?Math.round(s.ok/s.ans*100):0,mx=Math.max(1,...Array.from({length:7},(_,i)=>s.dh[t-i]||0));
     const bars=Array.from({length:7},(_,i)=>{const v=s.dh[t-6+i]||0;return`<i style="height:${Math.max(3,Math.round(v/mx*30))}px" title="${v} XP"></i>`}).join("");
-    const btn=`${adm&&role==="member"&&nAdm<5?`<button class="sm" data-rl="${h}:admin">Make admin</button>`:""}${adm&&role==="admin"&&nAdm>1?`<button class="sm" data-rl="${h}:member">Make member</button>`:""}${adm||me?`<button class="sm dg" data-rm="${h}">${me?"Leave":"Remove"}</button>`:""}`;
-    return`<div class="lr ${me?"me":""}"><div class="lh"><span class="ic">${l.t==="email"?"✉️":"📱"}</span><div class="lm"><b>${esc(l.m)}</b><div class="n"><span class="tg">${role==="admin"?"Admin":"Member"}</span>${me?`<span class="tg">This device</span>`:""}${fresh?`<span class="tg nw">New</span>`:""}Added ${ago(l.add)} · Active ${ago(l.last)} · ${esc(l.dev||"unknown device")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${btn}</div></div><div class="ls"><div><b>+${s.xp}</b>XP since joining (${share}%)</div><div><b>${s.ans}</b>answered</div><div><b>${ac}%</b>accuracy</div><div><b>+${s.dh[t]||0}</b>XP today</div><div><div class="sp7" title="Last 7 days">${bars}</div>7 days</div></div><div class="shb"><b style="width:${share}%"></b></div></div>`}).join("");
+    const canSet=sup&&!(role==="super"&&nSup<2),canRm=me||sup||(vr===1&&role==="member"),btn=`${canSet?ROLES.filter(x=>x!==role).map(x=>`<button class="sm" data-rl="${h}:${x}">Make ${x}</button>`).join(""):""}${canRm?`<button class="sm dg" data-rm="${h}">${me?"Leave":"Remove"}</button>`:""}`;
+    return`<div class="lr ${me?"me":""}"><div class="lh"><span class="ic">${l.t==="email"?"✉️":"📱"}</span><div class="lm"><b>${esc(l.m)}</b><div class="n"><span class="tg">${roleLab(role)}</span><span class="tg">${esc(pubNm(l,U.logins))}</span>${me?`<span class="tg">This device</span>`:""}${fresh?`<span class="tg nw">New</span>`:""}Added ${ago(l.add)} · Active ${ago(l.last)} · ${esc(l.dev||"unknown device")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${btn}</div></div><div class="ls"><div><b>+${s.xp}</b>XP since joining (${share}%)</div><div><b>${s.ans}</b>answered</div><div><b>${ac}%</b>accuracy</div><div><b>+${s.dh[t]||0}</b>XP today</div><div><div class="sp7" title="Last 7 days">${bars}</div>7 days</div></div><div class="shb"><b style="width:${share}%"></b></div></div>`}).join("");
   const led={};for(const h in by)led[h]={m:by[h].m,t:by[h].t,x:by[h].xp};
   for(const r of L){const e=led[r.h]||(led[r.h]={m:r.l.m,t:r.l.t,x:0});e.x+=r.s.xp;e.cur=true}
   const unattr=Math.max(0,(b?b.xp:0)-Object.values(by).reduce((a,e)=>a+e.xp,0));
-  const ledH=Object.entries(led).sort((a,c)=>c[1].x-a[1].x).map(([h,e])=>`<div class="lg2"><span>${e.t==="email"?"✉️":"📱"} ${esc(e.m)} <span class="tg">${e.cur?(U.roles[h]==="admin"?"Admin":"Member"):"Former"}</span>${!e.cur&&adm?` <button class="sm" data-back="${esc(h)}">↩️ Add back</button>`:""}</span><b>${e.x} XP · ${T.xp?Math.round(e.x/T.xp*100):0}%</b></div>`).join("")+(unattr?`<div class="lg2"><span>Earlier history (not attributed)</span><b>${unattr} XP</b></div>`:"");
+  const ledH=Object.entries(led).sort((a,c)=>c[1].x-a[1].x).map(([h,e])=>`<div class="lg2"><span>${e.t==="email"?"✉️":"📱"} ${esc(e.m)} <span class="tg">${e.cur?roleLab(U.roles[h]||"member"):"Former"}</span>${!e.cur&&adm?` <button class="sm" data-back="${esc(h)}">↩️ Add back</button>`:""}</span><b>${e.x} XP · ${T.xp?Math.round(e.x/T.xp*100):0}%</b></div>`).join("")+(unattr?`<div class="lg2"><span>Earlier history (not attributed)</span><b>${unattr} XP</b></div>`:"");
   const ep=U.ep,cmp=ep&&ep.status!=="done"?components(ep.edges).find(c=>c.includes(U.uid)):null;let mgH="";
   if(cmp)mgH=`<div class="lr me"><b>Temporary group ${tmpId(cmp)}</b> <span class="tg nw">${cmp.length} guilds</span><div class="hint" style="margin:4px 0 8px">Merges made this hour are collected under a temporary ID. In <b id="cd">…</b> everything is consolidated into one final guild with a new User ID, and every login moves there automatically.</div>${ep.edges.filter(g=>cmp.includes(g.a)||cmp.includes(g.b)).map(g=>`<div class="lg2" ${g.x?`style="text-decoration:line-through;opacity:.6"`:""}><span>${esc(g.na)} + ${esc(g.nb)}<div class="hint" style="margin:0">${esc(g.bm)} · ${ago(g.at)}</div></span>${!g.x&&adm&&(g.a===U.uid||g.b===U.uid)?`<button class="sm dg" data-ce="${g.id}">Cancel</button>`:""}</div>`).join("")}</div>`;
   mgH+=`<p class="hint" style="margin:0 0 4px">Anyone in a guild can merge it with another guild at any time. Merges are collected for the hour, then every connected guild is combined into one new guild: all emails and phones, all scores and the full history. The new guild takes a User ID from the pool of IDs released by earlier merges (or a fresh one), and the old IDs are deleted and returned to the pool. Admins of either guild can cancel until the hour ends. After that it can't be undone.</p><label for="my">Invite code of the other guild</label><input type="text" id="my" placeholder="GD-XXXXXXXX" autocomplete="off" autocapitalize="characters"><div class="er" id="er2"></div><button class="sm" id="mg">Merge</button><div class="hint" id="poolinfo" style="margin-top:10px"></div>`;
   shell(`<div class="dh"><div class="av">${esc(Array.from(U.name)[0]||"?")}</div><div style="flex:1;min-width:0"><div class="two" style="grid-template-columns:1fr auto"><input type="text" id="dn" maxlength="30" value="${esc(U.name)}" aria-label="Guild name" ${adm?"":"disabled"}><button class="sm" id="sn" ${adm?"":"disabled"}>Save</button></div><div class="hint" style="margin-top:6px">Private account ID <b>${esc(U.uid)}</b> <button class="sm" id="cp">Copy</button><div style="margin-top:4px">Used for certificates and recovery. Never share it. Friends use your Friend ID; new members use the guild invite code.</div></div>${U.parents&&U.parents.length?`<div class="hint" style="margin-top:6px">Formed by merging ${U.parents.map(esc).join(", ")}. Those IDs are retired and released for future merges${U.recycled?"; this User ID was recycled from an earlier merge":""}.</div>`:""}</div></div>
   <div class="ph" style="margin-top:14px"><div><b>${Math.floor(T.xp/100)+1}</b>level</div><div><b>${T.xp}</b>total XP</div><div><b>${acc}%</b>accuracy</div><div><b>${L.length}</b>logins</div></div>
-  ${succH()}<h2>Members and logins</h2><p class="hint" style="margin:0 0 10px">Admins manage the guild. Members can only leave. Don't recognise a login? An admin can remove it.</p>${rows}
+  ${succH()}<h2>Your public name</h2><p class="hint" style="margin:0 0 6px">Shown in Who paid, Vault activity and on the public guild page instead of your email or phone.</p><div class="two" style="grid-template-columns:1fr auto"><input type="text" id="pnm" maxlength="24" value="${esc((U.logins[U.h]||{}).dn||"")}" placeholder="${esc(pubNm(U.logins[U.h]||{},U.logins))}" aria-label="Public name"><button class="sm" id="pns">Save</button></div>
+  ${sup?`<h2>Roles and new joiners</h2><p class="hint" style="margin:0 0 6px">Super admins manage everything, including admins and perk prices. Admins spend the vault and manage members. New joiners get the role below; people already in the guild keep theirs.</p><div class="two" style="grid-template-columns:1fr auto"><select id="jrs" aria-label="Role for new joiners">${ROLES.map(r=>`<option value="${r}" ${jrOf()===r?"selected":""}>New joiners become: ${roleLab(r)}</option>`).join("")}</select><button class="sm" id="jrb">Save</button></div>`:""}
+  <h2>Members and logins</h2><p class="hint" style="margin:0 0 10px">👑 Super admins manage everyone. 🛡️ Admins manage members and spend the vault. Members can only leave. Don't recognise a login? An admin can remove it.</p>${rows}
   <h2>Contribution ledger</h2><p class="hint" style="margin:0 0 6px">Everyone who ever contributed, including former members and logins from merged guilds.</p>${ledH}
   ${U.tree?`<h2>Merge tree</h2><ul class="tree" style="margin-left:0;border:0;padding:0">${treeH(U.tree)}</ul>`:""}
   <h2>Merge guilds</h2>${mgH}
@@ -710,7 +733,7 @@ function renderDash(msg=""){
     $("nm2").onchange=async e=>{try{await dupd(U.uid,{noMerge:e.target.checked});U.noMerge=e.target.checked}catch(x){renderDash("Couldn't update. Check your connection.")}};
     $("ad").onclick=guard("ad",async()=>{const l=await rl("a");if(l.err){$("er").textContent=l.err;return}
       if((await ixGet(l.h)).includes(U.uid)){$("er").textContent="That login is already on this guild.";return}
-      const lg=mkLogin(l),ro={...U.roles,[l.h]:"member"};await dupd(U.uid,{["logins."+l.h]:lg,roles:ro});await ixAdd(l.h,U.uid);U.logins[l.h]=lg;U.roles=ro;renderDash("✅ Login added as a member.")});
+      const nr=isSuper()?jrOf():"member",lg=mkLogin(l),ro={...U.roles,[l.h]:nr};await dupd(U.uid,{["logins."+l.h]:lg,roles:ro});await ixAdd(l.h,U.uid);U.logins[l.h]=lg;U.roles=ro;renderDash("✅ Login added as "+nr+".")});
   }
   $("mg").onclick=guard("mg",async()=>{const e=$("er2"),code=$("my").value.trim().toUpperCase();e.textContent="";
     if(!JC_RE.test(code)){e.textContent="Enter the other guild's invite code (GD-…). Ask one of its admins.";return}
@@ -720,20 +743,23 @@ function renderDash(msg=""){
     try{await proposeMerge(id)}catch(x){if(x.message==="noacct"){const r=await dget("r_"+id);if(r&&r.to){e.textContent="That guild was merged. Use its new User ID: "+r.to;return}}const M={noacct:"No guild found with that User ID.",merged:"A guild was already merged. Use its newer User ID.",blocked:"That guild doesn't accept merges.",closing:"This hour is closing. Try again in a moment.",full:"Too many merges this hour. Try next hour.",dup:"That merge is already queued this hour."};if(M[x.message]){e.textContent=M[x.message];return}throw x}
     await refresh();renderDash("✅ Merge queued. The final guild is created when the hour ends.")});
   A().querySelectorAll("[data-ce]").forEach(b=>b.onclick=async()=>{try{await cancelEdge("e_"+curEp(),b.dataset.ce);await refresh();renderDash("Merge cancelled.")}catch(e){renderDash("Couldn't cancel. It may have just closed.")}});
-  A().querySelectorAll("[data-rl]").forEach(b=>b.onclick=async()=>{const[h,r]=b.dataset.rl.split(":"),ro={...U.roles,[h]:r};try{await dupd(U.uid,{roles:ro});U.roles=ro;renderDash("✅ Role updated.")}catch(e){renderDash("Couldn't update. Check your connection.")}});
+  A().querySelectorAll("[data-rl]").forEach(b=>b.onclick=async()=>{const[h,r]=b.dataset.rl.split(":");try{const F=await fbp();let ro;await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("gone");const cur=rolesFix(a);if(cur[U.h]!=="super")throw new Error("super");if(!a.logins[h]||!ROLES.includes(r))throw new Error("gone");const n={...cur,[h]:r};if(!Object.keys(n).some(k=>a.logins[k]&&a.logins[k].t&&n[k]==="super"))throw new Error("last");t.upd(U.uid,{roles:n});ro=n});U.roles=ro;renderDash("✅ Role updated.")}catch(e){renderDash(e.message==="last"?"There must always be at least one Super admin.":e.message==="super"?"Only Super admins can change roles.":"Couldn't update. Check your connection.")}});
+  const pns=$("pns");if(pns)pns.onclick=async()=>{const v=cleanName($("pnm").value).slice(0,24);try{await dupd(U.uid,{["logins."+U.h+".dn"]:v||null});if(v)U.logins[U.h].dn=v;else delete U.logins[U.h].dn;pubSync(true);renderDash("✅ Public name saved.")}catch(e){renderDash("Couldn't save. Check your connection.")}};
+  const jrb=$("jrb");if(jrb)jrb.onclick=async()=>{const v=$("jrs").value;if(!isSuper()||!ROLES.includes(v))return;try{await dupd(U.uid,{jr:v});U.jr=v;renderDash("✅ New joiners will become "+v+".")}catch(e){renderDash("Couldn't save. Check your connection.")}};
   A().querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>rmLogin(b.dataset.rm));bindSucc();
 }
 async function rmLogin(h){
   const l=U.logins[h],me=h===U.h;
-  const nAct=Object.values(U.logins).filter(x=>x.t).length,nAdm=Object.keys(U.logins).filter(k=>U.logins[k].t&&U.roles[k]==="admin").length,wasAdm=U.roles[h]==="admin";
+  const nAct=Object.values(U.logins).filter(x=>x.t).length,nSup=Object.keys(U.logins).filter(k=>U.logins[k].t&&U.roles[k]==="super").length,wasAdm=rk(U.roles[h])>=1,vr=rk(U.roles[U.h]),tr=rk(U.roles[h]);
+  if(!me&&!(vr===2||(vr===1&&tr===0))){alert("Only a Super admin can remove admins, and only admins can remove members.");return}
   let warn="";
   if(nAct<2)warn="This is the last login. The guild stays dormant: its vault, history and invite code are kept. The next person who joins with the invite code asks your previous admins for authority.\n\n";
-  else if(wasAdm&&nAdm<2)warn="This is the last admin. Members can keep playing, but nobody can spend the vault until a new admin is approved by the previous admins.\n\n";
+  else if(U.roles[h]==="super"&&nSup<2)warn="This is the last Super admin. Everyone who stays in the guild becomes a Super admin automatically.\n\n";
   if(!confirm(warn+`${me?"Leave the guild with":"Remove"} ${l.m}?`))return;
   const keep=confirm(`Keep ${me?"your":"their"} contribution in the guild history?\n\nOK = keep it in the ledger (they did contribute).\nCancel = subtract it from the total (use for logins you don't know).`);
   try{const F=await fbp();
     await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("x");const lg=a.logins[h];if(!lg)return;
-      const s=h===U.h?P:norm(lg.s),o={["logins."+h]:null,["roles."+h]:null,["ar."+h]:null};if(((a.roles||allAdmin(a.logins))[h])==="admin")o["fa."+h]={m:lg.m,at:Date.now()};
+      const s=h===U.h?P:norm(lg.s),o={["logins."+h]:null,["ar."+h]:null};{const cr=rolesFix(a);if(rk(cr[h])>=1)o["fa."+h]={m:lg.m,at:Date.now()};const rest={...a.logins};delete rest[h];delete cr[h];const nr=normRoles(cr,rest);o.roles=nr;if(Object.keys(rest).some(k=>rest[k].t)&&!Object.values(cr).includes("super")&&!a.jr)o.jr="super"}
       if(keep){const bs=a.base||{xp:0,ans:0,ok:0,dh:{},by:{},from:[],at:Date.now()},by=bs.by||{},e=by[h]||{m:lg.m,t:lg.t,xp:0,ans:0,ok:0};
         e.xp+=s.xp;e.ans+=s.ans;e.ok+=s.ok;e.left=Date.now();by[h]=e;bs.by=by;bs.xp+=s.xp;bs.ans+=s.ans;bs.ok+=s.ok;bs.dh=bs.dh||{};for(const d in s.dh)bs.dh[d]=(bs.dh[d]||0)+s.dh[d];o.base=bs}
       t.upd(U.uid,o)});
@@ -1234,7 +1260,7 @@ function vf(pr,tier){const f=pr.f||{},o={};for(const x of FIELDS){const val=Stri
 function allItems(pr){const f=pr.f||{},o=[];for(const x of FIELDS){const val=String(f[x.k]||"").trim();if(!val)continue;if(x.k==="dob"){const a=ageOf(val);if(a!==null)o.push(["dob",String(a),tierOf(pr,x)])}else o.push([x.k,val,tierOf(pr,x)])}return o}
 function buildPub(pr){
   const T=tot(),lv=Math.floor(T.xp/100)+1,fm=vf(pr,"members");
-  return{uid:U.fid||"",un:pr.un||"",name:U.name,created:U.created||Date.now(),upd:Date.now(),lvl:lv,rank:rankOf(lv),xp:T.xp,acc:T.ans?Math.round(T.ok/T.ans*100):0,cur:P.sk.cur,best:P.sk.best,ach:Object.keys(P.ach).length,achN:ACH.length,bd:Object.keys(P.ach).slice(0,80),ce:(()=>{try{return certs().slice(0,40).map(c=>({t:c.t,s:c.sub,d:c.d.ts||0}))}catch(e){return[]}})(),nm:Object.keys(fm).length,f:vf(pr,"public")};
+  return{uid:U.fid||"",un:pr.un||"",name:U.name,created:U.created||Date.now(),upd:Date.now(),lvl:lv,rank:rankOf(lv),xp:T.xp,acc:T.ans?Math.round(T.ok/T.ans*100):0,cur:P.sk.cur,best:P.sk.best,ach:Object.keys(P.ach).length,achN:ACH.length,bd:Object.keys(P.ach).slice(0,80),ce:(()=>{try{return certs().slice(0,40).map(c=>({t:c.t,s:c.sub,d:c.d.ts||0}))}catch(e){return[]}})(),nm:Object.keys(fm).length,vp:(()=>{try{return vaultPub()}catch(e){return null}})(),f:vf(pr,"public")};
 }
 function buildMem(pr){
   const T=tot(),t=dn();let mast="";
@@ -1362,7 +1388,7 @@ function pvHTML(p,m,who,items){
   }else{
     mem=`<div class="card lk2"><div class="big" style="margin:0 0 6px">🔒 More details for signed-in users</div><p class="hint" style="margin:0 0 12px">Sign in with any Table Trainer account to see the mastery map, achievements, 14-day activity${p.nm?` and ${p.nm} more profile detail${p.nm>1?"s":""}`:""}.</p><button class="pri" data-signin>Sign in to unlock</button></div>`;
   }
-  return hero+kp+sec("About",about)+sec("Education",edu)+sec("Work and skills",work)+sec("Hobbies and interests",hob)+sec("Social profiles",soc?`<div class="pills">${soc}</div>`:"")+sec("Gaming IDs",gm?`<div class="pills">${gm}</div>`:"")+mem
+  return hero+kp+sec("About",about)+sec("Education",edu)+sec("Work and skills",work)+sec("Hobbies and interests",hob)+sec("Social profiles",soc?`<div class="pills">${soc}</div>`:"")+sec("Gaming IDs",gm?`<div class="pills">${gm}</div>`:"")+vpH(p.vp)+mem
    +`<div class="card" style="text-align:center"><b>Want a profile like this?</b><p class="hint" style="margin:6px 0 12px">Practise multiplication tables, build streaks and share your progress.</p><button class="pri" id="pvc2">Start practising</button></div>`;
 }
 const pget=async id=>{try{return await dget(id)}catch(e){await new Promise(r=>setTimeout(r,900));return await dget(id)}};
@@ -1449,6 +1475,20 @@ function profileT(){
 }
 
 /* ---- Analytics dashboard tab ---- */
+
+/* ---------- My IDs card (Dashboard) ---------- */
+function idsH(){
+  if(!U)return`<div class="card"><h2 style="margin:0 0 4px">🆔 My IDs</h2><p class="hint" style="margin:0">Sign in to see your Account ID, Friend ID, guild invite code and linked logins.</p></div>`;
+  const un=(typeof myUn==="function"&&myUn())||"",lg=Object.values(U.logins||{}).filter(l=>l.t),em=lg.filter(l=>l.t==="email").length,ph=lg.length-em;
+  const row=(ic,lab,val,note,secret)=>val?`<div class="lg2" style="align-items:flex-start"><span><b>${ic} ${lab}</b><div class="hint" style="margin:2px 0 0">${note}</div></span><span style="text-align:right"><code style="word-break:break-all">${esc(val)}</code> <button class="sm" data-cpid="${esc(val)}">Copy</button></span></div>`:"";
+  return`<div class="card"><h2 style="margin:0 0 4px">🆔 My IDs</h2><p class="hint" style="margin:0 0 8px">Every ID linked to you, in one place. Pick the one you need.</p>
+  ${row("🔒","Account ID",U.uid,"Private. Used for certificates and recovery. Never share it.")}
+  ${row("🤝","Friend ID",U.fid||"","Public. Friends use it to follow or add you. It cannot open your account.")}
+  ${row("🔗","Public username",un?"@"+un:"","Your public page: "+(typeof SITE!=="undefined"?SITE.replace("https://",""):"")+"/"+(un||"…"))}
+  ${typeof isAdmin==="function"&&isAdmin()?row("🔑","Guild invite code",U.jc||"","Share with people who should join your guild (admins only)."):""}
+  <div class="lg2"><span><b>📇 Linked logins</b><div class="hint" style="margin:2px 0 0">All of them count as ONE player. XP from every login is added together.</div></span><span><b>${lg.length}</b> total · ✉️ ${em} · 📱 ${ph}</span></div>
+  <div class="lg2"><span><b>👤 Game name</b></span><span>${esc(U.name)}</span></div></div>`}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-cpid]");if(b){copyTxt(b.dataset.cpid);toast("Copied")}});
 function dashT(){
   const T=tot(),t=dn(),acc=T.ans?Math.round(T.ok/T.ans*100):0,lvl=Math.floor(T.xp/100)+1,need=100-T.xp%100;
   const D=n=>Array.from({length:n},(_,i)=>t-n+1+i),L30=D(30),L14=D(14);
@@ -1467,7 +1507,7 @@ function dashT(){
   if(P.sk.cur>0)ins.push(`You're on a <b>${P.sk.cur}-day streak</b>${P.sk.cur>=P.sk.best?" (a personal best!)":`. Your best is ${P.sk.best}.`}`);
   const ps=U?pscore((U.profile||{}).f||{}).s:0;
   const bars=(vals,lab,fn)=>vals.map((v,i)=>`<div class="${i===vals.length-1?"t":""}" title="${fn(v,i)}"><i style="height:${Math.max(2,v===null?2:Math.round(v))}px"></i>${lab(i)}</div>`).join("");
-  $("view").innerHTML=`<div class="stack">
+  $("view").innerHTML=`<div class="stack">${idsH()}
    <div class="bar2" style="margin:0"><h2 style="margin:0">Your dashboard</h2><span class="sp"></span><button class="sm" id="dsh">📤 Share progress</button><button class="sm" id="dcsv">⬇ Export CSV</button></div>
    <div class="ph"><div><b>${lvl}</b>level · ${rankOf(lvl)}</div><div><b>${fmt(T.xp)}</b>total XP</div><div><b>${acc}%</b>accuracy</div><div><b>${fmt(T.ans)}</b>answered</div><div><b>${P.sk.cur}🔥</b>day streak</div><div><b>${mst}</b>facts mastered</div><div><b>${due}</b>due for review</div><div><b>${act}/30</b>active days</div></div>
    <div class="cols"><div class="card"><h2 style="margin-top:0">XP, last 30 days</h2><div class="hint" style="margin:0">This week ${wk} XP${dlt===null?"":` (${dlt>=0?"+":""}${dlt}% vs last week)`}</div><div class="b14 b30">${bars(xp30.map(v=>v/mx*70),i=>i%5===4||i===29?new Date(L30[i]*864e5).getUTCDate():"&nbsp;",(v,i)=>xp30[i]+" XP")}</div></div>
@@ -2099,7 +2139,7 @@ function boardsT(){
   const loc=X.xd||{};
   const hist=Array.from({length:14},(_,i)=>t-i).map(d=>[d,loc[d]||0,X.ans[d]||0,Math.round((X.td[d]||0)/60)]);
   $("view").innerHTML=`<div class="card"><h2 style="margin:0">🏆 Leaderboards</h2><p class="hint">Ranked by XP earned in the period. ${U?"":"Sign in to appear on the boards. "}Names show first name and last initial. You can hide yourself in Settings.</p>
-  <div class="seg" id="b1">${[["ind","Individuals"],["gld","Guilds"]].map(([k,l])=>`<button data-k="${k}" class="${BD.scope===k?"on":""}">${l}</button>`).join("")}</div>
+  <label class="tgl" style="margin:8px 0 0"><input type="checkbox" id="bgrp" ${BD.grp===false?"":"checked"}> One row per player (merge all emails and phones of the same account)</label><div class="seg" id="b1">${[["ind","Individuals"],["gld","Guilds"]].map(([k,l])=>`<button data-k="${k}" class="${BD.scope===k?"on":""}">${l}</button>`).join("")}</div>
   <div class="seg" id="b2">${[["d","Day"],["m","This month"],["y","This year"],["a","All time"]].map(([k,l])=>`<button data-k="${k}" class="${BD.per===k?"on":""}">${l}</button>`).join("")}</div>
   ${BD.per==="d"?`<label for="bd">Day</label><select id="bd">${Array.from({length:14},(_,i)=>t-i).map(d=>`<option value="${d}" ${BD.day===d?"selected":""}>${d===t?"Today":new Date(d*864e5).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}</option>`).join("")}</select>`:""}
   <div class="two" style="margin-top:12px"><select id="blim" aria-label="How many to show">${[[10,"Top 10"],[50,"Top 50"],[100,"Top 100"],[0,"Everyone"]].map(([n,l])=>`<option value="${n}" ${BD.lim===n?"selected":""}>${l}</option>`).join("")}</select><input type="search" id="bq" placeholder="🔍 Find a player or guild" value="${esc(BD.q||"")}" aria-label="Search players" autocomplete="off"></div><div id="bl" style="margin-top:12px"><div class="hint">Loading…</div></div></div>
@@ -2112,7 +2152,8 @@ function boardsT(){
   bdGet(id).then(doc=>{
     if(BD.tk!==tokB||!$("bl"))return;
     const E=Object.entries((doc&&doc.e)||{}).map(([h,v])=>({h,...v})).filter(v=>v.x>0||v.p);let L;
-    if(BD.scope==="ind")L=E.map(v=>({key:v.h,name:v.n+(v.y===1?" ✉️":v.y===2?" 📱":""),x:v.x,l:v.l,me:U&&v.h===U.h.slice(0,24)}));
+    if(BD.scope==="ind"&&BD.grp!==false){const m={},mine=U&&(U.fid||("h"+U.h.slice(0,10)));for(const v of E){const k=v.u||v.h,o=m[k]||(m[k]={key:k,name:v.n,x:0,l:0,n:0,me:!!U&&(k===mine||v.h===U.h.slice(0,24))});o.x+=v.x;o.l=Math.max(o.l,v.l);o.n++;if(v.h===U?.h?.slice(0,24))o.me=true}L=Object.values(m).map(o=>({...o,name:o.name+(o.n>1?" ("+o.n+" logins)":"")}))}
+    else if(BD.scope==="ind")L=E.map(v=>({key:v.h,name:v.n+(v.y===1?" ✉️":v.y===2?" 📱":""),x:v.x,l:v.l,me:U&&v.h===U.h.slice(0,24)}));
     else{const m={};for(const v of E){const o=m[v.u]||(m[v.u]={key:v.u,name:v.gn||v.n,x:0,l:0,n:0,me:U&&v.u===(U.fid||("h"+U.h.slice(0,10)))});o.x+=v.x;o.l=Math.max(o.l,v.l);o.n++}L=Object.values(m).map(o=>({...o,name:o.name+(o.n>1?" ("+o.n+" logins)":"")}))}
     L.sort((a,b)=>b.x-a.x);
     BD.L=L;bdPaint();
@@ -2130,7 +2171,7 @@ function bdPaint(){
   box.querySelectorAll("[data-lv]").forEach(b=>b.onclick=()=>{location.hash="#u="+b.dataset.lv});
   if($("blm"))$("blm").onclick=()=>{BD.more+=50;bdPaint()}}
 document.addEventListener("input",e=>{if(e.target.id==="bq"){BD.q=e.target.value;bdPaint()}});
-document.addEventListener("change",e=>{if(e.target.id==="blim"){BD.lim=+e.target.value;BD.more=0;bdPaint()}});
+document.addEventListener("change",e=>{if(e.target.id==="blim"){BD.lim=+e.target.value;BD.more=0;bdPaint()}if(e.target.id==="bgrp"){BD.grp=e.target.checked;boardsT()}});
 
 /* ---------- developer console: open index.html#dev ---------- */
 let DV=null;
@@ -2141,7 +2182,7 @@ async function devOpen(){
   $("dvx").onclick=()=>{devClose();history.replaceState(null,"",location.pathname+location.search)};
   const B=$("dvb");let F;
   try{F=await fbp();const uid=F.uid();
-    let ix,vd;try{ix=await F.list("ix_",500);vd=await F.list("ixd_",500)}catch(e){B.innerHTML=`<div class="card"><h2 style="margin:0">Developer access needed</h2><p class="hint">This browser is not on the developer allowlist yet. In the Firebase console open <b>Firestore → accounts</b>, create a document with ID <code>devauth</code> and a field <code>uids</code> (array) containing this ID, then reload:</p><p><code>${esc(uid||"(signing in…)")}</code> <button class="sm" id="cpu">Copy</button></p></div>`;$("cpu").onclick=()=>copyTxt(uid||"");return}
+    let ix,vd;try{ix=await F.list("ix_",3000);vd=await F.list("ixd_",3000)}catch(e){B.innerHTML=`<div class="card"><h2 style="margin:0">Developer access needed</h2><p class="hint">This browser is not on the developer allowlist yet. In the Firebase console open <b>Firestore → accounts</b>, create a document with ID <code>devauth</code> and a field <code>uids</code> (array) containing this ID, then reload:</p><p><code>${esc(uid||"(signing in…)")}</code> <button class="sm" id="cpu">Copy</button></p></div>`;$("cpu").onclick=()=>copyTxt(uid||"");return}
     const V={};vd.forEach(d=>V[d.id.slice(4)]=d);DV={rows:ix.map(d=>({...d,id:d.id.slice(3),vdoc:V[d.id.slice(3)]||null})),f:{tag:"",q:"",flag:false,max:false},sort:"ts"};devRender();
   }catch(e){B.innerHTML=`<div class="card">Can't reach the server. Check your connection.</div>`}
 }
@@ -2156,9 +2197,9 @@ function devRender(){
   B.innerHTML=`<div class="ph"><div><b>${R0.length}</b>players synced</div><div><b>${flagged.length}</b>flagged / restricted</div><div><b>${maxed.length}</b>reached max level</div><div><b>${hit}</b>hit the daily XP cap</div><div><b>${CFG.dayCap}</b>current daily XP cap</div></div>
   ${maxed.length?`<div class="tip"><span>👑 <b>${maxed.length}</b> player${maxed.length>1?"s have":" has"} reached the existing maximum. Time to add new levels or content.</span><button class="sm" id="dmx">Show them</button></div>`:""}
   <div class="card"><div class="bar2"><b>Tags</b>${Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<button class="sm" data-tg="${esc(k)}"><span class="tgc ${esc(k)}">${esc(k)}</span> ${n}</button>`).join("")}<button class="sm" data-tg="">All</button></div>
-  <div class="bar2"><input type="text" id="dq" placeholder="Search name, login or User ID" value="${esc(DV.f.q)}" style="max-width:260px"><label class="tgl" style="margin:0"><input type="checkbox" id="df" ${DV.f.flag?"checked":""}> Flagged only</label><label class="tgl" style="margin:0"><input type="checkbox" id="dm" ${DV.f.max?"checked":""}> Reached max</label><span class="sp"></span><button class="sm" id="dat">⚙ Auto-tune cap</button><button class="sm" id="dcv">⬇ CSV</button></div>
+  <div class="bar2"><input type="text" id="dq" placeholder="Search name, login or User ID" value="${esc(DV.f.q)}" style="max-width:260px"><label class="tgl" style="margin:0"><input type="checkbox" id="df" ${DV.f.flag?"checked":""}> Flagged only</label><label class="tgl" style="margin:0"><input type="checkbox" id="dm" ${DV.f.max?"checked":""}> Reached max</label><span class="sp"></span><button class="sm" id="dsh">🕵️ Shared accounts</button><button class="sm" id="dat">⚙ Auto-tune cap</button><button class="sm" id="dcv">⬇ CSV</button></div>
   <div class="dvw"><table class="dvt"><thead><tr><th>Tag</th><th>Name</th><th>Login</th><th data-s="lv">Lvl</th><th data-s="xp">XP</th><th>Acc</th><th data-s="md">Median ms</th><th data-s="tr">Trust</th><th>Flags</th><th>Limit</th><th data-s="ts">Last seen</th></tr></thead><tbody>${rows.slice(0,300).map(r=>`<tr data-h="${r.id}"><td><span class="tgc ${esc(r.tg||"New")}">${esc(r.tg||"New")}</span></td><td>${esc(r.n||"")}</td><td>${esc(r.m||"")}</td><td>${r.lv||0}</td><td>${fmt(r.xp)}</td><td>${pc(r.ok,r.ans)}</td><td>${r.md||"-"}</td><td>${r.tr==null?"-":r.tr}</td><td>${(r.fl||[]).length?(r.fl||[]).map(f=>esc(f)).join(", "):"-"}</td><td>${["-","×.5","×.1","paused"][effRs(r)]}${(r.vdoc&&r.vdoc.vd)?" ("+esc(r.vdoc.vd)+")":""}</td><td>${ago2(r.ts)}</td></tr>`).join("")}</tbody></table></div><p class="hint">Showing ${Math.min(300,rows.length)} of ${rows.length}. Click a row for details and actions.</p></div><div id="dd"></div>`;
-  B.querySelectorAll("[data-tg]").forEach(b=>b.onclick=()=>{DV.f.tag=b.dataset.tg;devRender()});
+  B.querySelectorAll("[data-tg]").forEach(b=>b.onclick=()=>{DV.f.tag=b.dataset.tg;devRender()});if($("dsh"))$("dsh").onclick=devShared;
   B.querySelectorAll("th[data-s]").forEach(h=>h.onclick=()=>{DV.sort=h.dataset.s;devRender()});
   $("dq").oninput=e=>{DV.f.q=e.target.value.toLowerCase();const p=e.target.selectionStart;devRender();const n=$("dq");n.focus();n.setSelectionRange(p,p)};
   $("df").onchange=e=>{DV.f.flag=e.target.checked;devRender()};$("dm").onchange=e=>{DV.f.max=e.target.checked;devRender()};
@@ -2193,6 +2234,28 @@ function devDetail(h){
     try{const F=await fbp();await F.merge("ixd_"+h,{...P2,at});r.vdoc={...(r.vdoc||{}),...P2,at};toast("Saved. The player's app applies it within minutes.");devRender();devDetail(h)}catch(e){$("dae").textContent="Couldn't save. Is this browser on the developer allowlist?"}});
   $("dd").scrollIntoView({behavior:"smooth"});
 }
+
+/* ---------- Shared-account watch: one account (many logins) that may be played by several people at once ---------- */
+function devShared(sel){
+  const R0=DV.rows,t=dn(),G={};
+  R0.forEach(r=>{const k=r.u||("h"+r.id);(G[k]||(G[k]={u:k,rows:[]})).rows.push(r)});
+  const A=Object.values(G).map(g=>{const rs=g.rows,n=rs.length,dvs=new Set(rs.map(r=>r.dv||"?")).size;
+    let both=0,peak=0,mins=0;
+    for(let d=t-29;d<=t;d++){const act=rs.filter(r=>((r.ds||{})[d]||0)>0).length;if(act>=2)both++;
+      peak=Math.max(peak,rs.reduce((a,r)=>a+((r.ds||{})[d]||0),0));mins=Math.max(mins,Math.round(rs.reduce((a,r)=>a+((r.tm||{})[d]||0),0)/60))}
+    const sig=[];if(n>=3)sig.push(n+" logins");if(dvs>=2&&both>=3)sig.push(dvs+" devices active on "+both+" same days");
+    if(peak>CFG.dayCap)sig.push("combined "+peak+" XP/day is over the "+CFG.dayCap+" cap");if(mins>480)sig.push(mins+" min in one day");
+    return{...g,n,dvs,both,peak,mins,sig,xp:rs.reduce((a,r)=>a+(r.xp||0),0),name:(rs[0]&&rs[0].n)||""}})
+    .filter(a=>a.n>=2).sort((a,b)=>b.sig.length-a.sig.length||b.n-a.n);
+  const box=$("dd");
+  box.innerHTML=`<div class="card" style="margin-top:16px"><div class="bar2"><h2 style="margin:0">🕵️ Shared accounts</h2><span class="sp"></span><button class="sm" id="dsx">Close</button></div>
+  <p class="hint">Accounts with 2+ logins. Several people may play one account at the same time and push its XP up faster than one child could. Counts only here; tap a row to see the masked logins. A shared account is not proof of cheating (families and schools share on purpose).</p>
+  <div class="dvw"><table class="dvt"><thead><tr><th>Account</th><th>Name</th><th>Logins</th><th>Devices</th><th>Peak XP/day</th><th>Total XP</th><th>Signals</th></tr></thead><tbody>${A.map(a=>`<tr data-sa="${esc(a.u)}"><td>${esc(a.u)}</td><td>${esc(a.name)}</td><td>${a.n}</td><td>${a.dvs}</td><td>${fmt(a.peak)}</td><td>${fmt(a.xp)}</td><td>${a.sig.length?a.sig.map(esc).join(" · "):"-"}</td></tr>`).join("")||'<tr><td colspan="7">No account has more than one login yet.</td></tr>'}</tbody></table></div><div id="dsd"></div></div>`;
+  $("dsx").onclick=()=>{box.innerHTML=""};
+  box.querySelectorAll("[data-sa]").forEach(tr=>tr.onclick=()=>{const a=A.find(x=>x.u===tr.dataset.sa);if(!a)return;
+    $("dsd").innerHTML=`<p style="margin:12px 0 4px"><b>${esc(a.u)}</b> · ${a.n} logins</p><div class="rt">${a.rows.sort((x,y)=>(y.ts||0)-(x.ts||0)).map(r=>`<div><span>${r.ty==="email"?"✉️":"📱"} ${esc(r.m||"")} · ${esc(r.dv||"unknown device")}</span><span>${fmt(r.xp)} XP · ${r.ts?ago(r.ts):"never"}</span></div>`).join("")}</div>`});
+  box.scrollIntoView({behavior:"smooth"});
+}
 addEventListener("hashchange",()=>{if(location.hash==="#dev")devOpen();else devClose()});
 
 /* ---------- SECTION: GUILD HUB · coins, daily dues + auto-pay, perks, protector drops, team bounty quiz, guild power board ----------
@@ -2203,6 +2266,8 @@ addEventListener("hashchange",()=>{if(location.hash==="#dev")devOpen();else devC
      ct {h: lifetime coins contributed}   pd {h: [day, coins paid that day]}   logins.{h}.ap {on, amt}  (auto-pay)
      dr {id: {k, n, at}} protector drops      cl {id: {h: 1}} who claimed       ql {r, rank, prize, teams, pool} last quiz result
    Other docs: lbp_0 (guild power board), qz_<round> (team bounty quiz round). */
+const PC_MAX=100000;
+function perkCost(k,n,pc){pc=pc||(U&&U.pc)||{};const c=GC[k],v=Math.floor(+pc[k]);if(k==="pr")return v>=1?Math.max(1,v*n):Math.max(c.min,c.per*n);return v>=1?v:c.cost}
 const GC={rate:.5,maxDaily:500,
   xp:{ico:"🚀",name:"XP Booster",desc:"Every member earns 25% more XP for 24 hours.",cost:400,ms:864e5},
   cn:{ico:"🪙",name:"Coin Booster",desc:"Every member earns double coins for 24 hours.",cost:300,ms:864e5},
@@ -2222,14 +2287,14 @@ const gLevel=()=>{const t=gv().t||0;let l=1;GC.lv.forEach((v,i)=>{if(t>=v)l=i+1}
 const gOn=k=>(gv()[k]||0)>Date.now();
 function gXpMult(){return !U?1:1+(gLevel()-1)*.02+(gOn("x")?.25:0)}
 function earnCoins(xp){if(!U||!(xp>0))return;const g=Math.floor(xp*GC.rate*(gOn("k")?2:1));if(g>0){P.cn=(P.cn||0)+g;out("cn",g)}}
-function gLoad(a){if(!U||!a)return;U.vault=a.vault||{};U.ct=a.ct||{};U.pd=a.pd||{};U.dr=a.dr||{};U.cl=a.cl||{};U.ql=a.ql||null;U.vl=a.vl||{};U.fid=a.fid||U.fid||null;U.jc=a.jc||null;U.fa=a.fa||{};U.ar=a.ar||{};U.aka=a.aka||[];setTimeout(gClaim,400)}
+function gLoad(a){if(!U||!a)return;U.vault=a.vault||{};U.ct=a.ct||{};U.pd=a.pd||{};U.dr=a.dr||{};U.cl=a.cl||{};U.ql=a.ql||null;U.vl=a.vl||{};U.fid=a.fid||U.fid||null;U.jc=a.jc||null;U.fa=a.fa||{};U.ar=a.ar||{};U.pc=a.pc||{};U.jr=a.jr||null;U.aka=a.aka||[];setTimeout(gClaim,400)}
 function gMerge(accs){const v={c:0,t:0,x:0,k:0,d:{}},ct={},pd={},dr={},cl={};
   for(const a of accs){const w=a.vault||{};v.c+=w.c||0;v.t+=w.t||0;v.x=Math.max(v.x,w.x||0);v.k=Math.max(v.k,w.k||0);for(const d in w.d||{})v.d[d]=(v.d[d]||0)+w.d[d];
     for(const h in a.ct||{})ct[h]=(ct[h]||0)+a.ct[h];for(const h in a.pd||{})if(!pd[h]||pd[h][0]<=a.pd[h][0])pd[h]=a.pd[h];Object.assign(dr,a.dr||{});for(const id in a.cl||{})cl[id]=Object.assign(cl[id]||{},a.cl[id])}
   return{vault:v,ct,pd,dr,cl,vl:vlMerge(accs),fa:faMerge(accs)}}
 const gLeft=ms=>{const m=Math.max(0,Math.ceil(ms/6e4));return m>=60?Math.floor(m/60)+" h "+(m%60)+" min":m+" min"};
 const gPaidToday=h=>{const p=(U.pd||{})[h];return p&&p[0]===dn()?p[1]:0};
-const gErr={short:"Not enough coins.",gone:"This guild changed. Reload and try again.",amt:"Enter a whole number of coins (1 or more).",admin:"Only guild admins can do this.",closed:"Registration for this round is closed.",dup:"Already done.",full:"This round is full.",late:"Too late for this round.",done:"Already paid today."};
+const gErr={short:"Not enough coins.",gone:"This guild changed. Reload and try again.",amt:"Enter a whole number of coins (1 or more).",admin:"Only guild admins can do this.",closed:"Registration for this round is closed.",dup:"Already done.",full:"This round is full.",late:"Too late for this round.",done:"Already paid today.",super:"Only Super admins can do this.",price:"Prices must be whole numbers from 1 to 100,000."};
 const gMsg=e=>gErr[e&&e.message]||"Couldn't reach the server, or the Firestore rules for guild features are missing. Try again.";
 
 /* ---- pay the guild (manual or auto): one atomic transaction moves coins from the login to the vault ---- */
@@ -2243,10 +2308,10 @@ async function gPay(amt,auto){
     if(auto){const ap=l.ap||{};if(!ap.on||(ap.amt||0)-today<amt)throw new Error("done")}
     const u={["logins."+h+".s.cn"]:{__inc:-amt},"vault.c":{__inc:amt},"vault.t":{__inc:amt},["vault.d."+t]:{__inc:amt},["ct."+h]:{__inc:amt},["pd."+h]:[t,today+amt]};
     for(const d in (a.vault||{}).d||{})if(+d<t-9)u["vault.d."+d]=null;
-    vlAdd(u,a,{k:"pay",m:l.m,a:amt,at:Date.now()});
+    vlAdd(u,a,{k:"pay",h,n:pubNm(l,a.logins),a:amt,at:Date.now()});
     tx.upd(uid,u)});
   const a=await dget(uid);if(a&&a.logins&&a.logins[h]){const o=OUTS[uid+":"+h];P.cn=((a.logins[h].s||{}).cn||0)+((o&&o.cn)||0);U.logins=a.logins;gLoad(a)}
-  hud();gBoardPush();return amt}
+  hud();gBoardPush();pubSync();return amt}
 let gBusy=false;
 async function gAuto(){
   if(!U||gBusy)return;const ap=(U.logins[U.h]||{}).ap;if(!ap||!ap.on||!(ap.amt>=1))return;
@@ -2260,12 +2325,12 @@ async function gBuy(k){
   if(!isAdmin())throw new Error("admin");const F=await fbp(),now=Date.now();let cost=0;
   await F.txn(async tx=>{const a=await tx.get(U.uid);if(!a||a.mergedInto)throw new Error("gone");
     const v=a.vault||{},n=Object.values(a.logins||{}).filter(l=>l.t).length;
-    cost=k==="pr"?Math.max(GC.pr.min,GC.pr.per*n):GC[k].cost;if((v.c||0)<cost)throw new Error("short");
+    cost=perkCost(k,n,a.pc);if((v.c||0)<cost)throw new Error("short");
     const u={"vault.c":{__inc:-cost}};
     if(k==="xp")u["vault.x"]=Math.min(now+7*864e5,Math.max(now,v.x||0)+GC.xp.ms);
     else if(k==="cn")u["vault.k"]=Math.min(now+7*864e5,Math.max(now,v.k||0)+GC.cn.ms);
     else{u["dr."+rid(6)]={k:"pr",n:1,at:now};for(const o in a.dr||{})if((a.dr[o].at||0)<now-12*864e5){u["dr."+o]=null;u["cl."+o]=null}}
-    vlAdd(u,a,{k:"buy",p:k,m:((a.logins||{})[U.h]||{}).m||"",a:cost,at:now});
+    vlAdd(u,a,{k:"buy",p:k,h:U.h,n:pubNm((a.logins||{})[U.h]||{},a.logins),a:cost,at:now});
     tx.upd(U.uid,u)});
   const a=await dget(U.uid);gLoad(a);return cost}
 /* each member claims a drop once (checked inside a transaction so two devices can't both claim) */
@@ -2313,7 +2378,7 @@ async function qRegister(){
     if(z&&z.teams&&z.teams[U.uid])throw new Error("dup");if(z&&Object.keys(z.teams||{}).length>=GC.qMax)throw new Error("full");
     const tm={n:Array.from(U.name).slice(0,30).join(""),at:Date.now()};
     if(z)tx.upd(id,{["teams."+U.uid]:tm});else tx.set(id,{r:q.r,teams:{[U.uid]:tm},p:{},done:false});
-    {const u={"vault.c":{__inc:-GC.qEntry}};vlAdd(u,a,{k:"quiz",m:((a.logins||{})[U.h]||{}).m||"",a:GC.qEntry,at:Date.now()});tx.upd(U.uid,u)}});
+    {const u={"vault.c":{__inc:-GC.qEntry}};vlAdd(u,a,{k:"quiz",h:U.h,n:pubNm((a.logins||{})[U.h]||{},a.logins),a:GC.qEntry,at:Date.now()});tx.upd(U.uid,u)}});
   const a=await dget(U.uid);gLoad(a);QG.doc=await dget(id);QG.dt=Date.now();QG.key=""}
 async function qSubmit(){
   const S=QG.S;if(!S||S.sub||!U)return;S.sub=1;
@@ -2390,7 +2455,7 @@ function guildHub(){
   const mem=Object.entries(U.logins).filter(([,l])=>l.t),paidN=mem.filter(([h])=>gPaidToday(h)>0).length;
   let p7=0;for(const d in v.d||{})if(+d>t-7)p7+=v.d[d];
   const act=[gOn("x")?`<span class="gh-chip">🚀 XP +25% · ${gLeft(v.x-Date.now())} left</span>`:"",gOn("k")?`<span class="gh-chip">🪙 Coins ×2 · ${gLeft(v.k-Date.now())} left</span>`:"",lv>1?`<span class="gh-chip">⭐ Guild level bonus +${(lv-1)*2}% XP</span>`:""].join("");
-  const perk=(k)=>{const c=GC[k],cost=k==="pr"?Math.max(c.min,c.per*mem.length):c.cost,can=adm&&(v.c||0)>=cost;
+  const perk=(k)=>{const c=GC[k],cost=perkCost(k,mem.length),can=adm&&(v.c||0)>=cost;
     return`<div class="gh-perk"><span class="ic">${c.ico}</span><div class="tx"><b>${c.name}</b><small>${c.desc}</small></div><button class="sm" data-buy="${k}" ${can?"":"disabled"}>${fmt(cost)} 🪙</button></div>`};
   $("view").innerHTML=`${hubBanner()}<div class="card"><div class="two" style="grid-template-columns:1fr auto"><h2 style="margin:0">🏰 ${esc(U.name)}</h2><span class="tg">${GC.lvn[lv-1]} · Lv ${lv}</span></div>
     <p class="hint" style="margin:4px 0 0">Members pay coins into the guild vault. The vault buys boosters and gifts for everyone, enters the Team Bounty Quiz, and pushes your guild up the Guild Power board.</p>
@@ -2404,20 +2469,20 @@ function guildHub(){
     <label class="tgl"><input type="checkbox" id="gap1" ${ap.on?"checked":""}> Auto-pay every day</label>
     <div class="gh-amt"><input type="number" id="gap2" min="1" max="${GC.maxDaily}" step="1" value="${ap.amt||20}" aria-label="Coins per day"><span class="hint" style="margin:0">coins per day (up to ${GC.maxDaily})</span><button class="sm" id="gap3">Save</button></div><div class="er" id="gae"></div></div>
 
-  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">🎁 Guild perks <span class="tg">🔐 admins only</span></h2><p class="hint" style="margin:0 0 10px">${adm?"You are an admin, so you can spend the vault. Everyone in the guild gets the benefit.":"Only guild admins can spend the vault. Everyone in the guild gets the benefit."}</p>${perk("xp")}${perk("cn")}${perk("pr")}<div class="er" id="gbe"></div></div>
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">🎁 Guild perks <span class="tg">🔐 admins only</span></h2><p class="hint" style="margin:0 0 10px">${adm?"You are an admin, so you can spend the vault. Everyone in the guild gets the benefit.":"Only guild admins can spend the vault. Everyone in the guild gets the benefit."}</p>${perk("xp")}${perk("cn")}${perk("pr")}<div class="er" id="gbe"></div>${isSuper()?priceEditorH():""}</div>
 
   <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">🏆 Team Bounty Quiz</h2><div id="gar"><p class="hint">Loading…</p></div>
     <p class="hint" style="margin:10px 0 0">A new round every 30 minutes, on the clock. In the first 18 minutes an admin enters the guild (${GC.qEntry} 🪙 from the vault). Then ${GC.qN} questions go live for everyone at once. Scores are calculated in the browser and checked by fair-play rules, and coins have no cash value.</p></div>
 
   <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">📊 Guild Power · last 7 days</h2><p class="hint" style="margin:0 0 8px">Ranked by coins each guild paid in during the last 7 days. Guilds that stop paying slide down.</p><div id="gbd"><div class="hint">Loading…</div></div></div>
 
-  ${vaultLogH()}<div class="card" style="margin-top:14px"><h2 style="margin:0 0 6px">👥 Who paid</h2>${mem.sort((a,b)=>((U.ct||{})[b[0]]||0)-((U.ct||{})[a[0]]||0)).map(([h,l])=>`<div class="lg2"><span>${l.t==="email"?"✉️":"📱"} ${esc(l.m)}${h===U.h?" · you":""} ${gPaidToday(h)?`<span class="tg">✓ paid today</span>`:""}${l.ap&&l.ap.on?`<span class="tg nw">auto ${l.ap.amt}/day</span>`:""}</span><b>${fmt((U.ct||{})[h]||0)} 🪙</b></div>`).join("")}</div>`;
+  ${vaultLogH()}<div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">👥 Who paid <span class="tg">public names</span></h2><p class="hint" style="margin:0 0 6px">Shown by public nickname, never by email or phone. Set yours in Dashboard → Your public name. Paid today: <b>${fmt(mem.reduce((a,[h])=>a+gPaidToday(h),0))} 🪙</b>.</p>${mem.sort((a,b)=>((U.ct||{})[b[0]]||0)-((U.ct||{})[a[0]]||0)).map(([h,l])=>`<div class="lg2"><span>${esc(pubNm(l,U.logins))}${h===U.h?" · you":""} <span class="tg">${roleLab(U.roles[h]||"member")}</span> ${gPaidToday(h)?`<span class="tg">✓ ${fmt(gPaidToday(h))} today</span>`:""}${l.ap&&l.ap.on?`<span class="tg nw">auto ${l.ap.amt}/day</span>`:""}${adm?` <small class="hint">${esc(l.m)}</small>`:""}</span><b>${fmt((U.ct||{})[h]||0)} 🪙</b></div>`).join("")}</div>`;
   const amt=()=>Math.floor(+$("gam").value);
   $("view").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{$("gam").value=b.dataset.q==="all"?bal:Math.min(+b.dataset.q,bal)});
   $("gpay").onclick=async()=>{const b=$("gpay"),e=$("gpe");b.disabled=true;e.textContent="";try{const n=await gPay(amt());toast(`🏰 ${n} 🪙 paid to ${U.name}`);guildHub()}catch(x){e.textContent=gMsg(x);b.disabled=false}};
   $("gap3").onclick=async()=>{const e=$("gae");e.textContent="";try{await gSetAuto($("gap1").checked,$("gap2").value);toast($("gap1").checked?"🔁 Auto-pay is on":"Auto-pay is off");gAuto();guildHub()}catch(x){e.textContent=x.message==="amt"?gErr.amt:gMsg(x)}};
   $("view").querySelectorAll("[data-buy]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{const c=await gBuy(b.dataset.buy);toast(`${GC[b.dataset.buy].ico} ${GC[b.dataset.buy].name} bought for ${fmt(c)} 🪙`);guildHub()}catch(x){$("gbe").textContent=gMsg(x);b.disabled=false}});
-  arenaMount();gBoardShow();hubBind();
+  priceBind();arenaMount();gBoardShow();hubBind();
   gRef=setInterval(async()=>{if(mode!=="guild"||!$("gpay")){clearInterval(gRef);return}if(document.hidden)return;const ae=document.activeElement;if(ae&&ae.tagName==="INPUT")return;try{const a=await dget(U.uid);if(a&&a.logins){U.logins=a.logins;gLoad(a)}guildHub()}catch(e){}},30000)}
 
 /* ---------- SECTION: IDENTITY · SOCIAL · ADMIN SUCCESSION ----------
@@ -2530,7 +2595,7 @@ async function socInit(){
 }
 
 /* ---- guild authority and succession ---- */
-const hasAdmin=(roles,logins)=>Object.keys(logins||{}).some(k=>logins[k]&&logins[k].t&&(roles||{})[k]==="admin");
+const hasAdmin=(roles,logins)=>Object.keys(logins||{}).some(k=>logins[k]&&logins[k].t&&rk((roles||{})[k])>=1);
 async function reqAdmin(){
   const F=await fbp();
   await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("gone");
@@ -2609,19 +2674,48 @@ function bindSucc(){
 }
 
 /* ---- Guild Hub extras: everyone sees the vault ledger, only admins spend ---- */
-function vlAdd(u,a,e){const id=rid(6),old=Object.entries(a.vl||{}).sort((x,y)=>(y[1].at||0)-(x[1].at||0));u["vl."+id]=e;old.slice(29).forEach(([k])=>{u["vl."+k]=null})}
-function vlMerge(accs){const all=[];for(const a of accs)for(const k in a.vl||{})all.push([k,a.vl[k]]);all.sort((x,y)=>(y[1].at||0)-(x[1].at||0));return Object.fromEntries(all.slice(0,30))}
+/* Vault ledger: ONE row per member, per kind, per day (payments made the same day are added together, with a count).
+   Rows older than LEDGER_DAYS are deleted, and old one-per-transaction rows are folded into their day automatically. */
+const LEDGER_DAYS=14;
+const vlKey=(d,h,k,p)=>"d"+d+"_"+String(h||"x").replace(/[^A-Za-z0-9]/g,"").slice(0,10)+"_"+k+(p?"_"+p:"");
+const vlDay=e=>e.d!==undefined?e.d:dn(new Date(e.at||Date.now()));
+function pubNm(l,L){if(l&&l.dn)return l.dn;const ks=Object.keys(L||{}).filter(k=>L[k]&&L[k].t).sort((x,y)=>(L[x].add||0)-(L[y].add||0)),i=ks.findIndex(k=>L[k]===l);return"Member "+(i<0?1:i+1)}
+function vlFold(vl){const o={};for(const k in vl||{}){const e=vl[k];if(!e)continue;const d=vlDay(e),kk=e.d!==undefined?k:vlKey(d,e.h||e.m,e.k,e.p),x=o[kk]||(o[kk]={k:e.k,p:e.p||null,n:e.n||e.m||"",nm:e.nm||"",h:e.h||"",d,a:0,c:0,at:0});x.a+=e.a||0;x.c+=e.c||1;x.at=Math.max(x.at,e.at||0);if(e.n)x.n=e.n;if(e.nm)x.nm=e.nm}return o}
+function vlAdd(u,a,e){
+  const t=dn(),day=vlDay(e),key=vlKey(day,e.h,e.k,e.p),old=a.vl||{},acc={},keep=t-LEDGER_DAYS+1;
+  for(const k in old){const o=old[k];if(!o)continue;
+    if(o.d===undefined){const d=vlDay(o);if(d>=keep){const kk=vlKey(d,o.h||o.m,o.k,o.p),x=acc[kk]||(acc[kk]={k:o.k,p:o.p||null,n:o.n||o.m||"",nm:o.nm||"",h:o.h||"",d,a:0,c:0,at:0});x.a+=o.a||0;x.c+=1;x.at=Math.max(x.at,o.at||0)}u["vl."+k]=null}
+    else if(o.d<keep)u["vl."+k]=null}
+  const x=acc[key]||(acc[key]={k:e.k,p:e.p||null,n:e.n||"",nm:e.nm||"",h:e.h||"",d:day,a:0,c:0,at:0});x.a+=e.a||0;x.c+=1;x.at=Math.max(x.at,e.at||Date.now());if(e.n)x.n=e.n;
+  for(const kk in acc){const r=acc[kk];if(old[kk]&&old[kk].d!==undefined){u["vl."+kk+".a"]={__inc:r.a};u["vl."+kk+".c"]={__inc:r.c};u["vl."+kk+".at"]=r.at;if(r.n)u["vl."+kk+".n"]=r.n}else u["vl."+kk]=r}}
+function vlMerge(accs){const all={},keep=dn()-LEDGER_DAYS+1;for(const a of accs){const f=vlFold(a.vl);for(const kk in f){if(f[kk].d<keep)continue;const x=all[kk]||(all[kk]={...f[kk],a:0,c:0});x.a+=f[kk].a;x.c+=f[kk].c;x.at=Math.max(x.at,f[kk].at)}}return all}
 function faMerge(accs,keep){const o={};for(const a of accs)Object.assign(o,a.fa||{});for(const h of keep||[])delete o[h];return Object.fromEntries(Object.entries(o).slice(0,20))}
 function hubBanner(){
   if(!U||hasAdmin(U.roles,U.logins))return"";const mine=(U.ar||{})[U.h];
   return`<div class="tip" style="margin:0 0 12px"><span>⚠️ <b>This guild has no admin.</b> Members can still pay coins, but nobody can spend the vault. ${mine?"Your request is waiting for a previous admin.":"Ask for authority and the guild's previous admins will be asked to approve you."}</span>${mine?"":`<button class="pri" id="hra">🙋 Request admin</button>`}</div>`;
 }
 function hubBind(){const b=$("hra");if(b)b.onclick=async()=>{b.disabled=true;try{await reqAdmin();toast("✅ Request sent to previous admins");guildHub()}catch(e){toast(e.message==="has"?"This guild already has an admin":"Couldn't send. Check your connection.")}}}
+{const st=document.createElement("style");st.textContent=".vday{border-top:1px solid var(--line);padding:4px 0}.vday summary{cursor:pointer;padding:6px 0}";document.head.appendChild(st)}
 function vaultLogH(){
-  const L=Object.values(U.vl||{}).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,12);
-  const row=e=>`<div class="lg2"><span>${e.k==="pay"?"➕":"➖"} ${esc(e.m||"A member")} ${e.k==="pay"?"paid in":e.k==="buy"?"bought "+esc((GC[e.p]||{}).name||"a perk"):"entered the Team Bounty Quiz"} <small class="hint">${ago(e.at)}</small></span><b>${e.k==="pay"?"+":"−"}${fmt(e.a||0)} 🪙</b></div>`;
-  return`<div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">📜 Vault activity <span class="tg">everyone can see</span></h2><p class="hint" style="margin:0 0 8px">Every coin that goes into or out of the guild vault is listed here. All members can look, only admins can spend.</p>${L.length?L.map(row).join(""):`<p class="hint" style="margin:0">No vault activity yet.</p>`}</div>`;
-}
+  const t=dn(),F=vlFold(U.vl),days={};for(const k in F){const e=F[k];(days[e.d]||(days[e.d]=[])).push(e)}
+  const ds=Object.keys(days).map(Number).sort((a,b)=>b-a),tt=L=>{let i=0,o=0;L.forEach(e=>e.k==="pay"?i+=e.a:o+=e.a);return[i,o]};
+  const row=e=>`<div class="lg2"><span>${e.k==="pay"?"➕":"➖"} ${esc(e.n||"A member")} ${e.k==="pay"?"paid in":e.k==="buy"?"bought "+esc(e.p==="shop"||String(e.p||"").indexOf("s_")===0?(e.nm||"a shop item"):(GC[e.p]||{}).name||"a perk"):"entered the Team Bounty Quiz"}${e.c>1?` <small class="hint">${e.c} payments</small>`:""}</span><b>${e.k==="pay"?"+":"−"}${fmt(e.a)} 🪙</b></div>`;
+  const lab=d=>d===t?"Today":d===t-1?"Yesterday":new Date(d*864e5).toLocaleDateString(undefined,{day:"numeric",month:"short",timeZone:"UTC"});
+  const [ti,to]=days[t]?tt(days[t]):[0,0];
+  const blk=d=>{const L=days[d].sort((a,b)=>b.at-a.at),[i,o]=tt(L);return`<details class="vday" ${d===t?"open":""}><summary><b>${lab(d)}</b> <span class="hint">in +${fmt(i)} · out −${fmt(o)} 🪙</span></summary>${L.map(row).join("")}</details>`};
+  return`<div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">📜 Vault activity <span class="tg">everyone can see</span></h2><p class="hint" style="margin:0 0 8px">One line per member per day: payments made the same day are added together. Today: <b>+${fmt(ti)}</b> in · <b>−${fmt(to)}</b> out. Last ${LEDGER_DAYS} days are kept. Names are public nicknames.</p>${ds.length?ds.map(blk).join(""):`<p class="hint" style="margin:0">No vault activity yet.</p>`}</div>`}
+/* Super admins set perk prices for their guild */
+function priceEditorH(){const pc=U.pc||{},f=(k,l,ph)=>`<label style="display:flex;gap:8px;align-items:center;margin:4px 0"><span style="flex:1">${l}</span><input type="number" min="1" max="${PC_MAX}" step="1" data-pc="${k}" value="${pc[k]||""}" placeholder="${ph}" style="width:110px"></label>`;
+  return`<h3 style="margin:14px 0 4px;font-size:1rem">👑 Perk prices <span class="tg">Super admins only</span></h3><p class="hint" style="margin:0 0 6px">Leave a box empty to use the standard price.</p>${f("xp","🚀 XP Booster",GC.xp.cost)}${f("cn","🪙 Coin Booster",GC.cn.cost)}${f("pr","🛡️ Protector Drop (per member)",GC.pr.per)}<div class="act" style="justify-content:flex-start"><button class="sm" id="gpp">Save prices</button><button class="sm" id="gpr">Reset to standard</button></div><div class="er" id="gpe2"></div>`}
+function priceBind(){const b=$("gpp");if(!b)return;
+  const save=async o=>{const e=$("gpe2");e.textContent="";try{const F=await fbp();await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("gone");if(rolesFix(a)[U.h]!=="super")throw new Error("super");t.upd(U.uid,{pc:o})});U.pc=o;toast("✅ Prices saved");guildHub()}catch(x){e.textContent=gMsg(x)}};
+  b.onclick=()=>{const o={};for(const i of document.querySelectorAll("[data-pc]")){if(i.value==="")continue;const v=Math.floor(+i.value);if(!(v>=1&&v<=PC_MAX)){$("gpe2").textContent=gErr.price;return}o[i.dataset.pc]=v}save(o)};
+  $("gpr").onclick=()=>save({})}
+/* Public guild vault card (only on the public page, only when the owner has turned the public page on) */
+function vaultPub(){if(!U)return null;const t=dn(),v=U.vault||{},mem=Object.entries(U.logins||{}).filter(([,l])=>l.t);
+  return{c:v.c||0,t:v.t||0,lv:gLevel(),n:mem.length,d7:Array.from({length:7},(_,i)=>(v.d||{})[t-6+i]||0),top:mem.map(([h,l])=>({n:pubNm(l,U.logins),c:(U.ct||{})[h]||0,d:gPaidToday(h)})).filter(x=>x.c>0).sort((a,b)=>b.c-a.c).slice(0,10)}}
+function vpH(v){if(!v||!v.top)return"";const mx=Math.max(1,...v.d7);
+  return`<div class="card sec"><h2>🏰 Guild vault and top supporters</h2><div class="kp"><div><b>${fmt(v.c)}</b>🪙 in the vault</div><div><b>${GC.lvn[(v.lv||1)-1]||""}</b>Guild level ${v.lv||1}</div><div><b>${v.n}</b>members</div></div><div class="b14" style="margin:10px 0">${v.d7.map(x=>`<div title="${x} coins"><i style="height:${Math.max(2,Math.round(x/mx*70))}px"></i></div>`).join("")}</div><p class="hint" style="margin:0 0 6px">Coins paid in, last 7 days.</p>${v.top.map(x=>`<div class="lg2"><span>${esc(x.n)}${x.d?` <span class="tg">✓ paid today</span>`:""}</span><b>${fmt(x.c)} 🪙</b></div>`).join("")||`<p class="hint" style="margin:0">No payments yet.</p>`}<p class="hint" style="margin:8px 0 0">Like this guild? Use <b>Add friend</b> or <b>Follow</b> at the top of this page.</p></div>`}
 
 /* ---- Games: every game in the catalogue is part of the Daily mix and Shooter automatically ----
    Known game   = answered at least once. Unknown game = never answered. The mix mostly serves known games (⭐ = more, 🚫 = never)
@@ -2823,6 +2917,388 @@ const gSlug=n=>String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^
 
 /* ---------- Visible Sign out button in the header, next to the account button (shown whenever someone is signed in) ---------- */
 $("lgo").onclick=()=>{UM.close();signOut()};acctBtn();
+/* ---------- Donate: the button opens donate.html inside the site (loaded only when clicked) ---------- */
+function donOpen(){const f=$("donf");if(!f.getAttribute("src"))f.src="donate.html";$("donv").hidden=false;document.body.style.overflow="hidden";$("donx").focus()}
+function donClose(){$("donv").hidden=true;document.body.style.overflow=""}
+$("dnb").onclick=donOpen;$("donx").onclick=donClose;
+$("dnf").onclick=e=>{e.preventDefault();donOpen()};
+addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("donv").hidden)donClose()});
+</script>
+<script>
+/* =====================================================================
+   SECTION: SHOP · ARENA · ADMIN HUB   (added as a separate script so the original code above is untouched)
+   Uses the app's own globals: U (account), P (this login's stats), $, esc, dget/dupd/fbp, addXp, record, toast,
+   isAdmin, myNm, SC, scDoc, ensureIds, authHome, goTab, MODES, plusMode, hud, gLoad, vlAdd, rid, ago, fmt.
+   Firestore (all inside the existing "accounts" collection, same as gdir / sc_ / qz_):
+     accounts/{uid}.logins.{h}.inv {itemId:ts}   .eq {av,ti,th}   .ar {r,w,l,d,n,h:[...]}   per member
+     accounts/{uid}.gi {itemId:ts}  guild items      .od {id:{...}} purchase log      .au {id:{...}} admin audit log
+     accounts/ar_q_<game> {q:{key:{...}}, mt:{key:{id,at}}}   live matchmaking queue (one doc per game)
+     accounts/am_<id>     {m,seed,g,a,b,sc:{key:{s,i,at,d}}}    one doc per match
+   ===================================================================== */
+(function(){
+"use strict";
+const css=document.createElement("style");css.id="x-css";css.textContent=`
+.x-it{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--card)}
+.x-it .em{font-size:2.3rem;line-height:1}.x-it h3{margin:0;font-size:1rem}.x-it p{margin:0;font-size:.82rem;color:var(--mute);flex:1}
+.x-it .ft2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px}.x-pr{font-weight:800}
+.x-it.own{border-color:var(--acc)}
+.x-live{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.x-live span{background:var(--ok2);color:var(--ok);border-radius:99px;padding:3px 12px;font-weight:700;font-size:.82rem}
+.x-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center;margin-bottom:10px}.x-vs b{display:block;font-size:1.6rem}.x-vs small{color:var(--mute);display:block}
+.x-pulse{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ok);margin-right:6px;animation:xp 1.2s infinite}@keyframes xp{50%{opacity:.25}}
+.x-tb{width:100%;border-collapse:collapse;font-size:.88rem}.x-tb th,.x-tb td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}.x-tb th{color:var(--mute);font-size:.74rem;text-transform:uppercase}
+.x-w{overflow-x:auto}`;document.head.appendChild(css);
+
+const gate=t=>{$("view").innerHTML=`<div class="card"><h2 style="margin:0">${t}</h2><p class="hint">Sign in first: your coins, XP, level and guild are linked to your login.</p><div class="act" style="justify-content:flex-start"><button class="pri" id="xg">Sign in</button></div></div>`;$("xg").onclick=()=>authHome()};
+const XE={short:"Not enough coins.",dup:"You already own this.",admin:"Only guild admins can do this.",super:"Only Super admins can change roles.",gone:"Your account changed. Reload and try again.",last:"A guild needs at least one Super admin."};
+const xMsg=e=>XE[e&&e.message]||"Couldn't reach the server. Check your connection and try again.";
+const meL=()=>(U&&U.logins&&U.logins[U.h])||{};
+const odAdd=(u,a,e)=>{const id=rid(6),old=Object.entries(a.od||{}).sort((x,y)=>(y[1].at||0)-(x[1].at||0));u["od."+id]=e;old.slice(39).forEach(([k])=>{u["od."+k]=null})};
+const auAdd=(u,a,e)=>{const id=rid(6),old=Object.entries(a.au||{}).sort((x,y)=>(y[1].at||0)-(x[1].at||0));u["au."+id]=e;old.slice(39).forEach(([k])=>{u["au."+k]=null})};
+{const _g=gLoad;gLoad=function(a){_g.apply(this,arguments);if(U&&a){U.gi=a.gi||{};U.od=a.od||{};U.au=a.au||{}}}}
+
+/* ================= SHOP ================= */
+const TH=(l,d)=>({l,d});
+const XI=[
+ {id:"av1",c:"av",e:"🪖",n:"Recruit Helmet",p:150,d:"Starter battle-ready avatar. Shows next to your name."},
+ {id:"av2",c:"av",e:"🥷",n:"Shadow Scout",p:500,d:"Silent, fast, never misses a fact."},
+ {id:"av3",c:"av",e:"🦅",n:"Sky Hawk",p:900,d:"Sees every answer from above."},
+ {id:"av4",c:"av",e:"🐺",n:"Alpha Wolf",p:1500,d:"Leader of the pack."},
+ {id:"av5",c:"av",e:"👑",n:"Last Squad Crown",p:4000,d:"Only for the very best."},
+ {id:"ti1",c:"ti",e:"🪂",n:"Supply Hunter",p:250,d:"Title shown in the Arena."},
+ {id:"ti2",c:"ti",e:"🏃",n:"Safe-Zone Sprinter",p:600,d:"Title shown in the Arena."},
+ {id:"ti3",c:"ti",e:"🎯",n:"Table Sniper",p:1200,d:"Title shown in the Arena."},
+ {id:"th1",c:"th",e:"🌿",n:"Jungle Camo theme",p:400,d:"Greens for the whole site.",t:TH(["#2f7d32","#2f7d32","#e3f3e4"],["#4caf50","#8bd48d","#1d3320"])},
+ {id:"th2",c:"th",e:"🏜️",n:"Desert Storm theme",p:400,d:"Warm sand and orange.",t:TH(["#c26a10","#b35f0c","#fdeed8"],["#e8892e","#f2b36b","#3a2713"])},
+ {id:"th3",c:"th",e:"🌌",n:"Neon Night theme",p:600,d:"Electric cyan accents.",t:TH(["#0891b2","#0e7490","#d9f5fb"],["#22d3ee","#67e8f9","#0f2f38"])},
+ {id:"th4",c:"th",e:"🌑",n:"Blood Moon theme",p:600,d:"Deep red accents.",t:TH(["#c62828","#b71c1c","#fde7e7"],["#ef5350","#ff8a80","#3a1618"])},
+ {id:"pu1",c:"pu",e:"🛡️",n:"Streak Protector",p:120,d:"+1 protector. Saves your streak when you miss a day.",pu:1},
+ {id:"pu3",c:"pu",e:"🛡️",n:"Protector ×3",p:300,d:"+3 protectors at a discount.",pu:3}
+];
+const XG=[
+ {id:"gb1",c:"gb",e:"🚩",n:"Squad Banner",p:1500,d:"A banner for your guild, shown on the Admin hub and Arena."},
+ {id:"gb2",c:"gb",e:"⚔️",n:"War Emblem",p:4000,d:"A fierce emblem for the guild."},
+ {id:"gb3",c:"gb",e:"🏯",n:"Fortress Banner",p:10000,d:"The ultimate guild banner."}
+];
+const XC=[["all","All"],["av","🪖 Avatars"],["ti","🏷️ Titles"],["th","🎨 Themes"],["pu","🛡️ Power-ups"]];
+const itemById=id=>XI.concat(XG).find(x=>x.id===id);
+const XS={scope:"u",cat:"all",busy:false};
+
+/* apply equipped theme + header avatar */
+function xApply(){
+  const eq=U?(meL().eq||{}):(LS.get("tt_xeq")||{});if(U)LS.set("tt_xeq",eq);
+  let s=document.getElementById("x-theme");if(!s){s=document.createElement("style");s.id="x-theme";document.head.appendChild(s)}
+  const it=XI.find(x=>x.id===eq.th);
+  if(!it||!it.t){s.textContent="";return}
+  const v=a=>`--acc:${a[0]};--acc-t:${a[1]};--acc2:${a[2]}`;
+  s.textContent=`:root{${v(it.t.l)}}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${v(it.t.d)}}}:root[data-theme="dark"]{${v(it.t.d)}}`;
+  const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=it.t.l[0];
+}
+function xSync(){
+  try{
+    const adm=!!U&&isAdmin(),b=document.querySelector('#moremenu [data-k="admin"]');if(b)b.hidden=!adm;
+    xApply();
+    const eq=meL().eq||{},av=XI.find(x=>x.id===eq.av),a=$("acct");
+    if(U&&av&&a&&a.textContent.indexOf("👤")===0)a.textContent=a.textContent.replace("👤",av.e);
+  }catch(e){}
+}
+{const _h=hud;hud=function(){_h.apply(this,arguments);xSync()}}
+xApply();
+
+async function xRefresh(){const a=await dget(U.uid);if(a&&a.logins&&a.logins[U.h]){const o=OUTS[U.uid+":"+U.h];P.cn=((a.logins[U.h].s||{}).cn||0)+((o&&o.cn)||0);U.logins=a.logins;U.roles=rolesFix(a);U.jr=a.jr||null;U.pc=a.pc||{};gLoad(a)}hud()}
+
+async function buyUser(it){
+  await flush();const F=await fbp(),h=U.h,uid=U.uid;
+  await F.txn(async tx=>{
+    const a=await tx.get(uid);if(!a||a.mergedInto||!a.logins||!a.logins[h]||!a.logins[h].t)throw new Error("gone");
+    const l=a.logins[h],have=(l.s||{}).cn||0;
+    if(have<it.p)throw new Error("short");
+    if(!it.pu&&(l.inv||{})[it.id])throw new Error("dup");
+    const u={["logins."+h+".s.cn"]:{__inc:-it.p}};
+    if(!it.pu)u["logins."+h+".inv."+it.id]=Date.now();
+    odAdd(u,a,{m:l.m,nn:pubNm(l,a.logins),i:it.id,n:it.n,c:it.p,s:"u",at:Date.now()});
+    tx.upd(uid,u)});
+  if(it.pu){P.sk.prot+=it.pu;save()}
+  await xRefresh();
+}
+async function buyGuild(it){
+  if(!isAdmin())throw new Error("admin");
+  const F=await fbp(),h=U.h,uid=U.uid;
+  await F.txn(async tx=>{
+    const a=await tx.get(uid);if(!a||a.mergedInto||!a.logins||!a.logins[h])throw new Error("gone");
+    if(rk(rolesFix(a)[h])<1)throw new Error("admin");
+    if((a.gi||{})[it.id])throw new Error("dup");
+    if(((a.vault||{}).c||0)<it.p)throw new Error("short");
+    const l=a.logins[h],u={"vault.c":{__inc:-it.p},["gi."+it.id]:Date.now()};
+    vlAdd(u,a,{k:"buy",p:"s_"+it.id,nm:it.n,h,n:pubNm(l,a.logins),a:it.p,at:Date.now()});
+    odAdd(u,a,{m:l.m,nn:pubNm(l,a.logins),i:it.id,n:it.n,c:it.p,s:"g",at:Date.now()});
+    tx.upd(uid,u)});
+  await xRefresh();
+}
+async function setEq(cat,id){
+  await dupd(U.uid,{["logins."+U.h+".eq."+cat]:id||null});
+  const l=meL();l.eq=Object.assign({},l.eq||{});if(id)l.eq[cat]=id;else delete l.eq[cat];hud();
+}
+
+function shopT(){
+  if(!U)return gate("🛒 Shop");
+  const l=meL(),inv=l.inv||{},eq=l.eq||{},gi=U.gi||{},adm=isAdmin(),g=XS.scope==="g",bal=g?(U.vault&&U.vault.c)||0:P.cn||0;
+  const av=XI.find(x=>x.id===eq.av),ti=XI.find(x=>x.id===eq.ti),th=XI.find(x=>x.id===eq.th);
+  const list=(g?XG:XI.filter(x=>XS.cat==="all"||x.c===XS.cat));
+  const card=it=>{
+    const own=g?!!gi[it.id]:(!it.pu&&!!inv[it.id]),on=!g&&own&&eq[it.c]===it.id;
+    let btn;
+    if(own&&!g&&it.c!=="pu")btn=`<button class="sm" data-eq="${it.c}:${on?"":it.id}">${on?"✔ Equipped · remove":"Equip"}</button>`;
+    else if(own)btn=`<span class="tg">Owned</span>`;
+    else if(g&&!adm)btn=`<button class="sm" disabled title="Only guild admins can spend the vault">Admins only</button>`;
+    else btn=`<button class="pri" data-buy="${it.id}" ${bal<it.p?"disabled":""}>${bal<it.p?"Not enough":"Buy"}</button>`;
+    return`<div class="x-it ${own?"own":""}"><div class="em" aria-hidden="true">${it.e}</div><h3>${esc(it.n)}</h3><p>${esc(it.d)}</p><div class="ft2"><span class="x-pr">${g?"🏰":"🪙"} ${fmt(it.p)}</span>${btn}</div></div>`};
+  const mine=Object.entries(U.od||{}).map(([k,v])=>v).filter(v=>g?v.s==="g":v.s==="u"&&v.m===l.m).sort((a,b)=>b.at-a.at).slice(0,8);
+  $("view").innerHTML=`<div class="card"><div class="bar2" style="margin:0"><h2 style="margin:0">🛒 Shop</h2><span class="sp"></span><span class="tg" title="Your coins">🪙 ${fmt(P.cn||0)}</span><span class="tg" title="Guild vault">🏰 ${fmt((U.vault&&U.vault.c)||0)}</span></div>
+  <p class="hint" style="margin:6px 0 0">Spend coins you earn by practising. Spending never lowers your XP or level.</p>
+  <div class="seg"><button data-sc="u" class="${g?"":"on"}">👤 For me</button><button data-sc="g" class="${g?"on":""}">🏰 For my guild</button></div></div>
+  ${g?"":`<div class="card" style="margin-top:14px"><div class="bar2" style="margin:0"><span style="font-size:1.8rem">${av?av.e:"👤"}</span><div><b>${esc(myNm())}</b><div class="hint" style="margin:0">${ti?esc(ti.n):"No title"} · ${th?esc(th.n):"Default theme"}</div></div></div></div>
+  <div class="tabs" style="margin-top:14px">${XC.map(([k,n])=>`<button class="tab ${XS.cat===k?"on":""}" data-cat="${k}">${n}</button>`).join("")}</div>`}
+  ${g?`<div class="tip" style="margin-top:14px"><span>${adm?"You are a guild admin: purchases come from the guild vault. Members can fill the vault from the Guild tab.":"Only guild admins can spend the vault. Ask an admin."}</span></div>`:""}
+  <div class="grid" style="margin-top:14px">${list.map(card).join("")}</div>
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 6px">🧾 ${g?"Guild purchases":"My purchases"}</h2>${mine.length?mine.map(o=>`<div class="lg2"><span>${esc(o.n)} <small class="hint">${ago(o.at)}${g?" · "+esc(o.nn||"A member"):""}</small></span><b>−${fmt(o.c)} ${g?"🏰":"🪙"}</b></div>`).join(""):`<p class="hint" style="margin:0">Nothing bought yet.</p>`}</div>`;
+  const v=$("view");
+  v.querySelectorAll("[data-sc]").forEach(b=>b.onclick=()=>{XS.scope=b.dataset.sc;shopT()});
+  v.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{XS.cat=b.dataset.cat;shopT()});
+  v.querySelectorAll("[data-buy]").forEach(b=>b.onclick=async()=>{
+    const it=itemById(b.dataset.buy);if(!it||XS.busy)return;
+    if(!confirm(`Buy ${it.n} for ${fmt(it.p)} ${g?"coins from the guild vault":"coins"}?`))return;
+    XS.busy=true;b.disabled=true;
+    try{await(g?buyGuild:buyUser)(it);if(!g&&it.c!=="pu")await setEq(it.c,it.id);toast(`✅ ${it.n} is yours`);sfx("win")}catch(e){toast(xMsg(e))}
+    XS.busy=false;if(mode==="shop")shopT()});
+  v.querySelectorAll("[data-eq]").forEach(b=>b.onclick=async()=>{const[c,id]=b.dataset.eq.split(":");b.disabled=true;try{await setEq(c,id)}catch(e){toast(xMsg(e))}shopT()});
+}
+
+/* ================= ARENA ================= */
+const AM=[["sprint","⚡","Table Sprint","Multiplication facts. Fast, correct answers score most."],["missing","🧩","Missing Factor","Find the missing number: 7 × ? = 56."],["reverse","➗","Reverse Tables","Division from the tables: 72 ÷ 8."],["mixed","🔥","Mixed Blitz","Multiply, divide and add, all mixed up."]];
+const AN=10,ATL=90,ARK=[["Bronze",0],["Silver",1100],["Gold",1300],["Platinum",1500],["Diamond",1700],["Legend",1900]];
+const arRank=r=>{let n=ARK[0][0];ARK.forEach(x=>{if(r>=x[1])n=x[0]});return n};
+const arMe=()=>Object.assign({r:1000,w:0,l:0,d:0,n:0,h:[]},meL().ar||{});
+const arKey=()=>U.h.slice(0,16);
+const arQid=m=>"ar_q_"+m;
+const arWin=s=>s>=10?1e9:75+Math.floor(s/2)*60;   /* rating window: ±75, +60 every 2 s, unlimited after 10 s */
+const arRng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+function arQs(mode,seed,avg){
+  const r=arRng(seed),mx=Math.max(3,Math.min(20,Math.round(4+(avg-700)/60))),R=n=>Math.floor(r()*n),out=[];
+  for(let i=0;i<AN;i++){
+    const a=2+R(mx-1),b=2+R(Math.min(mx,12)-1),t=mode==="mixed"?R(3):mode==="missing"?3:mode==="reverse"?1:0;
+    out.push(t===0?{q:`${a} × ${b} = ?`,a:a*b,f:[a,b]}:t===1?{q:`${a*b} ÷ ${a} = ?`,a:b,f:[a,b]}:t===2?{q:`${a*b} + ${a} = ?`,a:a*b+a,f:null}:{q:`${a} × ? = ${a*b}`,a:b,f:[a,b]})}
+  return out}
+function arElo(rMe,rOpp,res,n){const K=n<10?40:28,ex=1/(1+Math.pow(10,(rOpp-rMe)/400));let d=Math.round(K*(res-ex));if(res===1&&d<6)d=6;if(res===0&&d>-6)d=-6;return d}
+const XA={timers:[],srch:null,m:null};
+const arClear=()=>{XA.timers.forEach(t=>clearInterval(t));XA.timers=[]};
+const arTimer=(fn,ms)=>{const t=setInterval(fn,ms);XA.timers.push(t);return t};
+async function arLeave(mode){try{if(U&&mode)await dupd(arQid(mode),{["q."+arKey()]:null})}catch(e){}}
+function arAbort(){arClear();const s=XA.srch;XA.srch=null;XA.m=null;if(s)arLeave(s.mode)}
+addEventListener("pagehide",()=>{if(XA.srch)arLeave(XA.srch.mode)});
+{const _s=start;start=function(){if(mode!=="arena")arAbort();return _s.apply(this,arguments)}}
+
+async function arLive(){
+  const now=Date.now(),out=[];
+  await Promise.all(AM.map(async([m])=>{try{const d=await dget(arQid(m));if(d&&d.q)for(const k in d.q){const e=d.q[k];if(now-e.at<20000)out.push({k,m,n:e.n,r:e.r,t:e.t})}}catch(e){}}));
+  return out}
+const xTitle=()=>{const t=XI.find(x=>x.id===(meL().eq||{}).ti);return t?t.n:""};
+
+function arenaT(){
+  arAbort();
+  if(!U)return gate("⚔️ Arena");
+  const me=arMe(),rk=arRank(me.r);
+  $("view").innerHTML=`<div class="card"><div class="bar2" style="margin:0"><h2 style="margin:0">⚔️ Arena</h2><span class="sp"></span><span class="tg">${rk}</span><span class="tg">⭐ ${me.r}</span></div>
+  <p class="hint" style="margin:6px 0 0">Live duels against real players. Choose a game, and you are matched <b>automatically</b> with the live player closest to your level. If few are online, the search widens until it finds the nearest one. You can't pick your opponent.</p>
+  <div class="stat three"><div><b>${me.w}</b>wins</div><div><b>${me.l}</b>losses</div><div><b>${me.n?Math.round(me.w/me.n*100):0}%</b>win rate</div></div></div>
+  <div class="grid" style="margin-top:14px">${AM.map(([k,e,n,d])=>`<div class="x-it"><div class="em">${e}</div><h3>${n}</h3><p>${d}</p><div class="ft2"><span class="hint" style="margin:0" id="xl_${k}">…</span><button class="pri" data-g="${k}">Find match</button></div></div>`).join("")}</div>
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px"><span class="x-pulse"></span>Live and ready</h2><p class="hint" style="margin:0">Players searching for a match right now. You can't choose one.</p><div class="x-live" id="xlive"><span style="background:none;color:var(--mute)">Looking…</span></div></div>
+  <div class="card" style="margin-top:14px"><h2 style="margin:0 0 6px">Recent matches</h2>${me.h.length?me.h.map(x=>`<div class="lg2"><span>${x.x===1?"🏆 Won":x.x===0?"❌ Lost":"🤝 Draw"} vs ${esc(x.o)} <small class="hint">${x.s}–${x.os} · ${ago(x.t)}</small></span><b class="${x.dl>0?"ok":x.dl<0?"bad":""}">${x.dl>0?"+":""}${x.dl}</b></div>`).join(""):`<p class="hint" style="margin:0">No matches yet. Play one!</p>`}</div>`;
+  document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>arSearch(b.dataset.g));
+  const paint=async()=>{if(mode!=="arena"||XA.srch||XA.m)return;const L=await arLive();if(!$("xlive"))return;
+    $("xlive").innerHTML=L.length?L.map(p=>`<span>🟢 ${esc(p.n)} · ${arRank(p.r)}</span>`).join(""):`<span style="background:none;color:var(--mute)">Nobody is searching right now. Start a search and others will find you.</span>`;
+    AM.forEach(([k])=>{const e=$("xl_"+k);if(e){const n=L.filter(p=>p.m===k).length;e.textContent=n?`🟢 ${n} live`:"No one live"}})};
+  paint();arTimer(paint,6000);
+}
+
+async function arJoin(mode,since){
+  const F=await fbp(),k=arKey(),e={n:myNm(),r:arMe().r,m:mode,at:Date.now(),s:since,f:U.fid||"",t:xTitle()};
+  try{await F.upd(arQid(mode),{["q."+k]:e,["mt."+k]:null})}catch(x){await F.set(arQid(mode),{q:{[k]:e},mt:{}})}}
+async function arTry(mode,since){
+  const F=await fbp(),key=arKey(),now=Date.now(),win=arWin((now-since)/1000),d=await dget(arQid(mode));if(!d)return null;
+  const mt=(d.mt||{})[key];if(mt&&now-mt.at<60000)return{id:mt.id};
+  const me=arMe().r;let best=null;
+  for(const k in d.q||{}){if(k===key)continue;const e=d.q[k];if(now-e.at>20000||(e.f&&e.f===U.fid))continue;
+    const dist=Math.abs(e.r-me),wo=e.s?arWin((now-e.s)/1000):0;
+    if(dist<=Math.max(win,wo)&&(!best||dist<best.dist))best={k,dist}}
+  if(!best)return{none:true};
+  let id=null;
+  await F.txn(async tx=>{const x=await tx.get(arQid(mode));if(!x||!x.q)return;const a=x.q[key],b=x.q[best.k],t=Date.now();
+    if(!a||!b||t-b.at>20000||(x.mt&&x.mt[key]&&t-x.mt[key].at<60000))return;
+    id=rid(8);const clean={};for(const k in x.q)if(t-x.q[k].at>60000)clean["q."+k]=null;for(const k in x.mt||{})if(t-x.mt[k].at>120000)clean["mt."+k]=null;
+    tx.set("am_"+id,{m:mode,seed:Math.floor(Math.random()*2147483647),g:Math.round((a.r+b.r)/2),at:t,a:{k:key,n:a.n,r:a.r,t:a.t||""},b:{k:best.k,n:b.n,r:b.r,t:b.t||""},sc:{}});
+    tx.upd(arQid(mode),Object.assign(clean,{["q."+key]:null,["q."+best.k]:null,["mt."+best.k]:{id,at:t}}))});
+  return id?{id}:{none:true}}
+
+function arSearch(mode){
+  arAbort();const since=Date.now(),S=XA.srch={mode,since,beat:0};let tries=0;
+  const g=AM.find(x=>x[0]===mode);
+  $("view").innerHTML=`<div class="card" style="text-align:center"><div class="q" style="margin:14px 0">${g[1]}</div><h2 style="margin:0">${g[2]}</h2><p class="hint"><span class="x-pulse"></span><span id="xs">Finding a player at your level…</span></p><div class="pb"><b id="xsb" style="width:0"></b></div><div class="act"><button class="sm" id="xc">Cancel</button></div></div>`;
+  $("xc").onclick=()=>arenaT();
+  arJoin(mode,since).catch(()=>{toast("Couldn't reach the Arena. Check your connection.");arenaT()});
+  arTimer(async()=>{
+    if(XA.srch!==S||S.busy)return;S.busy=true;const w=Math.floor((Date.now()-since)/1000);
+    const el=$("xs");if(el)el.textContent=w<10?`Finding a player at your level… ${w}s`:`Widening the search to the nearest available player… ${w}s`;
+    const sb=$("xsb");if(sb)sb.style.width=Math.min(100,w/18*100)+"%";
+    if(Date.now()-S.beat>8000){S.beat=Date.now();arJoin(mode,since).catch(()=>{})}
+    let r=null;try{r=await arTry(mode,since)}catch(e){}
+    S.busy=false;if(XA.srch!==S)return;
+    if(r&&r.id){const id=r.id;arClear();XA.srch=null;arLoad(id);return}
+    if(w>=18){arClear();XA.srch=null;arLeave(mode);arBot(mode)}
+  },1500);
+}
+
+async function arLoad(id){
+  try{const m=await dget("am_"+id);if(!m)throw 0;const k=arKey(),mine=m.a.k===k?m.a:m.b,opp=m.a.k===k?m.b:m.a;
+    arPlay({id,mode:m.m,seed:m.seed,g:m.g,me:mine,opp,bot:false})}
+  catch(e){toast("Couldn't start the match. Try again.");arenaT()}}
+function arBot(mode){
+  const r=arMe().r,seed=Math.floor(Math.random()*2147483647);
+  arPlay({id:"bot",mode,seed,g:r,me:{k:arKey(),n:myNm(),r},opp:{k:"bot",n:"Practice Bot",r,t:""},bot:true});
+}
+
+function arPlay(M){
+  arClear();const g=AM.find(x=>x[0]===M.mode),S=Object.assign({qs:arQs(M.mode,M.seed,M.g),i:0,s:0,c:0,done:false,oS:0,oI:0,oAt:Date.now(),oD:false},M);XA.m=S;
+  const hdr=`<div class="x-vs"><div><b>${esc(M.me.n)}</b><small>${arRank(M.me.r)} · ⭐ ${M.me.r}</small></div><div style="font-size:1.4rem">⚔️</div><div><b>${esc(M.opp.n)}</b><small>${arRank(M.opp.r)} · ⭐ ${M.opp.r}${M.opp.t?" · "+esc(M.opp.t):""}${M.bot?" · practice (no rating change)":""}</small></div></div>`;
+  let c=3;
+  $("view").innerHTML=`<div class="card" style="text-align:center">${hdr}<h2 style="margin:0">${g[1]} ${g[2]}</h2><div class="q"><span id="xcd">3</span></div><p class="hint">Get ready…</p></div>`;
+  arTimer(()=>{c--;const e=$("xcd");if(c<=0){arClear();arQuestion(S,hdr);return}if(e)e.textContent=c},1000);
+}
+function arQuestion(S,hdr){
+  S.end=Date.now()+ATL*1000;S.qt=Date.now();
+  const draw=()=>{
+    const q=S.qs[S.i];
+    $("view").innerHTML=`<div class="card">${hdr}<div class="pb"><b style="width:${S.i/AN*100}%"></b></div>
+    <div class="stat three"><div><b id="xs1">${S.s}</b>you</div><div><b id="xt">${Math.max(0,Math.ceil((S.end-Date.now())/1000))}</b>seconds</div><div><b id="xs2">${S.oS}</b>${esc(S.opp.n)} · <span id="xoi">${S.oI}</span>/${AN}</div></div>
+    <div class="q"><span>${q.q}</span></div><input type="number" id="xa" class="ans" inputmode="numeric" placeholder="Your answer" aria-label="Your answer"><div class="act"><button class="pri" id="xgo">Check</button></div><div class="fb" id="xfb" role="status" aria-live="polite"></div><div class="hint" style="text-align:center">Question ${S.i+1} of ${AN}</div></div>`;
+    $("xa").focus();$("xgo").onclick=submit;$("xa").addEventListener("keydown",e=>{if(e.key==="Enter")submit()});S.qt=Date.now()};
+  let lock=false;
+  const submit=()=>{
+    if(lock||S.done)return;const el=$("xa");if(!el||el.value==="")return;lock=true;
+    const q=S.qs[S.i],ok=Number(el.value)===q.a,dt=(Date.now()-S.qt)/1000;
+    if(q.f)record(q.f[0],q.f[1],ok,false);
+    if(ok){S.c++;S.s+=10+Math.max(0,5-Math.floor(dt));sfx("ok")}else{S.s=Math.max(0,S.s-3);sfx("bad")}
+    touch();checkAch();save();hud();S.i++;
+    const fb=$("xfb");if(fb){fb.className="fb "+(ok?"ok":"bad");fb.textContent=ok?"✅ Correct":"❌ It was "+q.a}
+    if(!S.bot)dupd("am_"+S.id,{["sc."+S.me.k]:{s:S.s,i:S.i,at:Date.now(),d:S.i>=AN?1:0}}).catch(()=>{});
+    if(S.i>=AN)return arDone(S);
+    setTimeout(()=>{if(XA.m===S&&!S.done){lock=false;draw()}},450)};
+  draw();
+  arTimer(()=>{
+    const t=$("xt");if(t)t.textContent=Math.max(0,Math.ceil((S.end-Date.now())/1000));
+    if(Date.now()>=S.end&&!S.done)arDone(S)},500);
+  if(S.bot){const skill=Math.max(.4,Math.min(.95,.62+Math.random()*.2));
+    arTimer(()=>{if(S.oI<AN&&Math.random()<.2){const ok=Math.random()<skill;S.oS=ok?S.oS+10+Math.floor(Math.random()*4):Math.max(0,S.oS-3);S.oI++;const a=$("xs2"),b=$("xoi");if(a)a.textContent=S.oS;if(b)b.textContent=S.oI}},800)}
+  else arTimer(async()=>{try{const d=await dget("am_"+S.id);const o=d&&d.sc&&d.sc[S.opp.k];if(o){S.oS=o.s;S.oI=o.i;S.oAt=o.at;S.oD=!!o.d;const a=$("xs2"),b=$("xoi");if(a)a.textContent=S.oS;if(b)b.textContent=S.oI}}catch(e){}},1500);
+}
+function arDone(S){
+  if(S.done)return;S.done=true;arClear();S.fin=Date.now();
+  if(!S.bot)dupd("am_"+S.id,{["sc."+S.me.k]:{s:S.s,i:S.i,at:Date.now(),d:1}}).catch(()=>{});
+  $("view").innerHTML=`<div class="card" style="text-align:center"><h2>Finished: ${S.s} points</h2><p class="hint"><span class="x-pulse"></span><span id="xw">Waiting for ${esc(S.opp.n)} to finish…</span></p></div>`;
+  if(S.bot){const fill=()=>{while(S.oI<AN){const ok=Math.random()<.7;S.oS=ok?S.oS+11:Math.max(0,S.oS-3);S.oI++}};setTimeout(()=>{fill();arResult(S,false)},1200);return}
+  arTimer(async()=>{
+    let o=null;try{const d=await dget("am_"+S.id);o=d&&d.sc&&d.sc[S.opp.k]}catch(e){}
+    if(o){S.oS=o.s;S.oI=o.i;S.oAt=o.at;S.oD=!!o.d}
+    const now=Date.now();
+    if(S.oD){arClear();arResult(S,false)}
+    else if(now-S.fin>40000||(now-(S.oAt||S.fin)>15000&&now-S.fin>15000)){arClear();arResult(S,true)}},1200);
+}
+async function arResult(S,forfeit){
+  if(XA.m!==S)return;
+  const me=arMe(),res=forfeit?(S.s>0?1:.5):S.s>S.oS?1:S.s<S.oS?0:.5,key="tt_arf_"+S.id;
+  let dl=0,xp=0;const done=!S.bot&&LS.get(key);
+  if(!S.bot&&!done){
+    dl=arElo(S.me.r,S.opp.r,res,me.n);const nr=Math.max(0,me.r+dl);dl=nr-me.r;
+    const a={r:nr,w:me.w+(res===1?1:0),l:me.l+(res===0?1:0),d:me.d+(res===.5?1:0),n:me.n+1,h:[{t:Date.now(),o:S.opp.n,s:S.s,os:S.oS,x:res,dl}].concat(me.h).slice(0,10)};
+    LS.set(key,1);
+    try{await dupd(U.uid,{["logins."+U.h+".ar"]:a});meL().ar=a}catch(e){toast("Couldn't save your rating. Check your connection.")}
+    xp=res===1?40:res===.5?20:15;xp+=S.c*2}
+  else if(S.bot){xp=res===1?15:6;xp+=S.c}
+  if(xp)addXp(xp);checkAch();save();hud();
+  const nr=arMe();
+  $("view").innerHTML=`<div class="card" style="text-align:center"><div class="q" style="margin:10px 0">${res===1?"🏆":res===0?"💪":"🤝"}</div><h2 style="margin:0">${res===1?"You won!":res===0?"Good fight":"Draw"}${forfeit&&res===1?" (opponent left)":""}</h2>
+  <p>You <b>${S.s}</b> – <b>${S.oS}</b> ${esc(S.opp.n)} · ${S.c}/${AN} correct</p>
+  <div class="stat three"><div><b class="${dl>0?"ok":dl<0?"bad":""}">${dl>0?"+":""}${dl}</b>rating</div><div><b>+${xp}</b>XP</div><div><b>${arRank(nr.r)}</b>⭐ ${nr.r}</div></div>
+  ${S.bot?`<p class="hint">Practice match: no rating change. Start a live search again when more players are online.</p>`:""}
+  <div class="act"><button class="pri" id="xag">Play again</button><button class="sm" id="xbk">Arena home</button></div></div>`;
+  $("xag").onclick=()=>arSearch(S.mode);$("xbk").onclick=()=>arenaT();
+  if(res===1)sfx("win");
+}
+
+/* ================= ADMIN HUB ================= */
+const XD={tab:"ov",q:""};
+async function adminT(){
+  if(!U)return gate("🛡️ Admin hub");
+  if(!isAdmin()){$("view").innerHTML=`<div class="card"><h2 style="margin:0">🛡️ Admin hub</h2><p class="hint">Only guild admins can open this page.</p></div>`;return}
+  $("view").innerHTML=`<div class="card" style="text-align:center">Loading admin hub…</div>`;
+  let a=null,sc=null;
+  try{a=await dget(U.uid);await ensureIds();if(U.fid)sc=await scDoc(U.fid)}catch(e){}
+  if(mode!=="admin")return;
+  if(!a){$("view").innerHTML=`<div class="card"><p class="hint">Couldn't load. Check your connection.</p><button class="sm" id="xr">Retry</button></div>`;$("xr").onclick=adminT;return}
+  const t=dn(),roles=rolesFix(a),gi=a.gi||{},od=Object.values(a.od||{}).sort((x,y)=>y.at-x.at),au=Object.values(a.au||{}).sort((x,y)=>y.at-x.at);
+  const L=Object.entries(a.logins||{}).filter(([,l])=>l.t).map(([h,l])=>({h,l,s:h===U.h?P:norm(l.s),role:roles[h]||"member",ar:l.ar||null})).sort((x,y)=>(y.l.last||0)-(x.l.last||0));
+  const nAdm=L.filter(x=>rk(x.role)>=1).length,nSup=L.filter(x=>x.role==="super").length,sup=roles[U.h]==="super",xp=L.reduce((n,x)=>n+(x.s.xp||0),0),act=L.filter(x=>Date.now()-(x.l.last||0)<7*864e5).length;
+  const TB=[["ov","📊 Overview"],["mem","👥 Members"],["con","🔗 Connections"],["ord","🧾 Orders"],["ar","⚔️ Arena"],["au","📜 Audit"]];
+  const banners=Object.keys(gi).map(id=>itemById(id)).filter(Boolean);
+  let body="";
+  if(XD.tab==="ov")body=`<div class="stat three" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))"><div><b>${L.length}</b>members</div><div><b>${act}</b>active (7 days)</div><div><b>${nSup}</b>👑 super</div><div><b>${nAdm-nSup}</b>🛡️ admins</div><div><b>${fmt(xp)}</b>total XP</div><div><b>${fmt((a.vault||{}).c||0)}</b>vault 🪙</div><div><b>${od.length}</b>recent orders</div></div>
+    <p class="hint">Guild items: ${banners.length?banners.map(b=>b.e+" "+esc(b.n)).join(" · "):"none yet. Buy a banner in the Shop."}</p>
+    <h2>Recent admin actions</h2>${au.slice(0,5).map(x=>`<div class="lg2"><span>${esc(x.m||"")} · ${esc(x.d||"")} <small class="hint">${ago(x.at)}</small></span></div>`).join("")||`<p class="hint">No actions recorded yet.</p>`}`;
+  if(XD.tab==="mem"){
+    const rows=L;
+    body=`<input type="search" id="xq" placeholder="🔍 Search members" aria-label="Search members" value="${esc(XD.q)}" autocomplete="off" style="margin-bottom:10px;width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit">`+
+    rows.map(({h,l,s,role,ar})=>{const me=h===U.h,btn=sup&&!(role==="super"&&nSup<2)?ROLES.filter(z=>z!==role).map(z=>`<button class="sm" data-rl="${h}:${z}">Make ${z}</button>`).join(""):"";
+      return`<div class="lr ${me?"me":""}" data-s="${esc(String(l.m).toLowerCase())}"><div class="lh"><span class="ic">${l.t==="email"?"✉️":"📱"}</span><div class="lm"><b>${esc(l.m)}</b><div class="n"><span class="tg">${roleLab(role)}</span><span class="tg">${esc(pubNm(l,a.logins))}</span>${me?`<span class="tg">This device</span>`:""}Joined ${ago(l.add)} · Active ${ago(l.last)} · ${esc(l.dev||"unknown device")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${btn}</div></div>
+      <div class="ls"><div><b>${fmt(s.xp||0)}</b>XP</div><div><b>${fmt(s.cn||0)}</b>🪙 coins</div><div><b>${s.ans?Math.round(s.ok/s.ans*100):0}%</b>accuracy</div><div><b>${ar?ar.r:"—"}</b>Arena ⭐</div><div><b>${Object.keys(l.inv||{}).length}</b>shop items</div><div><b>${(s.sk&&s.sk.cur)||0}🔥</b>streak</div></div></div>`}).join("")||`<p class="hint">No member matches.</p>`;
+    body+=`<p class="hint">${sup?"As a Super admin you can change anyone's role.":"Only Super admins can change roles."} This is your guild only. Emails and phone numbers are stored hashed and shown masked.</p>`}
+  if(XD.tab==="con"){
+    const sect=(t,m,ic,btn)=>{const e=Object.entries(m||{}).sort((x,y)=>(y[1].at||0)-(x[1].at||0));return`<h2>${ic} ${t} (${e.length})</h2>${e.map(([f,v])=>`<div class="lg2"><span><b>${esc(v.n||"Player")}</b> <small class="hint">${esc(f)} · ${ago(v.at)}</small></span><span><button class="sm" data-v="${esc(f)}">View</button>${btn?` <button class="sm dg" data-${btn}="${esc(f)}">${btn==="uf"?"Unfriend":"Decline"}</button>`:""}</span></div>`).join("")||`<p class="hint" style="margin:0">None.</p>`}`};
+    body=sc?sect("Friends",sc.fr,"👥","uf")+sect("Friend requests",sc.rq,"👋","dc")+sect("Followers",sc.fl,"⭐")+sect("Following",sc.fg,"➡️"):`<p class="hint">Friends data isn't available yet. Open Account and guild once to create your Friend ID.</p>`;
+    body+=`<h2>🔑 Logins (${L.length})</h2>`+L.map(x=>`<div class="lg2"><span>${x.l.t==="email"?"✉️":"📱"} ${esc(x.l.m)} <span class="tg">${roleLab(x.role)}</span><br><small class="hint">${esc(x.l.dev||"unknown device")} · last seen ${ago(x.l.last)}</small></span></div>`).join("")}
+  if(XD.tab==="ord")body=od.length?`<div class="x-w"><table class="x-tb"><tr><th>When</th><th>Who</th><th>Item</th><th>Cost</th><th>From</th></tr>${od.map(o=>`<tr><td>${ago(o.at)}</td><td>${esc(o.m||"")}</td><td>${esc(o.n||"")}</td><td>${fmt(o.c)}</td><td>${o.s==="g"?"🏰 vault":"🪙 own coins"}</td></tr>`).join("")}</table></div><p class="hint">The last 40 purchases are kept.</p>`:`<p class="hint">No purchases yet.</p>`;
+  if(XD.tab==="ar"){const R=L.filter(x=>x.ar).sort((x,y)=>y.ar.r-x.ar.r);body=R.length?`<div class="x-w"><table class="x-tb"><tr><th>#</th><th>Member</th><th>Rank</th><th>Rating</th><th>W–L–D</th></tr>${R.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.l.m)}</td><td>${arRank(x.ar.r)}</td><td>${x.ar.r}</td><td>${x.ar.w}–${x.ar.l}–${x.ar.d}</td></tr>`).join("")}</table></div>`:`<p class="hint">No member has played in the Arena yet.</p>`}
+  if(XD.tab==="au")body=au.length?au.map(x=>`<div class="lg2"><span>${esc(x.m||"")} · ${esc(x.d||"")} <small class="hint">${ago(x.at)}</small></span></div>`).join(""):`<p class="hint">Role changes made here are listed. Nothing yet.</p>`;
+  $("view").innerHTML=`<div class="card"><div class="bar2" style="margin:0"><h2 style="margin:0">🛡️ Admin hub</h2><span class="tg">${esc(U.name)}</span><span class="sp"></span><button class="sm" id="xrf">↻ Refresh</button></div></div>
+  <div class="tabs" style="margin-top:14px">${TB.map(([k,n])=>`<button class="tab ${XD.tab===k?"on":""}" data-t="${k}">${n}</button>`).join("")}</div><div class="card">${body}</div>`;
+  const v=$("view");
+  $("xrf").onclick=adminT;
+  v.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{XD.tab=b.dataset.t;adminT()});
+  const q=$("xq");if(q)q.oninput=()=>{XD.q=q.value;const t=q.value.trim().toLowerCase();v.querySelectorAll(".lr[data-s]").forEach(r=>r.hidden=!!t&&!r.dataset.s.includes(t))};
+  v.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{location.hash="#u="+b.dataset.v});
+  v.querySelectorAll("[data-uf]").forEach(b=>b.onclick=async()=>{if(!confirm("Remove this friend?"))return;b.disabled=true;try{await SC.unfriend(b.dataset.uf)}catch(e){toast("Couldn't update.")}adminT()});
+  v.querySelectorAll("[data-dc]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await SC.decline(b.dataset.dc)}catch(e){toast("Couldn't update.")}adminT()});
+  v.querySelectorAll("[data-rl]").forEach(b=>b.onclick=async()=>{
+    const[h,r]=b.dataset.rl.split(":");b.disabled=true;
+    try{
+      const F=await fbp();let ro;
+      await F.txn(async tx=>{const x=await tx.get(U.uid);if(!x||x.mergedInto)throw new Error("gone");const cur=rolesFix(x);
+        if(cur[U.h]!=="super")throw new Error("super");if(!x.logins[h]||!ROLES.includes(r))throw new Error("gone");
+        const n=Object.assign({},cur,{[h]:r});if(!Object.keys(n).some(k=>x.logins[k]&&x.logins[k].t&&n[k]==="super"))throw new Error("last");
+        const u={roles:n};auAdd(u,x,{m:pubNm(x.logins[h]||{},x.logins),d:(cur[h]||"member")+" → "+r+" by "+pubNm(x.logins[U.h]||{},x.logins),at:Date.now()});tx.upd(U.uid,u);ro=n});
+      U.roles=ro;toast("✅ Role updated");hud()}
+    catch(e){toast(xMsg(e))}
+    adminT()});
+}
+
+/* ---------- wiring ---------- */
+MODES.push(["shop","🛒 Shop"],["arena","⚔️ Arena"],["admin","🛡️ Admin"]);
+{const _pm=plusMode;plusMode=function(m){
+  if(m==="shop"||m==="arena"||m==="admin"){document.body.classList.add("jr");({shop:shopT,arena:arenaT,admin:adminT})[m]();return true}
+  return _pm.apply(this,arguments)}}
+["shop","arena","admin"].forEach(k=>{
+  const b=document.createElement("button");b.className="umi tab";b.setAttribute("role","menuitem");b.dataset.k=k;b.textContent=MODES.find(x=>x[0]===k)[1];if(k==="admin")b.hidden=true;
+  b.onclick=()=>goTab(b);$("moremenu").appendChild(b)});
+xSync();
+})();
 </script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";

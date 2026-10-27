@@ -20,6 +20,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap"></noscript>
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/icon-192.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✖️</text></svg>">
 <style>
 /* =====================================================================
@@ -338,11 +339,11 @@ function sfx(k){
   try{if(PREF.haptic&&navigator.vibrate)navigator.vibrate(k==="bad"?[35,45,35]:k==="win"?[20,40,20,40,60]:12)}catch(e){}
 }
 /* Spaced repetition (Leitner boxes). P.ms["7x8"] = [box 0-5, times seen, last day, times missed]. Facts up to 20 x 20 are tracked. */
-const BOX_DAYS=[0,1,2,4,8,16],MS_MAX=20,fkey=(a,m)=>a<m?a+"x"+m:m+"x"+a;
+const BOX_DAYS=[0,1,2,4,8,16],MS_MAX=20,JTRACK=60,fkey=(a,m)=>a<m?a+"x"+m:m+"x"+a;
 const fact=(a,m)=>P.ms[fkey(a,m)];
 const mlev=e=>!e?0:e[0]>=4?3:e[0]>=2?2:1;
 function learnFact(a,m,ok,help){
-  if(a>MS_MAX||m>MS_MAX)return;
+  if(Math.max(a,m)>JTRACK||Math.min(a,m)>MS_MAX)return;
   const k=fkey(a,m),e=P.ms[k]||(P.ms[k]=[0,0,0,0]);
   e[1]++;e[2]=dn();
   if(ok){if(!help)e[0]=Math.min(5,e[0]+1)}else{e[0]=0;e[3]++}
@@ -356,7 +357,7 @@ function record(a,m,ok,help){
 function smartPick(p){
   if(p.length<2)return p[0];
   const t=dn(),prev=st.cur&&fkey(st.cur.a,st.cur.m);
-  const w=p.map(([a,m])=>{if(fkey(a,m)===prev)return 0;const e=fact(a,m);if(!e)return 3;return(6-e[0])*((t-e[2])>=BOX_DAYS[e[0]]?2:.5)+(e[3]?1:0)});
+  const w=p.map(([a,m])=>{if(fkey(a,m)===prev)return 0;const e=fact(a,m);if(!e)return 3;return(6-e[0])*((t-e[2])>=BOX_DAYS[e[0]]?2:(e[0]>=4?.08:.5))+(e[3]?1:0)});
   let r=Math.random()*w.reduce((x,y)=>x+y,0);
   for(let i=0;i<p.length;i++){r-=w[i];if(r<=0)return p[i]}
   return p[p.length-1];
@@ -383,7 +384,7 @@ const ACH=[
   ["lv5","🎖️","Level 5","Reach level 5",()=>lvOf()>=5],
   ["lv10","👑","Level 10","Reach level 10",()=>lvOf()>=10],
   ["jr1","🧭","Pathfinder","Master a bunch on the Journey",()=>Object.values(P.jr.stg).some(d=>d.m&&!d.sk)],
-  ["jr9","🗺️","Path complete","Master every bunch on the Journey",()=>JB.every((_,i)=>P.jr.stg[i]&&P.jr.stg[i].m)]
+  ["jr9","🗺️","Path complete","Master every bunch on the Journey",()=>JB.slice(0,9).every((_,i)=>P.jr.stg[i]&&P.jr.stg[i].m)]
 ];
 function checkAch(){
   const got=[];for(const[id,ic,ti,ds,fn]of ACH){if(!P.ach[id]&&fn()){P.ach[id]=Date.now();got.push(ic+" "+ti)}}
@@ -703,8 +704,8 @@ function renderDash(msg=""){
   const sup=isSuper(),nSup=L.filter(x=>U.roles[x.h]==="super").length,vr=rk(U.roles[U.h]);
   const rows=L.map(({h,l,s})=>{const me=h===U.h,role=U.roles[h]||"member",fresh=!me&&Date.now()-l.add<864e5,share=T.xp?Math.round(s.xp/T.xp*100):0,ac=s.ans?Math.round(s.ok/s.ans*100):0,mx=Math.max(1,...Array.from({length:7},(_,i)=>s.dh[t-i]||0));
     const bars=Array.from({length:7},(_,i)=>{const v=s.dh[t-6+i]||0;return`<i style="height:${Math.max(3,Math.round(v/mx*30))}px" title="${v} XP"></i>`}).join("");
-    const canSet=sup&&!(role==="super"&&nSup<2),canRm=me||sup||(vr===1&&role==="member"),btn=`${canSet?ROLES.filter(x=>x!==role).map(x=>`<button class="sm" data-rl="${h}:${x}">Make ${x}</button>`).join(""):""}${canRm?`<button class="sm dg" data-rm="${h}">${me?"Leave":"Remove"}</button>`:""}`;
-    return`<div class="lr ${me?"me":""}"><div class="lh"><span class="ic">${l.t==="email"?"✉️":"📱"}</span><div class="lm"><b>${esc(l.m)}</b><div class="n"><span class="tg">${roleLab(role)}</span><span class="tg">${esc(pubNm(l,U.logins))}</span>${me?`<span class="tg">This device</span>`:""}${fresh?`<span class="tg nw">New</span>`:""}Added ${ago(l.add)} · Active ${ago(l.last)} · ${esc(l.dev||"unknown device")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${btn}</div></div><div class="ls"><div><b>+${s.xp}</b>XP since joining (${share}%)</div><div><b>${s.ans}</b>answered</div><div><b>${ac}%</b>accuracy</div><div><b>+${s.dh[t]||0}</b>XP today</div><div><div class="sp7" title="Last 7 days">${bars}</div>7 days</div></div><div class="shb"><b style="width:${share}%"></b></div></div>`}).join("");
+    const canSet=sup&&!(role==="super"&&nSup<2),canRm=me||sup||(vr===1&&role==="member"),btn=`${me||adm?`<button class="sm" data-edl="${h}">✏️ Manage</button>`:""}${canSet?ROLES.filter(x=>x!==role).map(x=>`<button class="sm" data-rl="${h}:${x}">Make ${x}</button>`).join(""):""}${canRm?`<button class="sm dg" data-rm="${h}">${me?"Leave":"Remove"}</button>`:""}`;
+    return`<div class="lr ${me?"me":""}"><div class="lh"><span class="ic">${l.t==="email"?"✉️":"📱"}</span><div class="lm"><b>${esc(l.m)}</b>${l.lb?` <span class="tg">${esc(l.lb)}</span>`:""}<div class="n"><span class="tg">${roleLab(role)}</span><span class="tg">${esc(pubNm(l,U.logins))}</span>${me?`<span class="tg">This device</span>`:""}${fresh?`<span class="tg nw">New</span>`:""}Added ${ago(l.add)} · Active ${ago(l.last)} · ${esc(l.dev||"unknown device")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${btn}</div></div><div class="ls"><div><b>+${s.xp}</b>XP since joining (${share}%)</div><div><b>${s.ans}</b>answered</div><div><b>${ac}%</b>accuracy</div><div><b>+${s.dh[t]||0}</b>XP today</div><div><div class="sp7" title="Last 7 days">${bars}</div>7 days</div></div><div class="shb"><b style="width:${share}%"></b></div></div>`}).join("");
   const led={};for(const h in by)led[h]={m:by[h].m,t:by[h].t,x:by[h].xp};
   for(const r of L){const e=led[r.h]||(led[r.h]={m:r.l.m,t:r.l.t,x:0});e.x+=r.s.xp;e.cur=true}
   const unattr=Math.max(0,(b?b.xp:0)-Object.values(by).reduce((a,e)=>a+e.xp,0));
@@ -998,7 +999,7 @@ function journey(){
   const nx=JB.findIndex((_,s)=>!jm(s)),md=JB.filter((_,s)=>jm(s)).length;
   const row=s=>{const d=P.jr.stg[s]||{},m=jm(s),n=s===nx;
     return`<div class="js ${m?"m":""} ${n?"nx":""}"><div class="jn">${m?"✓":s+1}</div><div class="card"><div class="jh"><h3>Tables ${jt(s)}</h3><span class="hint" style="margin:0">${m?(d.sk?"Skipped ahead":d.r===20?"Stretched to ×20":"Mastered")+(d.st?" · "+"★".repeat(d.st)+"☆".repeat(3-d.st):"")+(jdue(s).length?" · "+jdue(s).length+" due":""):n?"⭐ Up next":"Not started"}</span></div><div class="act" style="justify-content:flex-start;margin-top:10px">${jb("pv",m?"Review":"Learn &amp; practice","sm",s)}${jb("to","Test out","sm",s)}${m&&d.r!==20?jb("pv","Stretch ×11 to ×20","sm",s,1):""}</div></div></div>`};
-  $("view").innerHTML=`<div class="card"><h2 style="margin:0">${nx<0?"🎉 You finished the path":"🧭 Up next: tables "+jt(nx)}</h2><p class="hint">${md} of ${JB.length} bunches mastered. Preview two tables, practise, check the exam preview, then take the exam. Already know a bunch? Test out and skip it.</p><div class="pb"><b style="width:${md/JB.length*100}%"></b></div><div class="act" style="justify-content:flex-start"><button class="pri" data-ja="cn">${nx<0?"Free practice":"Continue"}</button><button class="sm" data-ja="lv">Change my level</button></div></div>${jDueCard()}<div class="jp">${JB.map((_,s)=>row(s)).join("")}</div>`}
+  $("view").innerHTML=`<div class="card"><h2 style="margin:0">${nx<0?"🎉 You finished the path":"🧭 Up next: tables "+jt(nx)}</h2><p class="hint">${md} bunch${md===1?"":"es"} mastered. The path never ends: every bunch you master opens the next two tables. Preview two tables, practise, check the exam preview, then take the exam. Already know a bunch? Test out and skip it.</p><div class="pb"><b style="width:${md/JB.length*100}%"></b></div><div class="act" style="justify-content:flex-start"><button class="pri" data-ja="cn">${nx<0?"Free practice":"Continue"}</button><button class="sm" data-ja="lv">Change my level</button></div></div>${jDueCard()}<div class="jp">${jWindow(row)}</div>`}
 function jWelcome(){$("view").innerHTML=jbox(`<h2 style="margin:0">Where should we start?</h2><p class="hint">Pick your level. You can test out of any bunch later, so you never repeat what you already know.</p><div class="jo"><button data-ja="nw"><b>I'm new to tables</b><small>Start with 2 and 3</small></button><button data-ja="k5"><b>I know tables up to 5</b><small>Start with 6 and 7</small></button><button data-ja="k10"><b>I know tables up to 9</b><small>Start with 10 and 11</small></button><button data-ja="qc"><b>Check me</b><small>A short quiz finds your level</small></button></div>`)}
 function jStart(s){P.jr.start=s;for(let t=0;t<s;t++)if(!jm(t))P.jr.stg[t]={m:1,sk:1,r:10,best:0};save();toast("Starting at tables "+jt(s));journey()}
 function jPlace(){
@@ -1007,7 +1008,7 @@ function jPlace(){
 function jPreview(s,x){
   const nxt=s+1<JB.length?`After this: tables ${jt(s+1)}.`:"This is the last bunch.";
   let h=`<div class="bar2"><b>Learn tables ${jt(s)}${x?" · ×11 to ×20":""}</b><span class="sp"></span>${jb("bk","Back to path","sm")}</div><p class="hint" style="margin:0 0 10px">Read the two tables, then hide the answers and test yourself. Tap an answer to hide or reveal it. ${nxt}</p><div class="grid">`;
-  JB[s].forEach(a=>{h+=`<div class="tbl" style="--c:${col(a)}"><h3>Table of ${a}</h3><div class="hint" style="margin:0;padding:8px 16px 4px">${JTIP[a]||"Split "+a+" into tens and ones."}</div><div class="body">`;for(let m=x?11:1;m<=(x?20:10);m++)h+=`<div class="line"><span>${a} × ${m}</span><span class="a">= <b>${a*m}</b></span></div>`;h+=`</div></div>`});
+  JB[s].forEach(a=>{h+=`<div class="tbl" style="--c:${col(a)}"><h3>Table of ${a}</h3><div class="hint" style="margin:0;padding:8px 16px 4px">${JTIP[a]||(a>12?"Split "+a+" into "+(a-a%10)+" + "+(a%10)+": multiply each part, then add.":"Split "+a+" into tens and ones.")}</div><div class="body">`;for(let m=x?11:1;m<=(x?20:10);m++)h+=`<div class="line"><span>${a} × ${m}</span><span class="a">= <b>${a*m}</b></span></div>`;h+=`</div></div>`});
   $("view").innerHTML=h+`</div><div class="act"><button class="sm" id="jh">Hide all answers</button>${jb("pr","Start practice","pri",s,x)}${jb("sk","I know these: go to exam preview","sm",s,x)}</div>`;
   document.querySelectorAll(".a").forEach(e=>e.onclick=()=>e.classList.toggle("hide"));
   $("jh").onclick=()=>document.querySelectorAll(".a").forEach(e=>e.classList.add("hide"))}
@@ -1111,7 +1112,7 @@ let CSEL=null;
 const csave=()=>LS.set("tt_cert",CS);
 function certs(){
   const o=[];JB.forEach((_,s)=>{const d=P.jr.stg[s];if(d&&d.m&&!d.sk)o.push({k:"b"+s,t:"Bunch mastered",sub:"Multiplication tables "+jt(s),d})});
-  if(JB.every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].m))o.push({k:"all",t:"Path complete",sub:"Multiplication tables 2 to 20",d:{ts:Math.max(0,...JB.map((_,s)=>P.jr.stg[s].ts||0))}});
+  if(JB.slice(0,9).every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].m))o.push({k:"all",t:"Path complete",sub:"Multiplication tables 2 to 20",d:{ts:Math.max(0,...JB.slice(0,9).map((_,s)=>P.jr.stg[s].ts||0))}});
   return o}
 const cdate=d=>new Date(d.ts||Date.now()).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
 function drawCert(cv,c,A){
@@ -1589,7 +1590,7 @@ function metrics(){
 function tamper(){return P.ok>P.ans||P.xp>15*P.ans+1500||P.speed>75||P.bs>P.ok||P.sk.best>4000}
 function maxInfo(){
   const o=[];if(lvOf()>=MAXLV)o.push("Top rank (level "+MAXLV+"+)");
-  if(JB.every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].m))o.push("Journey complete");
+  if(JB.slice(0,9).every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].m))o.push("Journey complete");
   if(ACH.every(a=>P.ach[a[0]]))o.push("All badges");
   let n=0;for(let i=1;i<=20;i++)for(let j=i;j<=20;j++)if(mlev(fact(i,j))===3)n++;if(n>=210)o.push("All 20×20 facts mastered");
   if(P.speed>=50)o.push("Speed round 50+");return o;
@@ -1724,7 +1725,7 @@ smartPick=function(p){
   const unseen=p.filter(([a,m])=>!fact(a,m)&&fkey(a,m)!==prev);
   if(unseen.length&&QC-lastNew>=4){lastNew=QC;LAB="new";return pick(unseen)}
   if(QC%5===0){const wk=Object.keys(P.weak).map(k=>k.split("x").map(Number)).filter(f=>f[0]<=MS_MAX&&f[1]<=MS_MAX&&fkey(f[0],f[1])!==prev);if(wk.length)return pick(wk)}
-  const w=p.map(([a,m])=>{if(fkey(a,m)===prev)return 0;const e=fact(a,m);if(!e)return 3;return(6-e[0])*((t-e[2])>=BOX_DAYS[e[0]]?2:.5)+(e[3]?1:0)});
+  const w=p.map(([a,m])=>{if(fkey(a,m)===prev)return 0;const e=fact(a,m);if(!e)return 3;return(6-e[0])*((t-e[2])>=BOX_DAYS[e[0]]?2:(e[0]>=4?.08:.5))+(e[3]?1:0)});
   let r=Math.random()*w.reduce((x,y)=>x+y,0);
   for(let i=0;i<p.length;i++){r-=w[i];if(r<=0)return p[i]}
   return p[p.length-1];
@@ -1924,7 +1925,7 @@ function gq(o){
   const grade=(ok)=>{
     i++;if(ok)right++;else{miss++;bad.push(cur)}
     answerQ(cur,ok,hinted);streak=ok?streak+1:0;P.bs=Math.max(P.bs,streak);recent.push(ok);if(recent.length>3)recent.shift();
-    if(o.auto){X.lv=X.lv||{};if(streak>=5&&L<5){L++;streak=0;recent=[];toast("⬆️ Level "+L)}else if(!ok&&recent.filter(x=>!x).length>=2&&L>1){L--;recent=[];toast("Level "+L+". Let's rebuild")}X.lv[o.g]=L}
+    if(o.auto){X.lv=X.lv||{};if(streak>=5){L++;streak=0;recent=[];toast("⬆️ Level "+L)}else if(!ok&&recent.filter(x=>!x).length>=2&&L>1){L--;recent=[];toast("Level "+L+". Let's rebuild")}X.lv[o.g]=L}
   };
   const feedback=(ok,go)=>{const fb=$("fb");fb.className="fb "+(ok?"ok":"bad");
     if(ok){fb.textContent=hinted?"✅ Correct, with a hint":"✅ Correct!";setTimeout(nx,550)}
@@ -1945,7 +1946,7 @@ addEventListener("keydown",e=>{if(!/^[1-4]$/.test(e.key)||(document.activeElemen
 function labHome(){
   const pl=g=>(X.gp[g]||[0])[0];
   $("view").innerHTML=`<div class="card"><h2 style="margin:0">🧮 Math Lab</h2><p class="hint">Mind-calculation games. They share one memory with your times tables: facts you miss come back soon, new ones are mixed in, and old ones return when due.</p>
-  <div class="two"><div><label for="lm">Style</label><select id="lm"><option value="q">15 questions</option><option value="s">Survival (3 lives)</option></select></div><div><label for="ll">Level</label><select id="ll"><option value="auto">Auto (adapts to you)</option>${[1,2,3,4,5].map(n=>`<option value="${n}">Level ${n}</option>`).join("")}</select></div></div>
+  <div class="two"><div><label for="lm">Style</label><select id="lm"><option value="q">15 questions</option><option value="s">Survival (3 lives)</option></select></div><div><label for="ll">Level</label><select id="ll"><option value="auto">Auto (adapts to you)</option>${lvOpts()}</select></div></div>
   <div class="jo fold-m shut" id="lbl">${LABG.map(([k,i,n,d])=>`<button data-lg="${k}"><b>${i} ${n}</b><small>${d}</small><small>${pl(k)?pl(k)+" answered · best "+((X.best||{})[k]||0):"🆕 not played yet"}</small></button>`).join("")}<button data-lg="shoot"><b>🔫 Shooter</b><small>Lock a target and shoot the right answer</small><small>${(X.gp.shoot||[0])[0]?(X.gp.shoot||[0])[0]+" answered":"🆕 not played yet"}</small></button></div><button class="sm fm" id="lbm">View more games ▾</button></div>`;
   $("lbm").onclick=()=>{const s=$("lbl").classList.toggle("shut");$("lbm").textContent=s?"View more games ▾":"View less ▴"};
   $("view").querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const g=b.dataset.lg;if(g==="shoot"){mode="shoot";start();return}labStart(g,$("lm").value,$("ll").value)});
@@ -1977,7 +1978,7 @@ function shootPlay(src,auto){
   const CX=W/2,CY=H-30,GROUND=H-64,S={lives:3,score:0,lv:1,streak:0,en:[],bu:[],pt:[],lock:null,Q:null,aim:-Math.PI/2,over:false,wait:0,kb:"",kbT:0,t:performance.now(),flash:0};
   const poolT=()=>{const p=pool();if(p.length)return p;const q=[];for(let a=2;a<=12;a++)for(let m=1;m<=10;m++)q.push([a,m]);return q};
   const genQ2=()=>{if(src==="tables"){const f=smartPick(poolT()),q=mulQ(f[0],f[1]);q.lab=LAB;LAB="";return q}
-    for(let i=0;i<6;i++){const q=src==="dmix"?mixGen():genQ(src,Math.min(5,1+Math.floor(S.score/6)));if(!q.ch&&!q.seq&&q.a!=null)return q}return genQ("add",1)};
+    for(let i=0;i<6;i++){const q=src==="dmix"?mixGen():genQ(src,Math.max(1+Math.floor(S.score/6),Math.min(8,((X.lv||{})[src])||1)));if(!q.ch&&!q.seq&&q.a!=null)return q}return genQ("add",1)};
   const hud2=()=>{$("sh").textContent=`${"❤️".repeat(S.lives)}${"🖤".repeat(3-S.lives)}  ·  Score ${S.score}  ·  Level ${S.lv}`};
   const wave=()=>{
     S.Q=genQ2();S.Q.miss=false;S.lock=null;S.en=[];qMark();$("sq").innerHTML=S.Q.t;
@@ -2762,7 +2763,7 @@ function mmUp(){
 
 /* ---------- Certificates v2: titles upgrade automatically from progress, milestone certificates, shown on public pages ---------- */
 {const _c=certs;certs=function(){
-  const L=_c.apply(this,arguments).map(c=>{if(c.k[0]==="b"&&c.d&&c.d.st===3)c.t="Bunch mastered with distinction";if(c.k==="all"&&JB.every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].st===3))c.t="Path complete with distinction";return c});
+  const L=_c.apply(this,arguments).map(c=>{if(c.k[0]==="b"&&c.d&&c.d.st===3)c.t="Bunch mastered with distinction";if(c.k==="all"&&JB.slice(0,9).every((_,s)=>P.jr.stg[s]&&P.jr.stg[s].st===3))c.t="Path complete with distinction";return c});
   let M={};try{M=LS.get("tt_cts")||{}}catch(e){}
   const xp=tot().xp,sk=P.sk.best,fm=Object.values(P.ms).filter(e=>mlev(e)===3).length,add=(k,ok,t,sub)=>{if(!ok)return;if(!M[k])M[k]=Date.now();L.push({k,t,sub,d:{ts:M[k]}})};
   [[500,"Rising Star"],[2000,"Table Champion"],[10000,"Maths Legend"]].forEach(([n,t])=>add("xp"+n,xp>=n,t,"Earned "+fmt(n)+" XP"));
@@ -2843,6 +2844,175 @@ addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("donv").hidden)donClose()
 </script>
 <script>
 /* =====================================================================
+   SECTION: ENDLESS · nothing in this block has a last level
+   1) Journey never ends: every bunch you master opens the next pair of tables (21+22, 23+24, ...).
+   2) Every Math Lab game has unlimited levels. Levels 1-5 are the original hand-made ranges; from level 6 on, numbers,
+      steps and traps are calculated from the level number, so there is nothing to write or update later.
+      Sizes stop growing at safe limits (so answers never overflow) and extra twists keep making it harder.
+   3) Connected memory: a question the player already KNOWS (box 4+, not due yet) is skipped and a fresh one is made,
+      so players keep meeting things they have not done. New questions join "known" after they are answered right.
+   4) 11 new games built on the same engine (hints, step-by-step answers, retries, daily mix and Shooter work automatically).
+   5) Login manager: a private label for each login and "Change email / phone" that keeps all scores.
+   To add a game: copy one entry in NEWG below. A generator is r(L) -> numbers, mk(...numbers) -> question.
+   ===================================================================== */
+(function(){
+"use strict";
+const RI=(lo,hi)=>lo+Math.floor(Math.random()*(Math.max(lo,hi)-lo+1));        /* safe random int, even if hi<lo */
+const PK=a=>a[Math.floor(Math.random()*a.length)];
+const S=L=>Math.max(0,L-5);                                                      /* steps beyond the hand-made levels */
+const DG=(L,lo,hi)=>Math.min(hi,lo+Math.floor(S(L)/2));                          /* digits grow every 2 levels up to a safe cap */
+const P10=d=>Math.pow(10,d);
+const rd=d=>RI(P10(d-1),P10(d)-1);                                               /* random number with exactly d digits */
+const carry=d=>{let s="";for(let i=0;i<d;i++)s+=RI(i?5:6,9);return+s};          /* every digit 5-9: forces a carry in each column */
+const gc=(a,b)=>b?gc(b,a%b):a;
+
+/* ---------- 1. endless Journey ---------- */
+const JBASE=9;
+window.jEnsure=function(){let last=-1;for(const k in P.jr.stg){const s=+k;if(P.jr.stg[k]&&P.jr.stg[k].m&&s>last)last=s}
+  const need=Math.max(JBASE,last+3);while(JB.length<need){const s=JB.length,t=21+2*(s-JBASE);JB.push([t,t+1])}};
+let EARLY=false;
+window.jWindow=row=>{jEnsure();const nx=JB.findIndex((_,s)=>!jm(s)),first=EARLY?0:Math.max(0,nx-4);
+  return(first>0?`<div class="act" style="justify-content:flex-start"><button class="sm" data-ja="er">Show ${first} earlier bunches</button></div>`:"")+JB.map((_,s)=>s>=first?row(s):"").join("")};
+$("view").addEventListener("click",e=>{const b=e.target.closest("[data-ja=er]");if(b){EARLY=true;journey()}});
+{const j0=journey;journey=function(){jEnsure();return j0.apply(this,arguments)}}
+ACH.push(["jr10","🚀","Beyond twenty","Master a bunch past table 20",()=>Object.keys(P.jr.stg).some(k=>+k>=JBASE&&P.jr.stg[k].m&&!P.jr.stg[k].sk)],
+ ["jr20","🌌","Endless explorer","Master 20 bunches on the Journey",()=>Object.values(P.jr.stg).filter(d=>d.m&&!d.sk).length>=20],
+ ["lv10","📈","Level 10","Reach level 10 in any Math Lab game",()=>Object.values((X&&X.lv)||{}).some(v=>v>=10)]);
+
+/* ---------- 2. unlimited levels for the 16 existing generators (levels 6+ are calculated) ---------- */
+const EXT={
+ add:L=>{const d=DG(L,3,9);return S(L)>=12?[carry(d),carry(d)]:[rd(d),rd(d)]},
+ sub:L=>{const d=DG(L,3,9);let a=rd(d),b=rd(d);for(let i=0;i<(S(L)>=12?40:1);i++){a=rd(d);b=rd(d);if(b>a){const t=a;a=b;b=t}if(a===b)a++;if(S(L)<12)break;let br=0,x=a,y=b;while(y>0){if(x%10<y%10)br++;x=Math.floor(x/10);y=Math.floor(y/10)}if(br>=d-1)break}if(b>a){const t=a;a=b;b=t}if(a===b)a++;return[a,b]},
+ bond:L=>{const k=Math.min(9,4+Math.floor(S(L)/2)),tg=P10(k);return[RI(1,tg-1),tg]},
+ pw:L=>{const s=S(L);return RI(0,2)?[Math.min(2500,RI(26+s*3,40+s*8)),2]:[Math.min(200,RI(11+s,16+s*2)),3]},
+ div:L=>{const s=S(L),b=RI(2,Math.min(99,13+s*3)),q=RI(2,Math.min(999,26+s*8));return[b*q,b]},
+ seq:L=>{const s=S(L),t=RI(0,5),st=RI(1,60+s*40),d=RI(2,Math.min(500,12+s*3));let a=[];
+   if(t===0)for(let i=0;i<5;i++)a.push(st+d*i);
+   else if(t===1){for(let i=0;i<5;i++)a.push(st+d*4-d*i)}
+   else if(t===2){const r=PK([2,3,4,5]),s0=RI(1,9);for(let i=0;i<5;i++)a.push(s0*Math.pow(r,i))}
+   else if(t===3){let v=st;const d0=RI(1,4+s);for(let i=0;i<5;i++){a.push(v);v+=d0+i*RI(1,3)}}
+   else if(t===4){const x=RI(1,9+s),y=RI(2,12+s);a=[x,y];for(let i=2;i<5;i++)a.push(a[i-1]+a[i-2])}
+   else{const n0=RI(2,30+s*4);for(let i=0;i<5;i++)a.push((n0+i)*(n0+i))}
+   return[a]},
+ cmp:L=>{const s=S(L),ex=()=>{const a=RI(12+s*2,40+s*6),b=RI(6+s,20+s*3);return RI(0,3)?[`${a} × ${b}`,a*b]:[`${a*3} + ${b*7}`,a*3+b*7]};let e1,v1,e2,v2;
+   for(let i=0;i<40;i++){[e1,v1]=ex();[e2,v2]=ex();if(v1!==v2&&e1!==e2&&Math.abs(v1-v2)<=Math.max(10,v1*.08))break}
+   if(v1===v2||e1===e2){e2=`${e1.split(" ")[0]} × ${+e1.split(" ")[2]+1}`;if(e1.includes("+"))e2=`${+e1.split(" ")[0]+1} + ${e1.split(" ")[2]}`}return[e1,e2]},
+ chain:L=>{const s=S(L),n=Math.min(12,8+Math.floor(s/2)),hi=Math.min(5000,99+s*40),d=Math.min(900,60+s*20);let v=RI(5,hi);const a=[v];
+   for(let i=1;i<n;i++){const ch=RI(1,d);if(RI(0,1)||v-ch<0){v+=ch;a.push("+"+ch)}else{v-=ch;a.push("−"+ch)}}return[a,v,Math.max(450,900-s*30)]},
+ dbl:L=>{const d=DG(L,3,8),half=RI(0,1)===1;let x=rd(d);if(half&&x%2)x++;return[x,half?"h":"d"]},
+ pct:L=>{const s=S(L),p=RI(1,Math.min(250,60+s*10)),st=100/gc(p,100),mb=Math.min(1e7,1000*(1+s*2));return[p,st*RI(1,Math.max(1,Math.floor(mb/st)))]},
+ eq:L=>{const s=S(L),t=RI(0,4),x=RI(2,20+s*5);let a,b=0;
+   if(t===0)a=RI(2,99+s*20);else if(t===1)a=RI(1,x-1||1);else if(t===2)a=RI(2,12+s);else if(t===3)a=RI(2,9+s);else{a=RI(2,9+s);b=RI(1,20+s*8)}
+   return[t,a,t===3?a*RI(2,12+s):x,b]},
+ rou:L=>{const k=Math.min(7,3+Math.floor(S(L)/2)),u=P10(k);return[RI(u+1,u*RI(10,100)),u]},
+ root:L=>[RI(2,Math.min(9000,25+S(L)*10))],
+ frac:L=>{const s=S(L),d=RI(3,Math.min(60,12+s));return[RI(1,d-1),d,d*RI(2,Math.min(999,20+s*5))]},
+ ten:L=>{const k=Math.min(6,3+Math.floor(S(L)/2)),p=P10(RI(1,k)),m=RI(0,1)===0,b=RI(2,P10(Math.min(7,3+Math.floor(S(L)/2)))-1);return m?[b,p,"m"]:[b*p,p,"d"]},
+ tf:L=>{const s=S(L),m=20+s*3,a=RI(2,m),b=RI(2,m);let v=a*b;if(RI(0,1)){const d=PK([-1,1,-2,2,-10,10,-a,b]);v=Math.max(1,a*b+d);if(v===a*b)v++}return[a,b,v]}
+};
+for(const g in EXT){if(GN[g]){const o=GN[g].r;GN[g].r=L=>L<=5?o(L):EXT[g](L)}}
+/* level pick list: grows with the player, nobody hits a ceiling */
+window.lvOpts=()=>{const mx=Math.max(10,...Object.values((X&&X.lv)||{}).map(Number).filter(Number.isFinite))+5;return Array.from({length:Math.min(mx,60)},(_,i)=>`<option value="${i+1}">Level ${i+1}</option>`).join("")};
+
+/* ---------- 3. connected memory: skip what the player already knows ---------- */
+const known=q=>{const e=q.f?fact(q.f[0],q.f[1]):X.mo[q.k];return!!e&&e[0]>=4&&(dn()-e[2])<BOX_DAYS[e[0]]};
+{const g0=genQ;genQ=function(g,L){L=Math.min(100000,Math.max(1,Math.floor(+L)||1));let q;for(let i=0;i<8;i++){q=g0(g,L);if(q.lab==="retry"||!known(q))return q}return q}}
+window.knownCount=()=>{let n=0,m=0;for(const k in P.ms)if(P.ms[k][0]>=4)n++;for(const k in X.mo)if(X.mo[k][0]>=4)m++;return[n,m]};
+{const l0=labHome;labHome=function(){l0.apply(this,arguments);const c=document.querySelector("#view .card"),p=c&&c.querySelector("p.hint");if(!p)return;const[n,m]=knownCount(),lv=Math.max(0,...Object.values(X.lv||{}).map(Number).filter(Number.isFinite));
+  p.insertAdjacentHTML("afterend",`<div class="tip"><span>🧠 <b>${n+m} things you know</b> (${n} table facts, ${m} from other games). Games skip these until they are due again and bring you new ones. ${lv?`Your highest level is <b>${lv}</b>. There is no last level.`:"Levels never end: the harder you play, the harder it gets."}</span></div>`)}}
+
+/* ---------- 4. eleven new games ---------- */
+const NEWG={
+ /* ➗ GCF and LCM */
+ fm:{r:L=>{const d=Math.min(4,1+Math.floor((L+1)/3)),f=RI(2,Math.min(30,5+S(L)*2)),a=f*RI(2,Math.min(99,5+L*3)),b=f*RI(2,Math.min(99,5+L*3));return[a===b?a+f:a,b,RI(0,1)?"g":"l"]},
+  mk:(a,b,o)=>{const g=gc(a,b),l=a/g*b;return o==="g"?{g:"fm",k:"fm:"+a+":"+b+":g",t:`Greatest common factor of ${a} and ${b} = <span>?</span>`,a:g,h:f=>f?`Common factors of ${a} and ${b}: the biggest is ${g}`:`List the factors of both numbers, or divide both by their shared primes`}
+   :{g:"fm",k:"fm:"+a+":"+b+":l",t:`Least common multiple of ${a} and ${b} = <span>?</span>`,a:l,h:f=>f?`GCF is ${g}, so LCM = ${a} × ${b} ÷ ${g} = ${l}`:`LCM = ${a} × ${b} ÷ their greatest common factor`}},fk:null},
+ /* 🧮 Order of operations */
+ bod:{r:L=>{const k=Math.min(L,12),m=9+Math.min(S(L)*2,40),t=RI(0,Math.min(3,Math.floor((k+1)/2)));return[t,RI(2,m),RI(2,m),RI(2,m),RI(2,9)]},
+  mk:(t,a,b,c,d)=>{const E=[[`${a} + ${b} × ${c}`,a+b*c,`Multiply first: ${b} × ${c} = ${b*c}, then add ${a}`],[`(${a} + ${b}) × ${c}`,(a+b)*c,`Brackets first: ${a} + ${b} = ${a+b}, then × ${c}`],[`${a*d+b*c} − ${b} × ${c}`,a*d,`Multiply first: ${b} × ${c} = ${b*c}, then subtract from ${a*d+b*c}`],[`${a} × (${b} + ${c}) − ${d}`,a*(b+c)-d,`Brackets: ${b} + ${c} = ${b+c}; × ${a} = ${a*(b+c)}; then − ${d}`]][t];
+   return{g:"bod",k:"bod:"+[t,a,b,c,d].join(":"),t:`${E[0]} = <span>?</span>`,a:E[1],h:f=>f?`${E[2]} → ${E[1]}`:`Brackets first, then × and ÷, then + and −`}},fk:null},
+ /* ❓ Missing operator */
+ opr:{r:L=>{const m=Math.min(12+S(L)*2,99);return[RI(2,m),RI(2,m),RI(0,3)]},
+  mk:(a,b,o)=>{const O=["+","−","×","÷"],calc=()=>[x+y,x-y,x*y,x/y];let x=a,y=b,r;if(o===1&&b>a){x=b;y=a}if(o===3){y=Math.max(2,Math.min(b,12));x=y*Math.max(2,a)}
+   for(let i=0;i<50&&calc().filter(v=>v===calc()[o]).length>1;i++){y++;if(o===3)x=y*Math.max(2,a);if(o===1&&y>=x)x=y+1}r=calc()[o];
+   return{g:"opr",k:"opr:"+x+":"+y+":"+o,t:`${x} <span>?</span> ${y} = ${r}`,ch:O.slice(),ai:o,a:null,h:f=>f?`${x} ${O[o]} ${y} = ${r}`:`Try each sign: which one turns ${x} and ${y} into ${r}?`}},fk:null},
+ /* 🔍 Prime or not */
+ prm:{r:L=>{const d=Math.min(8,2+Math.floor(L/2));let n=rd(d)|1;const isP=v=>{if(v<2)return false;for(let i=2;i*i<=v;i++)if(v%i===0)return false;return true};if(RI(0,2)===0){for(let i=0;i<6000&&!isP(n);i++)n+=2}return[n]},
+  mk:n=>{let f=0;for(let i=2;i*i<=n;i++)if(n%i===0){f=i;break}const p=n>1&&!f;return{g:"prm",k:"prm:"+n,t:`Is ${n} a prime number?`,ch:["Yes, prime","No, not prime"],ai:p?0:1,a:null,h:fl=>fl?(p?`No number from 2 to ${Math.floor(Math.sqrt(n))} divides ${n}, so it is prime`:`${n} = ${f} × ${n/f}, so it is not prime`):`Try dividing by 2, 3, 5, 7, 11... up to √${n} (about ${Math.floor(Math.sqrt(n))})`}},fk:null},
+ /* ✅ Divisibility rules */
+ dvs:{r:L=>{const d=PK(L<=2?[2,5,10]:L<=4?[2,3,4,5,9,10]:[2,3,4,5,6,8,9,11,12]),n=rd(Math.min(9,2+Math.floor(L/2)));return[RI(0,1)?n-n%d:n,d]},
+  mk:(n,d)=>{const y=n%d===0,R={2:"ends in 0, 2, 4, 6 or 8",3:"digits add up to a multiple of 3",4:"last two digits make a multiple of 4",5:"ends in 0 or 5",6:"even and digits add up to a multiple of 3",8:"last three digits make a multiple of 8",9:"digits add up to a multiple of 9",10:"ends in 0",11:"alternating digit sum is 0 or 11",12:"divisible by both 3 and 4"};
+   return{g:"dvs",k:"dvs:"+n+":"+d,t:`Is ${n.toLocaleString()} divisible by ${d}?`,ch:["Yes","No"],ai:y?0:1,a:null,h:f=>f?`${n} ÷ ${d} ${y?"= "+n/d+" exactly":"leaves "+n%d+" over"}`:`Rule for ${d}: a number divides by ${d} if it ${R[d]}`}},fk:null},
+ /* 🔢 Decimals */
+ dec:{r:L=>{const dp=Math.min(5,1+Math.floor(L/3)),dg=Math.min(6,1+Math.ceil(L/2)),a=RI(1,P10(dg)-1),b=RI(1,P10(dg)-1);return[a,b,dp,RI(0,1)]},
+  mk:(a,b,dp,sub)=>{const u=P10(dp),x=Math.max(a,b)/u,y=Math.min(a,b)/u,r=Math.round((sub?x-y:x+y)*u)/u,fx=v=>v.toFixed(dp);
+   return{g:"dec",k:"dec:"+a+":"+b+":"+dp+":"+sub,t:`${fx(x)} ${sub?"−":"+"} ${fx(y)} = <span>?</span>`,a:r,h:f=>f?`Line up the decimal points: ${fx(x)} ${sub?"−":"+"} ${fx(y)} = ${fx(r)}`:`Line up the decimal points, then ${sub?"subtract":"add"} column by column`}},fk:null},
+ /* 🔟 Place value */
+ plc:{r:L=>{const d=Math.min(12,3+Math.floor(L/2));let n=rd(d),i=RI(0,d-1);for(let t=0;t<30&&String(n)[i]==='0';t++)i=RI(0,d-1);if(String(n)[i]==='0')n+=P10(d-1-i);return[n,i]},
+  mk:(n,i)=>{const s=String(n),dgt=+s[i],pv=P10(s.length-1-i),N=["ones","tens","hundreds","thousands","ten thousands","hundred thousands","millions","ten millions","hundred millions","billions","ten billions","hundred billions"][s.length-1-i];
+   return{g:"plc",k:"plc:"+n+":"+i,t:`In ${n.toLocaleString()}, what is the value of the digit ${dgt} (the ${N} place)?`,a:dgt*pv,h:f=>f?`${dgt} is in the ${N} place: ${dgt} × ${pv.toLocaleString()} = ${(dgt*pv).toLocaleString()}`:`Count the places from the right: ones, tens, hundreds...`}},fk:null},
+ /* 🕒 Time */
+ tim:{r:L=>{const h=RI(1,12),m=RI(0,11)*5,add=RI(10,Math.min(1440,90+L*45));return[h,m,add,RI(0,1)]},
+  mk:(h,m,add,w)=>{const t0=h*60+m,t1=t0+add,H=x=>{const hh=Math.floor(x/60)%24,mm=x%60;return(hh%12||12)+":"+String(mm).padStart(2,"0")+(hh<12?" am":" pm")},hr=Math.floor(add/60),mi=add%60;
+   return w?{g:"tim",k:"tim:"+[h,m,add,w].join(":"),t:`From ${H(t0)} to ${H(t1)}: how many minutes?`,a:add,h:f=>f?`${hr?hr+" h ":""}${mi} min = ${add} minutes`:`Count the hours first (60 minutes each), then the extra minutes`}
+    :{g:"tim",k:"tim:"+[h,m,add,w].join(":"),t:`How many minutes is ${hr?hr+" hour"+(hr>1?"s":"")+" ":""}${mi?mi+" minutes":""}?`,a:add,h:f=>f?`${hr} × 60 + ${mi} = ${add}`:`1 hour = 60 minutes`}},fk:null},
+ /* 📐 Area and perimeter */
+ geo:{r:L=>{const m=Math.min(5000,6+L*4);return[RI(2,m),RI(2,m),RI(0,L>=4?2:1),RI(1,Math.max(1,Math.floor(m/3)))]},
+  mk:(w,h,o,c0)=>{const c=Math.max(1,Math.min(c0,w-1,h-1));if(o===2){const A=w*h-c*c>0?w*h-c*c:w*h+c*c,X=w*h-c*c>0?"minus a "+c+" × "+c+" square cut out":"plus a "+c+" × "+c+" square added";return{g:"geo",k:"geo:"+[w,h,o,c0].join(":"),t:`A ${w} × ${h} rectangle ${X}. What is the area?`,a:A,h:f=>f?`${w} × ${h} = ${w*h}; then ${w*h-c*c>0?"− ":"+ "}${c*c} = ${A}`:`Find the big rectangle's area, then take away or add the square's area`}}
+   return o?{g:"geo",k:"geo:"+[w,h,o,c].join(":"),t:`Perimeter of a ${w} by ${h} rectangle = <span>?</span>`,a:2*(w+h),h:f=>f?`2 × (${w} + ${h}) = ${2*(w+h)}`:`Add all four sides, or double (length + width)`}
+    :{g:"geo",k:"geo:"+[w,h,o,c].join(":"),t:`Area of a ${w} by ${h} rectangle = <span>?</span>`,a:w*h,h:f=>f?`${w} × ${h} = ${w*h}`:`Area = length × width`}},fk:null},
+ /* 📊 Mean and median */
+ avg:{r:L=>{const n=Math.min(9,3+Math.floor(L/2)),m=Math.min(10000,20+L*15),w=RI(0,1),mean=RI(5,m),a=[];for(let i=0;i<n;i++)a.push(Math.max(1,RI(mean-Math.floor(m/4),mean+Math.floor(m/4))));
+   if(w===0){const sm=a.reduce((x,y)=>x+y,0),rem=sm%n;a[n-1]+=rem?n-rem:0}else if(n%2===0)a.push(RI(1,mean+5));return[a,w]},
+  mk:(a,w)=>{const n=a.length,sm=a.reduce((x,y)=>x+y,0),so=a.slice().sort((x,y)=>x-y);
+   return w===0?{g:"avg",k:"avg:"+a.join(",")+":0",t:`Mean of ${a.join(", ")} = <span>?</span>`,a:sm/n,h:f=>f?`Total ${sm}, ÷ ${n} numbers = ${sm/n}`:`Add them all up, then divide by how many there are (${n})`}
+    :{g:"avg",k:"avg:"+a.join(",")+":1",t:`Median of ${a.join(", ")} = <span>?</span>`,a:so[(n-1)/2],h:f=>f?`In order: ${so.join(", ")}. The middle one is ${so[(n-1)/2]}`:`Put them in order, then pick the middle number`}},fk:null},
+ /* 📏 Units */
+ unt:{r:L=>{const u=PK(L<=2?[["m","cm",100],["km","m",1000],["kg","g",1000]]:[["m","cm",100],["km","m",1000],["kg","g",1000],["l","ml",1000],["m","mm",1000],["km","cm",100000],["t","kg",1000]]),dp=L<=2?0:Math.min(3,Math.floor(L/3)),w=RI(1,Math.min(9999,12+L*30));return[u,w,dp,RI(0,1)]},
+  mk:(u,w,dp,rev)=>{const f=u[2],x=w/P10(dp),small=Math.round(x*f*1e6)/1e6;
+   return rev?{g:"unt",k:"unt:"+[u[0],u[1],w,dp,rev].join(":"),t:`${small} ${u[1]} = <span>?</span> ${u[0]}`,a:x,h:fl=>fl?`${small} ÷ ${f} = ${x}`:`1 ${u[0]} = ${f} ${u[1]}, so divide by ${f}`}
+    :{g:"unt",k:"unt:"+[u[0],u[1],w,dp,rev].join(":"),t:`${x} ${u[0]} = <span>?</span> ${u[1]}`,a:small,h:fl=>fl?`${x} × ${f} = ${small}`:`1 ${u[0]} = ${f} ${u[1]}, so multiply by ${f}`}},fk:null}
+};
+Object.assign(GN,NEWG);
+const NEWL=[["fm","➗","GCF & LCM","Biggest shared factor, smallest shared multiple"],["bod","🧮","Order of operations","Brackets, × and ÷ first, then + and −"],["opr","❓","Missing sign","Which sign makes it true: + − × ÷"],["prm","🔍","Prime or not","Spot the primes, from 7 to enormous"],["dvs","✅","Divisibility rules","Can it be shared out exactly?"],["dec","🔢","Decimals","Add and subtract, lining up the point"],["plc","🏛","Place value","What is that digit really worth?"],["tim","🕒","Time","Minutes, hours and the clock"],["geo","📐","Area & perimeter","Rectangles and cut-out shapes"],["avg","📊","Mean & median","The average and the middle"],["unt","📏","Units","m, cm, km, kg, g, l, ml"]];
+for(const[k]of NEWL)GENS[k]=L=>genQ(k,L);
+LABG.splice(LABG.length-1,0,...NEWL);
+for(const[k,i,n]of NEWL){CAT.push([k,i+" "+n]);if(!["fm","opr","prm","dvs","tim","avg"].includes(k)&&!SHS.some(s=>s[0]===k))SHS.push([k,i+" "+n])}
+
+/* ---------- 5. login manager: private label + change email / phone (scores move with it) ---------- */
+async function replaceLogin(oldH,nl){
+  const F=await fbp(),others=(await ixGet(nl.h)).filter(u=>u!==U.uid);
+  if(others.length)throw new Error("used");
+  await F.txn(async t=>{const a=await t.get(U.uid);if(!a||a.mergedInto)throw new Error("gone");const old=a.logins[oldH];if(!old||!old.t)throw new Error("gone");if(a.logins[nl.h]&&a.logins[nl.h].t)throw new Error("same");
+    const ro=rolesFix(a),u={["logins."+oldH]:null,["logins."+nl.h]:{...old,t:nl.t,m:nl.m,chg:Date.now()}},nr={...ro};nr[nl.h]=nr[oldH]||"member";delete nr[oldH];u.roles=nr;
+    for(const f of["ct","pd","dr"])if(a[f]&&a[f][oldH]!==undefined){u[f+"."+nl.h]=a[f][oldH];u[f+"."+oldH]=null}
+    t.upd(U.uid,u)});
+  await ixAdd(nl.h,U.uid);await ixDel(oldH,U.uid)}
+window.replaceLogin=replaceLogin;
+{const l1=login;login=function(){const r=l1.apply(this,arguments);try{jEnsure()}catch(e){}return r}}
+function editLoginModal(h){
+  const l=U.logins[h];if(!l)return;const me=h===U.h;
+  openModal(`<div class="mh"><h2 id="mt">Manage this login</h2><button class="sm" id="mx">Close</button></div>
+  <p class="hint">${l.t==="email"?"✉️":"📱"} <b>${esc(l.m)}</b> · added ${ago(l.add)} · last used ${ago(l.last)} · ${esc(l.dev||"unknown device")}${me?" · <b>you are signed in with this</b>":""}</p>
+  <label for="lbl">Private label (only your guild sees it)</label><input type="text" id="lbl" maxlength="30" value="${esc(l.lb||"")}" placeholder="e.g. Mom's phone"><div class="act" style="justify-content:flex-start"><button class="sm" id="lbs">Save label</button></div>
+  <h3 style="margin:14px 0 4px">Change the ${l.t==="email"?"email":"phone number"} on this login</h3><p class="hint" style="margin:0 0 6px">All scores, XP and history stay with it. Your guild's main ID never changes. ${me?"You will be signed in again with the new details.":""}</p>${mf("ed")}<div class="er" id="ede"></div><div class="act" style="justify-content:flex-start"><button class="pri" id="edgo">Change</button></div>`);
+  mfw("ed","edgo");$("mx").onclick=closeModal;
+  if(!(me||isSuper())){const x=$("edgo").closest("div.act");[...MD().querySelectorAll("h3,p.hint")].filter(e=>/Change the|All scores/.test(e.textContent)).forEach(e=>e.remove());$("edseg")&&$("edseg").remove();$("ede")&&($("ede").hidden=false);["ede","edp"].forEach(i=>$(i)&&$(i).remove());x&&x.remove()}
+  $("lbs").onclick=async()=>{const v=cleanName($("lbl").value).slice(0,30);try{await dupd(U.uid,{["logins."+h+".lb"]:v||null});if(v)l.lb=v;else delete l.lb;closeModal();renderDash("✅ Label saved.")}catch(e){$("ede").textContent="Couldn't save. Check your connection."}};
+  $("edgo").onclick=async()=>{const r=await rl("ed");if(r.err){$("ede").textContent=r.err;return}
+    if(r.h===h){$("ede").textContent="That is the same login.";return}
+    if(!confirm("Change "+l.m+" to "+r.m+"? Scores move with it."))return;$("edgo").disabled=true;
+    try{await replaceLogin(h,r);const a=await resolve(U.uid);closeModal();
+      if(me){login(a,r.h,0,U.uid)}else{U.logins=a.logins;U.roles=rolesFix(a);renderDash("✅ Login changed.")}}
+    catch(e){$("ede").textContent=e.message==="used"?"That email or phone already belongs to another guild. Use Merge to join guilds.":e.message==="same"?"That login is already in this guild.":"Couldn't change it. Check your connection."}
+    $("edgo").disabled=false}}
+window.editLoginModal=editLoginModal;
+$("auth").addEventListener("click",e=>{const b=e.target.closest("[data-edl]");if(b)editLoginModal(b.dataset.edl)});
+})();
+</script>
+
+<script>
+/* =====================================================================
    SECTION: SHOP · ARENA · ADMIN HUB   (added as a separate script so the original code above is untouched)
    Uses the app's own globals: U (account), P (this login's stats), $, esc, dget/dupd/fbp, addXp, record, toast,
    isAdmin, myNm, SC, scDoc, ensureIds, authHome, goTab, MODES, plusMode, hud, gLoad, vlAdd, rid, ago, fmt.
@@ -2881,20 +3051,34 @@ const XI=[
  {id:"av3",c:"av",e:"🦅",n:"Sky Hawk",p:900,d:"Sees every answer from above."},
  {id:"av4",c:"av",e:"🐺",n:"Alpha Wolf",p:1500,d:"Leader of the pack."},
  {id:"av5",c:"av",e:"👑",n:"Last Squad Crown",p:4000,d:"Only for the very best."},
+ {id:"av6",c:"av",e:"🦊",n:"Clever Fox",p:700,d:"Quick thinker, quick answers."},
+ {id:"av7",c:"av",e:"🐉",n:"Number Dragon",p:2500,d:"Breathes fire on hard sums."},
+ {id:"av8",c:"av",e:"🚀",n:"Rocket Rider",p:1100,d:"Blast through the tables."},
+ {id:"av9",c:"av",e:"🦉",n:"Wise Owl",p:1300,d:"Calm, careful, always right."},
  {id:"ti1",c:"ti",e:"🪂",n:"Supply Hunter",p:250,d:"Title shown in the Arena."},
  {id:"ti2",c:"ti",e:"🏃",n:"Safe-Zone Sprinter",p:600,d:"Title shown in the Arena."},
  {id:"ti3",c:"ti",e:"🎯",n:"Table Sniper",p:1200,d:"Title shown in the Arena."},
+ {id:"ti4",c:"ti",e:"🧠",n:"Mind Mapper",p:800,d:"Title shown in the Arena."},
+ {id:"ti5",c:"ti",e:"⚡",n:"Lightning Brain",p:1800,d:"Title shown in the Arena."},
+ {id:"ti6",c:"ti",e:"🏆",n:"Times-Table Legend",p:3000,d:"Title shown in the Arena."},
  {id:"th1",c:"th",e:"🌿",n:"Jungle Camo theme",p:400,d:"Greens for the whole site.",t:TH(["#2f7d32","#2f7d32","#e3f3e4"],["#4caf50","#8bd48d","#1d3320"])},
  {id:"th2",c:"th",e:"🏜️",n:"Desert Storm theme",p:400,d:"Warm sand and orange.",t:TH(["#c26a10","#b35f0c","#fdeed8"],["#e8892e","#f2b36b","#3a2713"])},
  {id:"th3",c:"th",e:"🌌",n:"Neon Night theme",p:600,d:"Electric cyan accents.",t:TH(["#0891b2","#0e7490","#d9f5fb"],["#22d3ee","#67e8f9","#0f2f38"])},
  {id:"th4",c:"th",e:"🌑",n:"Blood Moon theme",p:600,d:"Deep red accents.",t:TH(["#c62828","#b71c1c","#fde7e7"],["#ef5350","#ff8a80","#3a1618"])},
+ {id:"th5",c:"th",e:"🌸",n:"Sakura theme",p:500,d:"Soft pink blossoms.",t:TH(["#d6336c","#c2255c","#fde8f0"],["#f06595","#faa2c1","#3a1826"])},
+ {id:"th6",c:"th",e:"🌊",n:"Deep Ocean theme",p:500,d:"Calm sea blues.",t:TH(["#1565c0","#0d47a1","#e3efff"],["#42a5f5","#90caf9","#10263d"])},
+ {id:"th7",c:"th",e:"🍇",n:"Royal Grape theme",p:700,d:"Rich purple accents.",t:TH(["#7b1fa2","#6a1b9a","#f3e5f8"],["#ba68c8","#d9a5e6","#2b1636"])},
+ {id:"th8",c:"th",e:"🌅",n:"Sunset Gold theme",p:700,d:"Golden hour glow.",t:TH(["#e08a00","#c77700","#fff3d6"],["#ffb300","#ffd54f","#3a2c0c"])},
  {id:"pu1",c:"pu",e:"🛡️",n:"Streak Protector",p:120,d:"+1 protector. Saves your streak when you miss a day.",pu:1},
  {id:"pu3",c:"pu",e:"🛡️",n:"Protector ×3",p:300,d:"+3 protectors at a discount.",pu:3}
 ];
 const XG=[
  {id:"gb1",c:"gb",e:"🚩",n:"Squad Banner",p:1500,d:"A banner for your guild, shown on the Admin hub and Arena."},
  {id:"gb2",c:"gb",e:"⚔️",n:"War Emblem",p:4000,d:"A fierce emblem for the guild."},
- {id:"gb3",c:"gb",e:"🏯",n:"Fortress Banner",p:10000,d:"The ultimate guild banner."}
+ {id:"gb3",c:"gb",e:"🏯",n:"Fortress Banner",p:10000,d:"The ultimate guild banner."},
+ {id:"gb4",c:"gb",e:"🐲",n:"Dragon Banner",p:6000,d:"A roaring dragon for the guild."},
+ {id:"gb5",c:"gb",e:"🌟",n:"Star Guild Crest",p:2500,d:"A shining crest for the guild."},
+ {id:"gb6",c:"gb",e:"🛡️",n:"Iron Shield Crest",p:3200,d:"Solid and dependable."}
 ];
 const XC=[["all","All"],["av","🪖 Avatars"],["ti","🏷️ Titles"],["th","🎨 Themes"],["pu","🛡️ Power-ups"]];
 const itemById=id=>XI.concat(XG).find(x=>x.id===id);
@@ -3174,7 +3358,7 @@ async function adminT(){
     const rows=L;
     body=`<input type="search" id="xq" placeholder="🔍 Search members" aria-label="Search members" value="${esc(XD.q)}" autocomplete="off" style="margin-bottom:10px;width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit">`+
     rows.map(({h,l,s,role,ar})=>{const me=h===U.h,btn=sup&&!(role==="super"&&nSup<2)?ROLES.filter(z=>z!==role).map(z=>`<button class="sm" data-rl="${h}:${z}">Make ${z}</button>`).join(""):"";
-      return`<div class="lr ${me?"me":""}" data-s="${esc(String(l.m).toLowerCase())}"><div class="lh"><span class="ic">${l.t==="email"?"✉️":"📱"}</span><div class="lm"><b>${esc(l.m)}</b><div class="n"><span class="tg">${roleLab(role)}</span><span class="tg">${esc(pubNm(l,a.logins))}</span>${me?`<span class="tg">This device</span>`:""}Joined ${ago(l.add)} · Active ${ago(l.last)} · ${esc(l.dev||"unknown device")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${btn}</div></div>
+      return`<div class="lr ${me?"me":""}" data-s="${esc(String(l.m).toLowerCase())}"><div class="lh"><span class="ic">${l.t==="email"?"✉️":"📱"}</span><div class="lm"><b>${esc(l.m)}</b>${l.lb?` <span class="tg">${esc(l.lb)}</span>`:""}<div class="n"><span class="tg">${roleLab(role)}</span><span class="tg">${esc(pubNm(l,a.logins))}</span>${me?`<span class="tg">This device</span>`:""}Joined ${ago(l.add)} · Active ${ago(l.last)} · ${esc(l.dev||"unknown device")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${btn}</div></div>
       <div class="ls"><div><b>${fmt(s.xp||0)}</b>XP</div><div><b>${fmt(s.cn||0)}</b>🪙 coins</div><div><b>${s.ans?Math.round(s.ok/s.ans*100):0}%</b>accuracy</div><div><b>${ar?ar.r:"—"}</b>Arena ⭐</div><div><b>${Object.keys(l.inv||{}).length}</b>shop items</div><div><b>${(s.sk&&s.sk.cur)||0}🔥</b>streak</div></div></div>`}).join("")||`<p class="hint">No member matches.</p>`;
     body+=`<p class="hint">${sup?"As a Super admin you can change anyone's role.":"Only Super admins can change roles."} This is your guild only. Emails and phone numbers are stored hashed and shown masked.</p>`}
   if(XD.tab==="con"){
@@ -3256,6 +3440,7 @@ for(const n of["gPay","gBuy"]){const f=window[n];if(typeof f==="function")window
 </script>
 
 
+<script src="addon.js"></script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getFirestore,initializeFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,deleteField,runTransaction,increment,collection,query,where,documentId,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -3273,6 +3458,10 @@ window.FB={ready:signInAnonymously(auth).catch(e=>console.warn("Anonymous sign-i
   list:async(p,n)=>{const q=query(collection(db,"accounts"),where(documentId(),">=",p),where(documentId(),"<",p+"\uf8ff"),limit(n||300));const r=await getDocs(q);return r.docs.map(x=>({id:x.id,...x.data()}))},
   txn:fn=>runTransaction(db,async t=>fn({get:async id=>{const x=await t.get(ref(id));return x.exists()?x.data():null},set:(id,d)=>t.set(ref(id),d),upd:(id,o)=>t.update(ref(id),cl(o)),del:id=>t.delete(ref(id))}))};
 
+</script>
+<script>
+/* Offline support: the service worker (sw.js) keeps the app working without internet. */
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
 </script>
 </body>
 </html>

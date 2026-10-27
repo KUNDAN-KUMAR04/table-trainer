@@ -3051,34 +3051,20 @@ const XI=[
  {id:"av3",c:"av",e:"🦅",n:"Sky Hawk",p:900,d:"Sees every answer from above."},
  {id:"av4",c:"av",e:"🐺",n:"Alpha Wolf",p:1500,d:"Leader of the pack."},
  {id:"av5",c:"av",e:"👑",n:"Last Squad Crown",p:4000,d:"Only for the very best."},
- {id:"av6",c:"av",e:"🦊",n:"Clever Fox",p:700,d:"Quick thinker, quick answers."},
- {id:"av7",c:"av",e:"🐉",n:"Number Dragon",p:2500,d:"Breathes fire on hard sums."},
- {id:"av8",c:"av",e:"🚀",n:"Rocket Rider",p:1100,d:"Blast through the tables."},
- {id:"av9",c:"av",e:"🦉",n:"Wise Owl",p:1300,d:"Calm, careful, always right."},
  {id:"ti1",c:"ti",e:"🪂",n:"Supply Hunter",p:250,d:"Title shown in the Arena."},
  {id:"ti2",c:"ti",e:"🏃",n:"Safe-Zone Sprinter",p:600,d:"Title shown in the Arena."},
  {id:"ti3",c:"ti",e:"🎯",n:"Table Sniper",p:1200,d:"Title shown in the Arena."},
- {id:"ti4",c:"ti",e:"🧠",n:"Mind Mapper",p:800,d:"Title shown in the Arena."},
- {id:"ti5",c:"ti",e:"⚡",n:"Lightning Brain",p:1800,d:"Title shown in the Arena."},
- {id:"ti6",c:"ti",e:"🏆",n:"Times-Table Legend",p:3000,d:"Title shown in the Arena."},
  {id:"th1",c:"th",e:"🌿",n:"Jungle Camo theme",p:400,d:"Greens for the whole site.",t:TH(["#2f7d32","#2f7d32","#e3f3e4"],["#4caf50","#8bd48d","#1d3320"])},
  {id:"th2",c:"th",e:"🏜️",n:"Desert Storm theme",p:400,d:"Warm sand and orange.",t:TH(["#c26a10","#b35f0c","#fdeed8"],["#e8892e","#f2b36b","#3a2713"])},
  {id:"th3",c:"th",e:"🌌",n:"Neon Night theme",p:600,d:"Electric cyan accents.",t:TH(["#0891b2","#0e7490","#d9f5fb"],["#22d3ee","#67e8f9","#0f2f38"])},
  {id:"th4",c:"th",e:"🌑",n:"Blood Moon theme",p:600,d:"Deep red accents.",t:TH(["#c62828","#b71c1c","#fde7e7"],["#ef5350","#ff8a80","#3a1618"])},
- {id:"th5",c:"th",e:"🌸",n:"Sakura theme",p:500,d:"Soft pink blossoms.",t:TH(["#d6336c","#c2255c","#fde8f0"],["#f06595","#faa2c1","#3a1826"])},
- {id:"th6",c:"th",e:"🌊",n:"Deep Ocean theme",p:500,d:"Calm sea blues.",t:TH(["#1565c0","#0d47a1","#e3efff"],["#42a5f5","#90caf9","#10263d"])},
- {id:"th7",c:"th",e:"🍇",n:"Royal Grape theme",p:700,d:"Rich purple accents.",t:TH(["#7b1fa2","#6a1b9a","#f3e5f8"],["#ba68c8","#d9a5e6","#2b1636"])},
- {id:"th8",c:"th",e:"🌅",n:"Sunset Gold theme",p:700,d:"Golden hour glow.",t:TH(["#e08a00","#c77700","#fff3d6"],["#ffb300","#ffd54f","#3a2c0c"])},
  {id:"pu1",c:"pu",e:"🛡️",n:"Streak Protector",p:120,d:"+1 protector. Saves your streak when you miss a day.",pu:1},
  {id:"pu3",c:"pu",e:"🛡️",n:"Protector ×3",p:300,d:"+3 protectors at a discount.",pu:3}
 ];
 const XG=[
  {id:"gb1",c:"gb",e:"🚩",n:"Squad Banner",p:1500,d:"A banner for your guild, shown on the Admin hub and Arena."},
  {id:"gb2",c:"gb",e:"⚔️",n:"War Emblem",p:4000,d:"A fierce emblem for the guild."},
- {id:"gb3",c:"gb",e:"🏯",n:"Fortress Banner",p:10000,d:"The ultimate guild banner."},
- {id:"gb4",c:"gb",e:"🐲",n:"Dragon Banner",p:6000,d:"A roaring dragon for the guild."},
- {id:"gb5",c:"gb",e:"🌟",n:"Star Guild Crest",p:2500,d:"A shining crest for the guild."},
- {id:"gb6",c:"gb",e:"🛡️",n:"Iron Shield Crest",p:3200,d:"Solid and dependable."}
+ {id:"gb3",c:"gb",e:"🏯",n:"Fortress Banner",p:10000,d:"The ultimate guild banner."}
 ];
 const XC=[["all","All"],["av","🪖 Avatars"],["ti","🏷️ Titles"],["th","🎨 Themes"],["pu","🛡️ Power-ups"]];
 const itemById=id=>XI.concat(XG).find(x=>x.id===id);
@@ -3440,7 +3426,109 @@ for(const n of["gPay","gBuy"]){const f=window[n];if(typeof f==="function")window
 </script>
 
 
-<script src="addon.js"></script>
+<script>
+/* =====================================================================
+   SECTION: OFFLINE · LIVE STATUS · VISUAL HINTS   (additive: existing functions are wrapped, never rewritten)
+   1) Live/Offline badge + dismissible reminder that re-appears after a random PRIME number of minutes.
+   2) Offline sign-in: every account you sign into is kept on this device (tt_acc / tt_hix / tt_pp:<uid>:<login>),
+      one separate copy per account. Offline you can open any of them, even switch accounts. Score changes already
+      wait in the per-account outbox (tt_out) and merge into the server when the connection returns.
+   3) Visual hints drawn by code: multiples strip for × facts, division ladder (like a school LCM ladder) for GCF & LCM.
+   ===================================================================== */
+(function(){
+"use strict";
+const PR=[2,3,5,7,11,13],SN="\u2063",RE=/\u2063([ML])(\d+)x(\d+)\u2063/;
+const NET={ok:navigator.onLine!==false};let RESTORED=false;
+/* ---------- A. visual hints ---------- */
+const css=document.createElement("style");css.textContent=`
+.vh{margin:8px 0 2px;padding:10px 12px;border:1px dashed var(--acc,#5b3df5);border-radius:12px;background:var(--acc2,#eeeaff);color:var(--ink);text-align:left;font-weight:600}
+.vh .cap{font-size:.8rem;color:var(--mute);margin-bottom:6px;font-weight:700}.vh .row{display:flex;flex-wrap:wrap;gap:6px}
+.vc{padding:4px 8px;border-radius:8px;background:var(--card);border:1px solid var(--line);font-size:.85rem;opacity:0;animation:vhin .35s ease forwards}
+.vc.hit{background:var(--ok2);border-color:var(--ok);color:var(--ok);font-weight:800}
+.vl{border-collapse:collapse;margin:0 auto;font-size:1rem}.vl td{padding:3px 12px;opacity:0;animation:vhin .4s ease forwards}
+.vl td:first-child{border-right:2px solid var(--ink);text-align:right;font-weight:800}.vl tr.cm td:first-child{color:var(--ok)}
+.vl tr:not(:last-child) td{border-bottom:1px solid var(--line)}
+@keyframes vhin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.vc,.vl td{animation:none;opacity:1}}
+#net{font-size:.78rem}#offb{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:9999;max-width:min(92vw,520px);display:flex;gap:10px;align-items:center;background:var(--warn2,#fff1d6);color:var(--warn,#a85d00);border:1px solid var(--warn,#a85d00);border-radius:12px;padding:10px 14px;box-shadow:var(--sh);font-weight:700;font-size:.88rem}
+.nb{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-weight:700;font-size:.85rem;text-align:center}.nb.on{background:var(--ok2);color:var(--ok)}.nb.off{background:var(--warn2);color:var(--warn)}`;
+document.head.appendChild(css);
+function mulVis(a,m){const n=Math.max(a,m),k=Math.min(a,m);if(k<2||k>12)return"";
+  let h=`<div class="cap">Multiples of ${n}: count them until the ${k}${["th","st","nd","rd"][k%10>3||(k>10&&k<14)?0:k%10]} one</div><div class="row">`;
+  for(let i=1;i<=k;i++)h+=`<span class="vc ${i===k?"hit":""}" style="animation-delay:${i*.16}s">${n} × ${i} = ${n*i}</span>`;return`<div class="vh">${h}</div></div>`}
+function ladder(ns){const rows=[];let c=ns.slice();
+  for(let g=0;g<14&&c.some(x=>x>1);g++){let p=0;const mx=Math.max(...c);for(let q=2;q<=mx;q++)if(c.some(x=>x>1&&x%q===0)){p=q;break}if(!p)break;
+    rows.push([p,c.slice(),c.every(x=>x%p===0)]);c=c.map(x=>x%p===0?x/p:x)}
+  if(c.some(x=>x>1))return null;rows.push([null,c.slice(),false]);
+  const L=rows.reduce((x,r)=>r[0]?x*r[0]:x,1),G=rows.reduce((x,r)=>r[0]&&r[2]?x*r[0]:x,1);
+  const f=a=>a.length?a.join(" × "):"1";return{rows,L,G,lt:f(rows.filter(r=>r[0]).map(r=>r[0])),gt:f(rows.filter(r=>r[2]).map(r=>r[0]))}}
+window.ttLadder=ladder;
+function fmVis(a,b){if(a>1e6||b>1e6)return"";const d=ladder([a,b]);if(!d)return"";
+  return`<div class="vh"><div class="cap">Divide by primes until every number is 1</div><table class="vl">${d.rows.map((r,i)=>`<tr class="${r[2]?"cm":""}"><td style="animation-delay:${i*.3}s">${r[0]||""}</td><td style="animation-delay:${i*.3}s">${r[1].join(",&nbsp; ")}</td></tr>`).join("")}</table>
+  <div class="cap" style="margin:8px 0 0">LCM = all divisors: ${d.lt} = <b>${d.L}</b> · GCF = green divisors (they divide both): ${d.gt} = <b>${d.G}</b></div></div>`}
+{const h0=hintFor;hintFor=function(a,m){return h0.apply(this,arguments)+SN+"M"+a+"x"+m+SN}}
+{const g0=genQ;genQ=function(g){const q=g0.apply(this,arguments);if(q&&g==="fm"&&q.k&&typeof q.h==="function"&&!q._v){const p=q.k.split(":"),a=+p[1],b=+p[2];if(a&&b){const h=q.h;q.h=f=>h(f)+SN+"L"+a+"x"+b+SN;q._v=1}}return q}}
+let raf=0;new MutationObserver(()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;
+  document.querySelectorAll("#hintt,#view .hint").forEach(el=>{if(el.dataset.vh||!el.textContent.includes(SN))return;
+    const m=el.textContent.match(RE);if(!m)return;el.dataset.vh=1;const a=+m[2],b=+m[3];
+    el.innerHTML=esc(el.textContent.replace(RE,""))+(m[1]==="M"?mulVis(a,b):fmVis(a,b))})})}).observe(document.body,{childList:true,subtree:true,characterData:true});
+
+/* ---------- B. per-account offline copies ---------- */
+const J=(k,d)=>LS.get(k)||d,ppk=(u,h)=>"tt_pp:"+u+":"+h;
+function keep(a,h){const S=J("tt_acc",{}),I=J("tt_hix",{});S[a.uid]={a:JSON.parse(JSON.stringify(a)),t:Date.now()};
+  Object.keys(S).sort((x,y)=>S[y].t-S[x].t).slice(8).forEach(k=>delete S[k]);          /* keep the 8 most recent accounts */
+  for(const k in I)I[k]=I[k].filter(u=>S[u]);
+  for(const k in a.logins||{})if(a.logins[k].t){const l=I[k]=I[k]||[];if(!l.includes(a.uid))l.push(a.uid)}
+  LS.set("tt_acc",S);LS.set("tt_hix",I)}
+let ppT=0;function savePP(force){if(!U)return;const n=Date.now();if(!force&&n-ppT<1500)return;ppT=n;
+  const o=J(ppk(U.uid,U.h),{});LS.set(ppk(U.uid,U.h),{p:P,t:n,d:(!NET.ok||hasOut())?1:(o.d&&hasOut()?1:0)})}
+{const l0=login;login=function(a,h,isNew,from){l0.apply(this,arguments);try{keep(a,h);
+  if(!RESTORED&&NET.ok){const o=J(ppk(a.uid,h),null);if(o&&o.d&&o.p){const s=P;P=Object.assign(norm(o.p),{xp:s.xp,ans:s.ans,ok:s.ok,cn:s.cn,dh:s.dh});hud();flush()}}   /* offline-only changes merge in; counters come from server + outbox */
+  RESTORED=false;savePP(true)}catch(e){}}}
+{const p0=persist;persist=function(){p0.apply(this,arguments);savePP()}}
+{const f0=flush;flush=function(){savePP(true);return f0.apply(this,arguments)}}
+function offlineOpen(uid,h){const e=J("tt_acc",{})[uid];if(!e)return false;RESTORED=true;login(JSON.parse(JSON.stringify(e.a)),h,0,uid);
+  const o=J(ppk(uid,h),null);if(o&&o.p){P=norm(o.p);hud();update()}toast("📴 Offline mode: opened "+U.name+" from this device. Progress is kept here and syncs when you are online.");return true}
+async function offlineGo(){const l=await rl("l");if(l.err){$("er").textContent=l.err;return}
+  const S=J("tt_acc",{}),L=(J("tt_hix",{})[l.h]||[]).filter(u=>S[u]&&S[u].a.logins&&S[u].a.logins[l.h]&&S[u].a.logins[l.h].t);
+  if(!L.length){$("er").textContent="You're offline, and this email or phone hasn't signed in on this device before. Connect to the internet for the first sign-in.";return}
+  if(L.length===1){offlineOpen(L[0],l.h);return}
+  shell(`<h2>Which account?</h2><p class="hint">Offline mode: these accounts are saved on this device.</p>${L.map((u,i)=>`<button class="sm" style="width:100%;margin-top:8px" data-i="${i}">${esc(S[u].a.name)} · ${esc(u)}</button>`).join("")}`);
+  A().querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>offlineOpen(L[+b.dataset.i],l.h))}
+function patchAuth(){const b=$("go1");if(!b||b.dataset.off)return;b.dataset.off=1;const o=b.onclick;
+  b.onclick=async function(){if(NET.ok)return o.apply(this,arguments);b.disabled=true;try{await offlineGo()}catch(e){}b.disabled=false};
+  const c=A().querySelector(".card");if(c&&!c.querySelector(".nb"))c.insertAdjacentHTML("afterbegin",nbHTML())}
+{const a0=authHome;authHome=function(){if(U)return;a0.apply(this,arguments);patchAuth()}}
+{const r0=renderDash;renderDash=function(){const r=r0.apply(this,arguments);const c=A().querySelector(".card");if(c&&!c.querySelector(".nb"))c.insertAdjacentHTML("afterbegin",nbHTML());return r}}
+
+/* ---------- C. live / offline status ---------- */
+const nbHTML=()=>NET.ok?`<div class="nb on" data-nb>🟢 Online${RESTORED?"":""} · progress syncs to your guild</div>`:`<div class="nb off" data-nb>🟠 Offline mode · working from this device, syncs when you reconnect${U?"":" (only accounts used here before can sign in)"}</div>`;
+const chip=document.createElement("button");chip.className="ib";chip.id="net";$("theme").before(chip);
+function paint(){chip.textContent=NET.ok?"🟢 Live":"🟠 Offline";chip.title=NET.ok?"Connected: progress syncs":"No connection: progress is saved on this device";
+  document.querySelectorAll("[data-nb]").forEach(e=>e.outerHTML=nbHTML())}
+chip.onclick=()=>toast(NET.ok?"🟢 Live: connected, progress syncs automatically.":"🟠 Offline: "+Object.keys(OUTS).length+" account(s) have unsent progress. It syncs when you reconnect.");
+let offT=0,dis=false,ep=0,bT=0;
+const hideB=()=>{const b=$("offb");if(b)b.remove()};
+function showB(){hideB();const b=document.createElement("div");b.id="offb";b.setAttribute("role","status");
+  b.innerHTML=`<span>📴 You are offline. Your progress is saved on this device and will sync when the internet returns.</span><button class="sm" id="offx">Dismiss</button>`;
+  document.body.appendChild(b);$("offx").onclick=()=>{dis=true;hideB()};clearTimeout(bT);bT=setTimeout(hideB,9000)}
+function remind(e){if(e!==ep||NET.ok||dis)return;showB();offT=setTimeout(()=>remind(e),PR[Math.floor(Math.random()*PR.length)]*60000)}   /* next reminder: random prime minutes */
+function setNet(ok){if(ok===NET.ok)return;NET.ok=ok;paint();clearTimeout(offT);hideB();
+  if(!ok){dis=false;const e=++ep;offT=setTimeout(()=>remind(e),20000)}                    /* only if the outage lasts 20 s: ignores flicker */
+  else{try{if(U){flush();poll()}}catch(e){}}}
+async function probe(){if(navigator.onLine===false){setNet(false);return}
+  const c=new AbortController,t=setTimeout(()=>c.abort(),6000);
+  try{await fetch("https://firestore.googleapis.com/?_="+Date.now(),{mode:"no-cors",cache:"no-store",signal:c.signal});setNet(true)}catch(e){setNet(false)}clearTimeout(t)}
+addEventListener("offline",()=>setNet(false));addEventListener("online",probe);setInterval(probe,15000);
+paint();patchAuth();
+if(!NET.ok){ep++;const e=ep;offT=setTimeout(()=>remind(e),20000)}
+/* start-up: if the saved session can't be verified (offline or very slow), open it from this device */
+function autoRestore(){if(U)return;const s=LS.get("tt_sess");if(s&&J("tt_acc",{})[s.uid])offlineOpen(s.uid,s.h)}
+if(!NET.ok)autoRestore();else setTimeout(()=>{if(!U&&!NET.ok)autoRestore()},4000);
+setTimeout(probe,1500);
+})();
+</script>
+
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getFirestore,initializeFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,deleteField,runTransaction,increment,collection,query,where,documentId,getDocs,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
